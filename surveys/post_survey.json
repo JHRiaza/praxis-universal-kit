@@ -1,0 +1,462 @@
+{
+  "_meta": {
+    "id": "post_survey",
+    "version": "0.1",
+    "title_en": "PRAXIS Post-Survey: Impact & Adoption Assessment",
+    "title_es": "Encuesta Post-PRAXIS: Evaluación de Impacto y Adopción del Framework",
+    "purpose_en": "Assess the impact of PRAXIS governance adoption on your AI-assisted workflow. Compare with your pre-survey baseline.",
+    "purpose_es": "Evaluar el impacto de la adopción del framework PRAXIS en sus prácticas de trabajo con IA. Compare con su evaluación basal inicial.",
+    "estimated_minutes": 12,
+    "sections": ["A_workflow_post", "B_praxis_specific", "C_qualitative", "D_behavior_change"],
+    "note_en": "Section A uses the exact same items as the pre-survey for paired comparison analysis.",
+    "note_es": "La Sección A utiliza exactamente los mismos ítems que la encuesta pre-PRAXIS para análisis de comparación pareada."
+  },
+  "questions": [
+    {
+      "id": "A1",
+      "section": "A_workflow_post",
+      "type": "likert_5",
+      "text_en": "I have clear rules about what AI should and should not do in my workflow.",
+      "text_es": "Tengo reglas claras sobre qué debe y qué no debe hacer la IA en mi flujo de trabajo.",
+      "scale_en": ["Strongly disagree", "Disagree", "Neutral / Not sure", "Agree", "Strongly agree"],
+      "scale_es": ["Totalmente en desacuerdo", "En desacuerdo", "Neutral / No estoy seguro", "De acuerdo", "Totalmente de acuerdo"],
+      "required": true,
+      "praxis_layer": "L1",
+      "paired_with": "B1"
+    },
+    {
+      "id": "A2",
+      "section": "A_workflow_post",
+      "type": "likert_5",
+      "text_en": "I know who is responsible for decisions made with AI assistance.",
+      "text_es": "Sé quién es responsable de las decisiones tomadas con asistencia de IA.",
+      "scale_en": ["Strongly disagree", "Disagree", "Neutral / Not sure", "Agree", "Strongly agree"],
+      "scale_es": ["Totalmente en desacuerdo", "En desacuerdo", "Neutral / No estoy seguro", "De acuerdo", "Totalmente de acuerdo"],
+      "required": true,
+      "praxis_layer": "L1",
+      "paired_with": "B2"
+    },
+    {
+      "id": "A3",
+      "section": "A_workflow_post",
+      "type": "likert_5",
+      "text_en": "When something goes wrong with an AI result, I have a documented process to prevent it from happening again.",
+      "text_es": "Cuando algo sale mal con un resultado de IA, tengo un proceso documentado para evitar que vuelva a ocurrir.",
+      "scale_en": ["Strongly disagree", "Disagree", "Neutral / Not sure", "Agree", "Strongly agree"],
+      "scale_es": ["Totalmente en desacuerdo", "En desacuerdo", "Neutral / No estoy seguro", "De acuerdo", "Totalmente de acuerdo"],
+      "required": true,
+      "praxis_layer": "L1",
+      "paired_with": "B3"
+    },
+    {
+      "id": "A4",
+      "section": "A_workflow_post",
+      "type": "likert_5",
+      "text_en": "I have a systematic way of deciding which tasks to delegate to AI.",
+      "text_es": "Tengo una forma sistemática de decidir qué tareas delegar a la IA.",
+      "scale_en": ["Strongly disagree", "Disagree", "Neutral / Not sure", "Agree", "Strongly agree"],
+      "scale_es": ["Totalmente en desacuerdo", "En desacuerdo", "Neutral / No estoy seguro", "De acuerdo", "Totalmente de acuerdo"],
+      "required": true,
+      "praxis_layer": "L2",
+      "paired_with": "B4"
+    },
+    {
+      "id": "A5",
+      "section": "A_workflow_post",
+      "type": "likert_5",
+      "text_en": "I choose which AI model/tool to use based on specific criteria (not just habit).",
+      "text_es": "Elijo qué modelo/herramienta de IA usar basándome en criterios específicos (no por costumbre).",
+      "scale_en": ["Strongly disagree", "Disagree", "Neutral / Not sure", "Agree", "Strongly agree"],
+      "scale_es": ["Totalmente en desacuerdo", "En desacuerdo", "Neutral / No estoy seguro", "De acuerdo", "Totalmente de acuerdo"],
+      "required": true,
+      "praxis_layer": "L2",
+      "paired_with": "B5"
+    },
+    {
+      "id": "A6",
+      "section": "A_workflow_post",
+      "type": "likert_5",
+      "text_en": "When AI fails at a task, I have a clear escalation process.",
+      "text_es": "Cuando la IA falla en una tarea, tengo un proceso claro de escalación.",
+      "scale_en": ["Strongly disagree", "Disagree", "Neutral / Not sure", "Agree", "Strongly agree"],
+      "scale_es": ["Totalmente en desacuerdo", "En desacuerdo", "Neutral / No estoy seguro", "De acuerdo", "Totalmente de acuerdo"],
+      "required": true,
+      "praxis_layer": "L2",
+      "paired_with": "B6"
+    },
+    {
+      "id": "A7",
+      "section": "A_workflow_post",
+      "type": "likert_5",
+      "text_en": "I write clear instructions before starting AI-assisted tasks.",
+      "text_es": "Defino instrucciones claras antes de iniciar tareas asistidas por IA.",
+      "scale_en": ["Strongly disagree", "Disagree", "Neutral / Not sure", "Agree", "Strongly agree"],
+      "scale_es": ["Totalmente en desacuerdo", "En desacuerdo", "Neutral / No estoy seguro", "De acuerdo", "Totalmente de acuerdo"],
+      "required": true,
+      "praxis_layer": "L3",
+      "paired_with": "B7"
+    },
+    {
+      "id": "A8",
+      "section": "A_workflow_post",
+      "type": "likert_5",
+      "text_en": "I test/validate AI outputs before accepting them.",
+      "text_es": "Pruebo/valido los resultados de IA antes de aceptarlos.",
+      "scale_en": ["Strongly disagree", "Disagree", "Neutral / Not sure", "Agree", "Strongly agree"],
+      "scale_es": ["Totalmente en desacuerdo", "En desacuerdo", "Neutral / No estoy seguro", "De acuerdo", "Totalmente de acuerdo"],
+      "required": true,
+      "praxis_layer": "L3",
+      "paired_with": "B8"
+    },
+    {
+      "id": "A9",
+      "section": "A_workflow_post",
+      "type": "likert_5",
+      "text_en": "I can complete complex multi-step projects using AI without significantly redoing work.",
+      "text_es": "Puedo completar proyectos complejos de múltiples pasos usando IA sin rehacer significativamente el trabajo.",
+      "scale_en": ["Strongly disagree", "Disagree", "Neutral / Not sure", "Agree", "Strongly agree"],
+      "scale_es": ["Totalmente en desacuerdo", "En desacuerdo", "Neutral / No estoy seguro", "De acuerdo", "Totalmente de acuerdo"],
+      "required": true,
+      "praxis_layer": "L3",
+      "paired_with": "B9"
+    },
+    {
+      "id": "A10",
+      "section": "A_workflow_post",
+      "type": "likert_5",
+      "text_en": "I keep records of what AI produced and why I accepted or rejected the results.",
+      "text_es": "Mantengo registros de lo que produjo la IA y por qué acepté/rechacé los resultados.",
+      "scale_en": ["Strongly disagree", "Disagree", "Neutral / Not sure", "Agree", "Strongly agree"],
+      "scale_es": ["Totalmente en desacuerdo", "En desacuerdo", "Neutral / No estoy seguro", "De acuerdo", "Totalmente de acuerdo"],
+      "required": true,
+      "praxis_layer": "L4",
+      "paired_with": "B10"
+    },
+    {
+      "id": "A11",
+      "section": "A_workflow_post",
+      "type": "likert_5",
+      "text_en": "My AI-assisted work benefits from knowledge accumulated in previous sessions.",
+      "text_es": "Mi trabajo asistido por IA se beneficia del conocimiento adquirido en sesiones anteriores.",
+      "scale_en": ["Strongly disagree", "Disagree", "Neutral / Not sure", "Agree", "Strongly agree"],
+      "scale_es": ["Totalmente en desacuerdo", "En desacuerdo", "Neutral / No estoy seguro", "De acuerdo", "Totalmente de acuerdo"],
+      "required": true,
+      "praxis_layer": "L4",
+      "paired_with": "B11"
+    },
+    {
+      "id": "A12",
+      "section": "A_workflow_post",
+      "type": "likert_5",
+      "text_en": "I can explain to a colleague exactly how a specific AI-assisted result was produced.",
+      "text_es": "Puedo explicar a un colega cómo se produjo un resultado específico asistido por IA.",
+      "scale_en": ["Strongly disagree", "Disagree", "Neutral / Not sure", "Agree", "Strongly agree"],
+      "scale_es": ["Totalmente en desacuerdo", "En desacuerdo", "Neutral / No estoy seguro", "De acuerdo", "Totalmente de acuerdo"],
+      "required": true,
+      "praxis_layer": "L4",
+      "paired_with": "B12"
+    },
+    {
+      "id": "A13",
+      "section": "A_workflow_post",
+      "type": "likert_5",
+      "text_en": "The quality of my AI-assisted outputs is consistent across similar tasks.",
+      "text_es": "La calidad de mis resultados asistidos por IA es consistente en tareas similares.",
+      "scale_en": ["Strongly disagree", "Disagree", "Neutral / Not sure", "Agree", "Strongly agree"],
+      "scale_es": ["Totalmente en desacuerdo", "En desacuerdo", "Neutral / No estoy seguro", "De acuerdo", "Totalmente de acuerdo"],
+      "required": true,
+      "praxis_layer": "L5",
+      "paired_with": "B13"
+    },
+    {
+      "id": "A14",
+      "section": "A_workflow_post",
+      "type": "likert_5",
+      "text_en": "I can reliably predict how long an AI-assisted task will take.",
+      "text_es": "Puedo predecir de manera confiable cuánto tiempo tomará una tarea asistida por IA.",
+      "scale_en": ["Strongly disagree", "Disagree", "Neutral / Not sure", "Agree", "Strongly agree"],
+      "scale_es": ["Totalmente en desacuerdo", "En desacuerdo", "Neutral / No estoy seguro", "De acuerdo", "Totalmente de acuerdo"],
+      "required": true,
+      "praxis_layer": "L5",
+      "paired_with": "B14"
+    },
+    {
+      "id": "A15",
+      "section": "A_workflow_post",
+      "type": "likert_5",
+      "text_en": "I am satisfied with the overall quality of my AI-assisted work.",
+      "text_es": "Estoy satisfecho con la calidad general de mi trabajo asistido por IA.",
+      "scale_en": ["Strongly disagree", "Disagree", "Neutral / Not sure", "Agree", "Strongly agree"],
+      "scale_es": ["Totalmente en desacuerdo", "En desacuerdo", "Neutral / No estoy seguro", "De acuerdo", "Totalmente de acuerdo"],
+      "required": true,
+      "praxis_layer": "L5",
+      "paired_with": "B15"
+    },
+    {
+      "id": "B1",
+      "section": "B_praxis_specific",
+      "type": "likert_5",
+      "text_en": "PRAXIS Governance layer has improved my control over AI decisions.",
+      "text_es": "La capa de Gobernanza de PRAXIS ha mejorado mi control sobre las decisiones con IA.",
+      "scale_en": ["Strongly disagree", "Disagree", "Neutral / Not sure", "Agree", "Strongly agree"],
+      "scale_es": ["Totalmente en desacuerdo", "En desacuerdo", "Neutral / No estoy seguro", "De acuerdo", "Totalmente de acuerdo"],
+      "required": true,
+      "praxis_layer": "L1"
+    },
+    {
+      "id": "B2",
+      "section": "B_praxis_specific",
+      "type": "likert_5",
+      "text_en": "PRAXIS Orchestration layer has improved my ability to delegate tasks appropriately.",
+      "text_es": "La capa de Orquestación de PRAXIS ha mejorado mi capacidad para delegar tareas apropiadamente.",
+      "scale_en": ["Strongly disagree", "Disagree", "Neutral / Not sure", "Agree", "Strongly agree"],
+      "scale_es": ["Totalmente en desacuerdo", "En desacuerdo", "Neutral / No estoy seguro", "De acuerdo", "Totalmente de acuerdo"],
+      "required": true,
+      "praxis_layer": "L2"
+    },
+    {
+      "id": "B3",
+      "section": "B_praxis_specific",
+      "type": "likert_5",
+      "text_en": "PRAXIS Execution layer has improved the quality of my instructions to AI.",
+      "text_es": "La capa de Ejecución de PRAXIS ha mejorado la calidad de mis instrucciones a la IA.",
+      "scale_en": ["Strongly disagree", "Disagree", "Neutral / Not sure", "Agree", "Strongly agree"],
+      "scale_es": ["Totalmente en desacuerdo", "En desacuerdo", "Neutral / No estoy seguro", "De acuerdo", "Totalmente de acuerdo"],
+      "required": true,
+      "praxis_layer": "L3"
+    },
+    {
+      "id": "B4",
+      "section": "B_praxis_specific",
+      "type": "likert_5",
+      "text_en": "PRAXIS Memory layer has improved my ability to learn from past AI sessions.",
+      "text_es": "La capa de Memoria de PRAXIS ha mejorado mi capacidad para aprender de experiencias previas.",
+      "scale_en": ["Strongly disagree", "Disagree", "Neutral / Not sure", "Agree", "Strongly agree"],
+      "scale_es": ["Totalmente en desacuerdo", "En desacuerdo", "Neutral / No estoy seguro", "De acuerdo", "Totalmente de acuerdo"],
+      "required": true,
+      "praxis_layer": "L4"
+    },
+    {
+      "id": "B5",
+      "section": "B_praxis_specific",
+      "type": "likert_5",
+      "text_en": "PRAXIS Production layer has improved the consistency of my final outputs.",
+      "text_es": "La capa de Producción de PRAXIS ha mejorado la consistencia de mis resultados finales.",
+      "scale_en": ["Strongly disagree", "Disagree", "Neutral / Not sure", "Agree", "Strongly agree"],
+      "scale_es": ["Totalmente en desacuerdo", "En desacuerdo", "Neutral / No estoy seguro", "De acuerdo", "Totalmente de acuerdo"],
+      "required": true,
+      "praxis_layer": "L5"
+    },
+    {
+      "id": "B6",
+      "section": "B_praxis_specific",
+      "type": "likert_5",
+      "text_en": "PRAXIS has significantly improved my productivity with AI tools.",
+      "text_es": "PRAXIS ha mejorado significativamente mi productividad con herramientas de IA.",
+      "scale_en": ["Strongly disagree", "Disagree", "Neutral / Not sure", "Agree", "Strongly agree"],
+      "scale_es": ["Totalmente en desacuerdo", "En desacuerdo", "Neutral / No estoy seguro", "De acuerdo", "Totalmente de acuerdo"],
+      "required": true,
+      "praxis_layer": null
+    },
+    {
+      "id": "B7",
+      "section": "B_praxis_specific",
+      "type": "likert_5",
+      "text_en": "PRAXIS principles are applicable to my specific work domain.",
+      "text_es": "Los principios de PRAXIS son aplicables a mi dominio de trabajo específico.",
+      "scale_en": ["Strongly disagree", "Disagree", "Neutral / Not sure", "Agree", "Strongly agree"],
+      "scale_es": ["Totalmente en desacuerdo", "En desacuerdo", "Neutral / No estoy seguro", "De acuerdo", "Totalmente de acuerdo"],
+      "required": true,
+      "praxis_layer": null
+    },
+    {
+      "id": "B8",
+      "section": "B_praxis_specific",
+      "type": "likert_5",
+      "text_en": "It was easy to integrate PRAXIS into my existing workflow.",
+      "text_es": "Ha sido fácil integrar PRAXIS en mi flujo de trabajo existente.",
+      "scale_en": ["Strongly disagree", "Disagree", "Neutral / Not sure", "Agree", "Strongly agree"],
+      "scale_es": ["Totalmente en desacuerdo", "En desacuerdo", "Neutral / No estoy seguro", "De acuerdo", "Totalmente de acuerdo"],
+      "required": true,
+      "praxis_layer": null
+    },
+    {
+      "id": "B9",
+      "section": "B_praxis_specific",
+      "type": "likert_5",
+      "text_en": "The time invested in learning PRAXIS has been worth it.",
+      "text_es": "El tiempo invertido en aprender PRAXIS ha valido la pena.",
+      "scale_en": ["Strongly disagree", "Disagree", "Neutral / Not sure", "Agree", "Strongly agree"],
+      "scale_es": ["Totalmente en desacuerdo", "En desacuerdo", "Neutral / No estoy seguro", "De acuerdo", "Totalmente de acuerdo"],
+      "required": true,
+      "praxis_layer": null
+    },
+    {
+      "id": "B10",
+      "section": "B_praxis_specific",
+      "type": "numeric",
+      "text_en": "How likely are you to recommend PRAXIS to a colleague who works with AI? (0 = definitely not, 10 = definitely yes)",
+      "text_es": "¿Qué tan probable es que recomiende PRAXIS a un colega que trabaja con IA? (0 = definitivamente no, 10 = definitivamente sí)",
+      "min": 0,
+      "max": 10,
+      "required": true,
+      "scoring": "NPS",
+      "praxis_layer": null
+    },
+    {
+      "id": "C1",
+      "section": "C_qualitative",
+      "type": "open_text",
+      "text_en": "What aspect of PRAXIS has been most valuable for your AI work? Please give specific examples if possible.",
+      "text_es": "¿Qué aspecto de PRAXIS ha sido más valioso para su trabajo con IA? Proporcione ejemplos específicos si es posible.",
+      "max_words": 300,
+      "required": false,
+      "praxis_layer": null
+    },
+    {
+      "id": "C2",
+      "section": "C_qualitative",
+      "type": "open_text",
+      "text_en": "What would you change or improve about the PRAXIS framework or this tool?",
+      "text_es": "¿Qué cambiaría o mejoraría del framework PRAXIS o de esta herramienta?",
+      "max_words": 300,
+      "required": false,
+      "praxis_layer": null
+    },
+    {
+      "id": "C3",
+      "section": "C_qualitative",
+      "type": "open_text",
+      "text_en": "Describe a specific situation where PRAXIS helped (or didn't help) you get better results. Include: (1) the type of task, (2) which layers/principles you applied, (3) the outcome.",
+      "text_es": "Describa una situación específica donde PRAXIS le ayudó (o no le ayudó) a obtener mejores resultados. Incluya: (1) el tipo de tarea, (2) qué capas/principios aplicó, (3) el resultado obtenido.",
+      "max_words": 400,
+      "required": false,
+      "praxis_layer": null
+    },
+    {
+      "id": "D1",
+      "section": "D_behavior_change",
+      "type": "multi_choice",
+      "text_en": "How has your AI workflow changed since adopting PRAXIS? (Select all that apply)",
+      "text_es": "¿Cómo ha cambiado su flujo de trabajo con IA desde la adopción de PRAXIS? (Marque todas las que apliquen)",
+      "options_en": [
+        "I now document governance rules before new projects",
+        "I systematically evaluate which tasks to delegate vs. do manually",
+        "I spend more time writing clear AI instructions",
+        "I keep detailed records of AI sessions",
+        "I review and validate results more systematically",
+        "I plan projects considering specific AI model capabilities",
+        "I have established clear quality criteria for AI outputs",
+        "I do regular retrospectives on my AI workflow effectiveness",
+        "My AI workflow has not changed significantly",
+        "Other (specify in notes)"
+      ],
+      "options_es": [
+        "Ahora documento reglas de gobernanza antes de proyectos nuevos",
+        "Evalúo sistemáticamente qué tareas delegar vs. hacer manualmente",
+        "Dedico más tiempo a formular instrucciones claras para la IA",
+        "Mantengo registros detallados de las sesiones con IA",
+        "Reviso y valido resultados más sistemáticamente",
+        "Planifico proyectos considerando las capacidades específicas de diferentes modelos de IA",
+        "He establecido criterios claros de calidad para aceptar/rechazar outputs de IA",
+        "Realizo retrospectivas regulares sobre la efectividad de mi uso de IA",
+        "No he cambiado significativamente mi flujo de trabajo",
+        "Otro (especificar en notas)"
+      ],
+      "required": true,
+      "allow_other": true,
+      "praxis_layer": null
+    },
+    {
+      "id": "D2",
+      "section": "D_behavior_change",
+      "type": "numeric",
+      "text_en": "Approximately how many governance rules have you created since adopting PRAXIS?",
+      "text_es": "¿Aproximadamente cuántas reglas de gobernanza ha creado desde que adoptó PRAXIS?",
+      "min": 0,
+      "max": 200,
+      "required": true,
+      "praxis_layer": "L1"
+    },
+    {
+      "id": "D3",
+      "section": "D_behavior_change",
+      "type": "single_choice",
+      "text_en": "How often do you log your AI tasks in PRAXIS?",
+      "text_es": "¿Con qué frecuencia registra sus tareas de IA en la herramienta PRAXIS?",
+      "options_en": [
+        "Always (>90% of tasks)",
+        "Frequently (70–90% of tasks)",
+        "Sometimes (40–70% of tasks)",
+        "Rarely (10–40% of tasks)",
+        "Never or almost never (<10% of tasks)"
+      ],
+      "options_es": [
+        "Siempre (>90% de las tareas)",
+        "Frecuentemente (70–90% de las tareas)",
+        "A veces (40–70% de las tareas)",
+        "Raramente (10–40% de las tareas)",
+        "Nunca o casi nunca (<10% de las tareas)"
+      ],
+      "required": true,
+      "praxis_layer": null
+    },
+    {
+      "id": "D4",
+      "section": "D_behavior_change",
+      "type": "single_choice",
+      "text_en": "Do you evaluate AI output quality systematically using predefined criteria?",
+      "text_es": "¿Evalúa la calidad de los outputs de IA de manera sistemática usando criterios predefinidos?",
+      "options_en": [
+        "Yes, I always use systematic criteria",
+        "Sometimes I use systematic criteria",
+        "No, I evaluate intuitively"
+      ],
+      "options_es": [
+        "Sí, siempre uso criterios sistemáticos",
+        "A veces uso criterios sistemáticos",
+        "No, evalúo de manera intuitiva"
+      ],
+      "required": true,
+      "praxis_layer": "L5"
+    },
+    {
+      "id": "D5",
+      "section": "D_behavior_change",
+      "type": "single_choice",
+      "text_en": "Have you changed which AI models/tools you use based on PRAXIS delegation principles?",
+      "text_es": "¿Ha cambiado qué modelos/herramientas de IA utiliza basándose en los principios de delegación de PRAXIS?",
+      "options_en": [
+        "Yes, I now select models more strategically",
+        "No, I still use the same tools as before"
+      ],
+      "options_es": [
+        "Sí, ahora selecciono modelos de manera más estratégica",
+        "No, sigo usando las mismas herramientas que antes"
+      ],
+      "required": true,
+      "praxis_layer": "L2"
+    }
+  ],
+  "scoring": {
+    "workflow_post": {
+      "L1_governance": ["A1", "A2", "A3"],
+      "L2_orchestration": ["A4", "A5", "A6"],
+      "L3_execution": ["A7", "A8", "A9"],
+      "L4_memory": ["A10", "A11", "A12"],
+      "L5_production": ["A13", "A14", "A15"]
+    },
+    "praxis_utility": {
+      "by_layer": ["B1", "B2", "B3", "B4", "B5"],
+      "overall_value": ["B6", "B7"],
+      "adoption_ease": ["B8", "B9"],
+      "nps": "B10"
+    },
+    "nps_interpretation": {
+      "promoters": "9–10",
+      "passives": "7–8",
+      "detractors": "0–6",
+      "formula": "% promoters - % detractors"
+    }
+  }
+}

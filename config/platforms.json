@@ -1,0 +1,196 @@
+{
+  "_comment": "PRAXIS Universal Kit — Platform Detection Signatures v0.1",
+  "_description": "Each platform entry defines how to detect the AI tool, where to inject governance files, and tier metadata.",
+  "platforms": [
+    {
+      "id": "openclaw",
+      "name": "OpenClaw",
+      "tier": 1,
+      "description": "Deep integration: cron, heartbeat, memory system",
+      "detection": {
+        "dirs": ["~/.openclaw"],
+        "executables": ["openclaw"],
+        "env_vars": ["OPENCLAW_HOME"]
+      },
+      "governance_files": {
+        "soul": "SOUL.md",
+        "agents": "AGENTS.md",
+        "heartbeat": "HEARTBEAT.md",
+        "memory": "MEMORY.md"
+      },
+      "notes": "Deepest integration tier. Supports cron reminders, heartbeat passive collection, memory system maps to PRAXIS L4."
+    },
+    {
+      "id": "claude_cowork",
+      "name": "Claude Cowork (Claude Code / Claude.ai)",
+      "tier": 2,
+      "description": "Anthropic project instructions via CLAUDE.md",
+      "detection": {
+        "files": ["CLAUDE.md"],
+        "dirs": ["~/.claude"],
+        "executables": ["claude"],
+        "env_vars": ["ANTHROPIC_API_KEY", "CLAUDE_HOME"]
+      },
+      "governance_files": {
+        "primary": "CLAUDE.md"
+      },
+      "notes": "Uses CLAUDE.md in project root or ~/.claude/ for user-level config. Claude Code CLI uses same mechanism."
+    },
+    {
+      "id": "codex",
+      "name": "OpenAI Codex / Codex CLI",
+      "tier": 2,
+      "description": "OpenAI sandbox agent — AGENTS.md in project root",
+      "detection": {
+        "files": ["AGENTS.md"],
+        "dirs": [".codex"],
+        "executables": ["codex"],
+        "env_vars": ["OPENAI_API_KEY"]
+      },
+      "governance_files": {
+        "primary": "AGENTS.md"
+      },
+      "notes": "Codex reads AGENTS.md for instructions. Environment variable OPENAI_API_KEY may indicate Codex usage."
+    },
+    {
+      "id": "cursor",
+      "name": "Cursor",
+      "tier": 2,
+      "description": "AI IDE by Anysphere — .cursorrules or .cursor/rules/",
+      "detection": {
+        "files": [".cursorrules"],
+        "dirs": [".cursor"],
+        "executables": ["cursor"],
+        "env_vars": ["CURSOR_HOME"]
+      },
+      "governance_files": {
+        "primary": ".cursorrules",
+        "alt": ".cursor/rules/praxis.md"
+      },
+      "notes": "Cursor reads .cursorrules from project root. Newer versions also support .cursor/rules/*.md for modular rules."
+    },
+    {
+      "id": "windsurf",
+      "name": "Windsurf",
+      "tier": 2,
+      "description": "Codeium AI IDE — .windsurfrules",
+      "detection": {
+        "files": [".windsurfrules"],
+        "dirs": [".windsurf"],
+        "executables": ["windsurf"],
+        "env_vars": ["WINDSURF_HOME"]
+      },
+      "governance_files": {
+        "primary": ".windsurfrules"
+      },
+      "notes": "Windsurf reads .windsurfrules from project root or .windsurf/ directory."
+    },
+    {
+      "id": "copilot",
+      "name": "GitHub Copilot",
+      "tier": 3,
+      "description": "GitHub Copilot — .github/copilot-instructions.md",
+      "detection": {
+        "files": [".github/copilot-instructions.md"],
+        "dirs": [".github"],
+        "executables": ["gh"],
+        "env_vars": ["GITHUB_TOKEN", "GH_TOKEN"]
+      },
+      "governance_files": {
+        "primary": ".github/copilot-instructions.md"
+      },
+      "notes": "Copilot reads custom instructions from .github/copilot-instructions.md. Directory .github/ is a weak signal (also used for Actions)."
+    },
+    {
+      "id": "aider",
+      "name": "Aider",
+      "tier": 3,
+      "description": "CLI coding agent — .aider.conf.yml + CONVENTIONS.md",
+      "detection": {
+        "files": [".aider.conf.yml", ".aider.conf.yaml", ".aider"],
+        "dirs": [".aider"],
+        "executables": ["aider"],
+        "env_vars": ["AIDER_MODEL"]
+      },
+      "governance_files": {
+        "primary": "CONVENTIONS.md",
+        "config": ".aider.conf.yml"
+      },
+      "notes": "Aider reads CONVENTIONS.md and .aider.conf.yml. The conventions file is injected into the context automatically."
+    },
+    {
+      "id": "continue_dev",
+      "name": "Continue.dev",
+      "tier": 3,
+      "description": "VSCode/JetBrains extension — .continue/config.json",
+      "detection": {
+        "files": [".continue/config.json", ".continue/config.yaml"],
+        "dirs": [".continue"],
+        "env_vars": ["CONTINUE_API_KEY"]
+      },
+      "governance_files": {
+        "primary": ".continue/config.json",
+        "rules": ".continue/rules/praxis.md"
+      },
+      "notes": "Continue.dev reads .continue/config.json. Rules can be injected as system prompts via the config."
+    },
+    {
+      "id": "cline",
+      "name": "Cline",
+      "tier": 3,
+      "description": "VSCode extension (formerly Claude Dev) — .cline/instructions.md",
+      "detection": {
+        "files": [".clinerules", ".cline/instructions.md"],
+        "dirs": [".cline"],
+        "env_vars": ["CLINE_API_KEY"]
+      },
+      "governance_files": {
+        "primary": ".clinerules",
+        "alt": ".cline/instructions.md"
+      },
+      "notes": "Cline reads .clinerules from project root or .cline/instructions.md."
+    },
+    {
+      "id": "roo_code",
+      "name": "Roo Code",
+      "tier": 3,
+      "description": "VSCode extension — .roo/rules.md or .roorules",
+      "detection": {
+        "files": [".roorules", ".roo/rules.md"],
+        "dirs": [".roo"],
+        "env_vars": ["ROO_API_KEY"]
+      },
+      "governance_files": {
+        "primary": ".roorules",
+        "alt": ".roo/rules.md"
+      },
+      "notes": "Roo Code reads .roorules or .roo/rules.md for persistent instructions."
+    },
+    {
+      "id": "generic",
+      "name": "Generic (any AI tool)",
+      "tier": 4,
+      "description": "Fallback for any AI tool — plain PRAXIS_GOVERNANCE.md",
+      "detection": {
+        "fallback": true
+      },
+      "governance_files": {
+        "primary": "PRAXIS_GOVERNANCE.md"
+      },
+      "notes": "Works with any AI tool including ChatGPT web, Gemini, Perplexity. User pastes PRAXIS_GOVERNANCE.md content manually."
+    }
+  ],
+  "detection_priority": [
+    "openclaw",
+    "claude_cowork",
+    "codex",
+    "cursor",
+    "windsurf",
+    "copilot",
+    "aider",
+    "continue_dev",
+    "cline",
+    "roo_code",
+    "generic"
+  ]
+}

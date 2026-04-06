@@ -1,0 +1,403 @@
+{
+  "_meta": {
+    "id": "pre_survey",
+    "version": "0.1",
+    "title_en": "PRAXIS Pre-Survey: AI Workflow Baseline",
+    "title_es": "Encuesta Pre-PRAXIS: Evaluación Basal de Flujos de Trabajo con IA",
+    "purpose_en": "Baseline assessment of your current AI-assisted workflow before adopting PRAXIS governance.",
+    "purpose_es": "Evaluación basal de sus prácticas actuales de trabajo con IA antes de adoptar el framework PRAXIS.",
+    "estimated_minutes": 10,
+    "sections": ["A_demographics", "B_workflow", "C_pain_points"]
+  },
+  "questions": [
+    {
+      "id": "A1",
+      "section": "A_demographics",
+      "type": "multi_choice",
+      "text_en": "What is your primary professional domain?",
+      "text_es": "¿Cuál es su dominio profesional principal?",
+      "options_en": [
+        "Software development / Programming",
+        "Content creation / Marketing",
+        "Graphic design / UX/UI",
+        "Academic / Scientific research",
+        "Business consulting",
+        "Education / Training",
+        "Data analysis / Business intelligence",
+        "Project management",
+        "Writing / Journalism",
+        "Other (specify in notes)"
+      ],
+      "options_es": [
+        "Desarrollo de software / Programación",
+        "Creación de contenidos / Marketing",
+        "Diseño gráfico / UX/UI",
+        "Investigación académica / Científica",
+        "Consultoría empresarial",
+        "Educación / Formación",
+        "Análisis de datos / Business Intelligence",
+        "Gestión de proyectos",
+        "Redacción / Periodismo",
+        "Otro (especificar en notas)"
+      ],
+      "required": true,
+      "allow_other": true,
+      "praxis_layer": null
+    },
+    {
+      "id": "A2",
+      "section": "A_demographics",
+      "type": "single_choice",
+      "text_en": "How many years of experience do you have using AI tools in your work?",
+      "text_es": "¿Cuántos años de experiencia tiene utilizando herramientas de IA en su trabajo?",
+      "options_en": [
+        "Less than 6 months",
+        "6 months – 1 year",
+        "1–2 years",
+        "2–3 years",
+        "More than 3 years"
+      ],
+      "options_es": [
+        "Menos de 6 meses",
+        "6 meses – 1 año",
+        "1–2 años",
+        "2–3 años",
+        "Más de 3 años"
+      ],
+      "required": true,
+      "praxis_layer": null
+    },
+    {
+      "id": "A3",
+      "section": "A_demographics",
+      "type": "single_choice",
+      "text_en": "What is the typical size of your team when working on AI-assisted projects?",
+      "text_es": "¿Cuál es el tamaño típico de su equipo de trabajo en proyectos con IA?",
+      "options_en": [
+        "Solo (individual)",
+        "Small team (2–5 people)",
+        "Medium team (6–20 people)",
+        "Large team (more than 20 people)"
+      ],
+      "options_es": [
+        "Trabajo individual (solo)",
+        "Equipo pequeño (2–5 personas)",
+        "Equipo mediano (6–20 personas)",
+        "Equipo grande (más de 20 personas)"
+      ],
+      "required": true,
+      "praxis_layer": null
+    },
+    {
+      "id": "A4",
+      "section": "A_demographics",
+      "type": "multi_choice",
+      "text_en": "Which AI tools do you use regularly (at least once per week)? Select all that apply.",
+      "text_es": "¿Qué herramientas de IA utiliza regularmente (al menos una vez por semana)? Marque todas las que apliquen.",
+      "options_en": [
+        "ChatGPT / GPT-4",
+        "Claude (Anthropic)",
+        "Gemini (Google)",
+        "GitHub Copilot",
+        "Cursor",
+        "Windsurf",
+        "Aider",
+        "Continue.dev",
+        "Cline / Roo Code",
+        "OpenAI Codex CLI",
+        "Midjourney / DALL-E / image tools",
+        "Perplexity",
+        "Notion AI / writing tools",
+        "Other (specify in notes)"
+      ],
+      "options_es": [
+        "ChatGPT / GPT-4",
+        "Claude (Anthropic)",
+        "Gemini (Google)",
+        "GitHub Copilot",
+        "Cursor",
+        "Windsurf",
+        "Aider",
+        "Continue.dev",
+        "Cline / Roo Code",
+        "OpenAI Codex CLI",
+        "Midjourney / DALL-E / herramientas de imagen",
+        "Perplexity",
+        "Notion AI / herramientas de escritura",
+        "Otro (especificar en notas)"
+      ],
+      "required": true,
+      "allow_other": true,
+      "praxis_layer": null
+    },
+    {
+      "id": "A5",
+      "section": "A_demographics",
+      "type": "single_choice",
+      "text_en": "How frequently do you use AI tools in your work?",
+      "text_es": "¿Con qué frecuencia utiliza herramientas de IA en su trabajo?",
+      "options_en": [
+        "Daily (5+ times per week)",
+        "Weekly (2–4 times per week)",
+        "Monthly (2–4 times per month)",
+        "Rarely (less than once per month)"
+      ],
+      "options_es": [
+        "Diariamente (5+ veces por semana)",
+        "Semanalmente (2–4 veces por semana)",
+        "Mensualmente (2–4 veces por mes)",
+        "Raramente (menos de una vez por mes)"
+      ],
+      "required": true,
+      "praxis_layer": null
+    },
+    {
+      "id": "B1",
+      "section": "B_workflow",
+      "type": "likert_5",
+      "text_en": "I have clear rules about what AI should and should not do in my workflow.",
+      "text_es": "Tengo reglas claras sobre qué debe y qué no debe hacer la IA en mi flujo de trabajo.",
+      "scale_en": ["Strongly disagree", "Disagree", "Neutral / Not sure", "Agree", "Strongly agree"],
+      "scale_es": ["Totalmente en desacuerdo", "En desacuerdo", "Neutral / No estoy seguro", "De acuerdo", "Totalmente de acuerdo"],
+      "required": true,
+      "praxis_layer": "L1"
+    },
+    {
+      "id": "B2",
+      "section": "B_workflow",
+      "type": "likert_5",
+      "text_en": "I know who is responsible for decisions made with AI assistance.",
+      "text_es": "Sé quién es responsable de las decisiones tomadas con asistencia de IA.",
+      "scale_en": ["Strongly disagree", "Disagree", "Neutral / Not sure", "Agree", "Strongly agree"],
+      "scale_es": ["Totalmente en desacuerdo", "En desacuerdo", "Neutral / No estoy seguro", "De acuerdo", "Totalmente de acuerdo"],
+      "required": true,
+      "praxis_layer": "L1"
+    },
+    {
+      "id": "B3",
+      "section": "B_workflow",
+      "type": "likert_5",
+      "text_en": "When something goes wrong with an AI result, I have a documented process to prevent it from happening again.",
+      "text_es": "Cuando algo sale mal con un resultado de IA, tengo un proceso documentado para evitar que vuelva a ocurrir.",
+      "scale_en": ["Strongly disagree", "Disagree", "Neutral / Not sure", "Agree", "Strongly agree"],
+      "scale_es": ["Totalmente en desacuerdo", "En desacuerdo", "Neutral / No estoy seguro", "De acuerdo", "Totalmente de acuerdo"],
+      "required": true,
+      "praxis_layer": "L1"
+    },
+    {
+      "id": "B4",
+      "section": "B_workflow",
+      "type": "likert_5",
+      "text_en": "I have a systematic way of deciding which tasks to delegate to AI.",
+      "text_es": "Tengo una forma sistemática de decidir qué tareas delegar a la IA.",
+      "scale_en": ["Strongly disagree", "Disagree", "Neutral / Not sure", "Agree", "Strongly agree"],
+      "scale_es": ["Totalmente en desacuerdo", "En desacuerdo", "Neutral / No estoy seguro", "De acuerdo", "Totalmente de acuerdo"],
+      "required": true,
+      "praxis_layer": "L2"
+    },
+    {
+      "id": "B5",
+      "section": "B_workflow",
+      "type": "likert_5",
+      "text_en": "I choose which AI model/tool to use based on specific criteria (not just habit).",
+      "text_es": "Elijo qué modelo/herramienta de IA usar basándome en criterios específicos (no por costumbre).",
+      "scale_en": ["Strongly disagree", "Disagree", "Neutral / Not sure", "Agree", "Strongly agree"],
+      "scale_es": ["Totalmente en desacuerdo", "En desacuerdo", "Neutral / No estoy seguro", "De acuerdo", "Totalmente de acuerdo"],
+      "required": true,
+      "praxis_layer": "L2"
+    },
+    {
+      "id": "B6",
+      "section": "B_workflow",
+      "type": "likert_5",
+      "text_en": "When AI fails at a task, I have a clear escalation process.",
+      "text_es": "Cuando la IA falla en una tarea, tengo un proceso claro de escalación.",
+      "scale_en": ["Strongly disagree", "Disagree", "Neutral / Not sure", "Agree", "Strongly agree"],
+      "scale_es": ["Totalmente en desacuerdo", "En desacuerdo", "Neutral / No estoy seguro", "De acuerdo", "Totalmente de acuerdo"],
+      "required": true,
+      "praxis_layer": "L2"
+    },
+    {
+      "id": "B7",
+      "section": "B_workflow",
+      "type": "likert_5",
+      "text_en": "I write clear instructions before starting AI-assisted tasks.",
+      "text_es": "Defino instrucciones claras antes de iniciar tareas asistidas por IA.",
+      "scale_en": ["Strongly disagree", "Disagree", "Neutral / Not sure", "Agree", "Strongly agree"],
+      "scale_es": ["Totalmente en desacuerdo", "En desacuerdo", "Neutral / No estoy seguro", "De acuerdo", "Totalmente de acuerdo"],
+      "required": true,
+      "praxis_layer": "L3"
+    },
+    {
+      "id": "B8",
+      "section": "B_workflow",
+      "type": "likert_5",
+      "text_en": "I test/validate AI outputs before accepting them.",
+      "text_es": "Pruebo/valido los resultados de IA antes de aceptarlos.",
+      "scale_en": ["Strongly disagree", "Disagree", "Neutral / Not sure", "Agree", "Strongly agree"],
+      "scale_es": ["Totalmente en desacuerdo", "En desacuerdo", "Neutral / No estoy seguro", "De acuerdo", "Totalmente de acuerdo"],
+      "required": true,
+      "praxis_layer": "L3"
+    },
+    {
+      "id": "B9",
+      "section": "B_workflow",
+      "type": "likert_5",
+      "text_en": "I can complete complex multi-step projects using AI without significantly redoing work.",
+      "text_es": "Puedo completar proyectos complejos de múltiples pasos usando IA sin rehacer significativamente el trabajo.",
+      "scale_en": ["Strongly disagree", "Disagree", "Neutral / Not sure", "Agree", "Strongly agree"],
+      "scale_es": ["Totalmente en desacuerdo", "En desacuerdo", "Neutral / No estoy seguro", "De acuerdo", "Totalmente de acuerdo"],
+      "required": true,
+      "praxis_layer": "L3"
+    },
+    {
+      "id": "B10",
+      "section": "B_workflow",
+      "type": "likert_5",
+      "text_en": "I keep records of what AI produced and why I accepted or rejected the results.",
+      "text_es": "Mantengo registros de lo que produjo la IA y por qué acepté/rechacé los resultados.",
+      "scale_en": ["Strongly disagree", "Disagree", "Neutral / Not sure", "Agree", "Strongly agree"],
+      "scale_es": ["Totalmente en desacuerdo", "En desacuerdo", "Neutral / No estoy seguro", "De acuerdo", "Totalmente de acuerdo"],
+      "required": true,
+      "praxis_layer": "L4"
+    },
+    {
+      "id": "B11",
+      "section": "B_workflow",
+      "type": "likert_5",
+      "text_en": "My AI-assisted work benefits from knowledge accumulated in previous sessions.",
+      "text_es": "Mi trabajo asistido por IA se beneficia del conocimiento adquirido en sesiones anteriores.",
+      "scale_en": ["Strongly disagree", "Disagree", "Neutral / Not sure", "Agree", "Strongly agree"],
+      "scale_es": ["Totalmente en desacuerdo", "En desacuerdo", "Neutral / No estoy seguro", "De acuerdo", "Totalmente de acuerdo"],
+      "required": true,
+      "praxis_layer": "L4"
+    },
+    {
+      "id": "B12",
+      "section": "B_workflow",
+      "type": "likert_5",
+      "text_en": "I can explain to a colleague exactly how a specific AI-assisted result was produced.",
+      "text_es": "Puedo explicar a un colega cómo se produjo un resultado específico asistido por IA.",
+      "scale_en": ["Strongly disagree", "Disagree", "Neutral / Not sure", "Agree", "Strongly agree"],
+      "scale_es": ["Totalmente en desacuerdo", "En desacuerdo", "Neutral / No estoy seguro", "De acuerdo", "Totalmente de acuerdo"],
+      "required": true,
+      "praxis_layer": "L4"
+    },
+    {
+      "id": "B13",
+      "section": "B_workflow",
+      "type": "likert_5",
+      "text_en": "The quality of my AI-assisted outputs is consistent across similar tasks.",
+      "text_es": "La calidad de mis resultados asistidos por IA es consistente en tareas similares.",
+      "scale_en": ["Strongly disagree", "Disagree", "Neutral / Not sure", "Agree", "Strongly agree"],
+      "scale_es": ["Totalmente en desacuerdo", "En desacuerdo", "Neutral / No estoy seguro", "De acuerdo", "Totalmente de acuerdo"],
+      "required": true,
+      "praxis_layer": "L5"
+    },
+    {
+      "id": "B14",
+      "section": "B_workflow",
+      "type": "likert_5",
+      "text_en": "I can reliably predict how long an AI-assisted task will take.",
+      "text_es": "Puedo predecir de manera confiable cuánto tiempo tomará una tarea asistida por IA.",
+      "scale_en": ["Strongly disagree", "Disagree", "Neutral / Not sure", "Agree", "Strongly agree"],
+      "scale_es": ["Totalmente en desacuerdo", "En desacuerdo", "Neutral / No estoy seguro", "De acuerdo", "Totalmente de acuerdo"],
+      "required": true,
+      "praxis_layer": "L5"
+    },
+    {
+      "id": "B15",
+      "section": "B_workflow",
+      "type": "likert_5",
+      "text_en": "I am satisfied with the overall quality of my AI-assisted work.",
+      "text_es": "Estoy satisfecho con la calidad general de mi trabajo asistido por IA.",
+      "scale_en": ["Strongly disagree", "Disagree", "Neutral / Not sure", "Agree", "Strongly agree"],
+      "scale_es": ["Totalmente en desacuerdo", "En desacuerdo", "Neutral / No estoy seguro", "De acuerdo", "Totalmente de acuerdo"],
+      "required": true,
+      "praxis_layer": "L5"
+    },
+    {
+      "id": "C1",
+      "section": "C_pain_points",
+      "type": "multi_choice",
+      "text_en": "What is your biggest frustration with AI-assisted work? (Select all that apply)",
+      "text_es": "¿Cuál es su mayor frustración con el trabajo asistido por IA? (Marque todas las que apliquen)",
+      "options_en": [
+        "Inconsistent or unpredictable results",
+        "Difficulty getting exactly what I need",
+        "Time wasted reformulating prompts",
+        "Uncertainty about output quality",
+        "Difficulty integrating AI into existing workflows",
+        "Accuracy / truthfulness concerns",
+        "Lack of transparency about how results were generated",
+        "Limited customization",
+        "Losing context between sessions",
+        "Other (specify in notes)"
+      ],
+      "options_es": [
+        "Resultados inconsistentes o impredecibles",
+        "Dificultad para obtener exactamente lo que necesito",
+        "Tiempo perdido en reformular prompts",
+        "Incertidumbre sobre la calidad del resultado",
+        "Dificultad para integrar IA en flujos existentes",
+        "Preocupaciones sobre exactitud/veracidad",
+        "Falta de transparencia en cómo se generaron los resultados",
+        "Limitaciones en la personalización",
+        "Pérdida de contexto entre sesiones",
+        "Otro (especificar en notas)"
+      ],
+      "required": true,
+      "allow_other": true,
+      "praxis_layer": null
+    },
+    {
+      "id": "C2",
+      "section": "C_pain_points",
+      "type": "single_choice",
+      "text_en": "How often do you have to redo AI-assisted work from scratch?",
+      "text_es": "¿Con qué frecuencia tiene que rehacer trabajo con IA desde cero?",
+      "options_en": [
+        "Never or almost never (0–5% of the time)",
+        "Rarely (5–15% of the time)",
+        "Occasionally (15–30% of the time)",
+        "Frequently (30–50% of the time)",
+        "Very frequently (more than 50% of the time)"
+      ],
+      "options_es": [
+        "Nunca o casi nunca (0–5% de las veces)",
+        "Raramente (5–15% de las veces)",
+        "Ocasionalmente (15–30% de las veces)",
+        "Frecuentemente (30–50% de las veces)",
+        "Muy frecuentemente (más del 50% de las veces)"
+      ],
+      "required": true,
+      "praxis_layer": null
+    },
+    {
+      "id": "C3",
+      "section": "C_pain_points",
+      "type": "numeric",
+      "text_en": "Rate your confidence that your current AI workflow will consistently produce good results. (1 = very low confidence, 10 = total confidence)",
+      "text_es": "Califique su confianza en que su flujo de trabajo actual con IA producirá buenos resultados. (1 = muy poca confianza, 10 = confianza total)",
+      "min": 1,
+      "max": 10,
+      "required": true,
+      "praxis_layer": null
+    }
+  ],
+  "scoring": {
+    "L1_governance": ["B1", "B2", "B3"],
+    "L2_orchestration": ["B4", "B5", "B6"],
+    "L3_execution": ["B7", "B8", "B9"],
+    "L4_memory": ["B10", "B11", "B12"],
+    "L5_production": ["B13", "B14", "B15"],
+    "total_maturity": "mean of all layer scores",
+    "range": "1.0 – 5.0",
+    "interpretation": {
+      "1.0_2.0": "Early stage — AI use is mostly ad-hoc",
+      "2.0_3.0": "Developing — Some structure, significant gaps",
+      "3.0_4.0": "Structured — Clear processes in most areas",
+      "4.0_5.0": "Advanced — Systematic, documented, reproducible"
+    }
+  }
+}

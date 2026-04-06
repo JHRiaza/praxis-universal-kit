@@ -1,0 +1,218 @@
+{
+  "_meta": {
+    "id": "praxis_q",
+    "version": "0.1",
+    "title_en": "PRAXIS-Q: Sprint Quality Rubric (3-point fast version)",
+    "title_es": "PRAXIS-Q: Rúbrica de Calidad por Sprint (versión rápida 3 puntos)",
+    "purpose_en": "Fast per-sprint quality self-assessment. Complete in under 15 seconds. Prompted automatically after each 'praxis log' in Phase B.",
+    "purpose_es": "Autoevaluación rápida de calidad por sprint. Completar en menos de 15 segundos. Se solicita automáticamente después de cada 'praxis log' en Fase B.",
+    "estimated_seconds": 15,
+    "phase_required": "B",
+    "scale": {
+      "min": 1,
+      "max": 3,
+      "labels_en": ["Needs work", "Acceptable", "Excellent"],
+      "labels_es": ["Necesita trabajo", "Aceptable", "Excelente"]
+    }
+  },
+  "dimensions": [
+    {
+      "id": "completeness",
+      "name_en": "Completeness",
+      "name_es": "Completitud",
+      "question_en": "How complete is the work?",
+      "question_es": "¿Qué tan completo está el trabajo?",
+      "scores": [
+        {
+          "value": 1,
+          "label_en": "Incomplete",
+          "label_es": "Incompleto",
+          "emoji": "red_circle",
+          "description_en": "Critical elements missing. Significant additional work required. Minimum objectives not met.",
+          "description_es": "Faltan elementos críticos. Se requieren pasos adicionales significativos. No se cumplieron los objetivos mínimos del sprint."
+        },
+        {
+          "value": 2,
+          "label_en": "Mostly Complete",
+          "label_es": "Mayormente Completo",
+          "emoji": "yellow_circle",
+          "description_en": "Most sprint objectives met. Minor details or refinements missing. Functional but could use polishing.",
+          "description_es": "Se cumplieron la mayoría de objetivos del sprint. Faltan algunos detalles menores. El trabajo es funcional pero podría beneficiarse de pulimiento."
+        },
+        {
+          "value": 3,
+          "label_en": "Fully Complete",
+          "label_es": "Totalmente Completo",
+          "emoji": "green_circle",
+          "description_en": "All sprint objectives met. Deliverable ready for use or next phase. No additional steps required.",
+          "description_es": "Todos los objetivos del sprint se cumplieron satisfactoriamente. El entregable está listo para uso o siguiente fase. No se requieren pasos adicionales."
+        }
+      ]
+    },
+    {
+      "id": "quality",
+      "name_en": "Quality",
+      "name_es": "Calidad",
+      "question_en": "What is the quality of the output?",
+      "question_es": "¿Cuál es la calidad del trabajo producido?",
+      "scores": [
+        {
+          "value": 1,
+          "label_en": "Needs Rework",
+          "label_es": "Necesita Reelaboración",
+          "emoji": "red_circle",
+          "description_en": "Output has significant errors. Does not meet minimum quality standards. Substantial parts need to be redone.",
+          "description_es": "El resultado tiene errores significativos. No cumple estándares mínimos de calidad. Requiere rehacer partes sustanciales."
+        },
+        {
+          "value": 2,
+          "label_en": "Acceptable",
+          "label_es": "Aceptable",
+          "emoji": "yellow_circle",
+          "description_en": "Quality adequate for purpose. Minor errors that don't affect core functionality. Meets basic expectations.",
+          "description_es": "La calidad es adecuada para el propósito. Errores menores que no afectan funcionalidad crítica. Cumple expectativas básicas."
+        },
+        {
+          "value": 3,
+          "label_en": "Excellent",
+          "label_es": "Excelente",
+          "emoji": "green_circle",
+          "description_en": "Quality exceeds expectations. No detectable errors. Result could serve as a reference example.",
+          "description_es": "Calidad superior a las expectativas. Sin errores detectables. Resultado que podría servir como referencia."
+        }
+      ]
+    },
+    {
+      "id": "coherence",
+      "name_en": "Coherence",
+      "name_es": "Coherencia",
+      "question_en": "How well does this fit with the overall project?",
+      "question_es": "¿Qué tan bien se integra este trabajo con el proyecto general?",
+      "scores": [
+        {
+          "value": 1,
+          "label_en": "Doesn't Fit",
+          "label_es": "No Encaja",
+          "emoji": "red_circle",
+          "description_en": "Result is inconsistent with project objectives. Style, tone or approach misaligned with prior work. Significant adjustments needed.",
+          "description_es": "El resultado es inconsistente con objetivos del proyecto. Estilo, tono o enfoque desalineado con trabajo previo. Requiere ajustes significativos."
+        },
+        {
+          "value": 2,
+          "label_en": "Mostly Fits",
+          "label_es": "Encaja Mayormente",
+          "emoji": "yellow_circle",
+          "description_en": "Coherent with most project aspects. Minor style or approach inconsistencies. Integrates with minimal adjustments.",
+          "description_es": "Coherente con la mayoría de aspectos del proyecto. Algunas inconsistencias menores de estilo o enfoque. Se integra con ajustes mínimos."
+        },
+        {
+          "value": 3,
+          "label_en": "Fits Perfectly",
+          "label_es": "Encaja Perfectamente",
+          "emoji": "green_circle",
+          "description_en": "Fully aligned with project objectives and style. Integrates without modifications. Maintains perfect continuity.",
+          "description_es": "Totalmente alineado con objetivos y estilo del proyecto. Se integra sin modificaciones. Mantiene continuidad perfecta con trabajo existente."
+        }
+      ]
+    },
+    {
+      "id": "efficiency",
+      "name_en": "Efficiency",
+      "name_es": "Eficiencia",
+      "question_en": "How efficient was the time invested?",
+      "question_es": "¿Qué tan eficiente fue el tiempo invertido?",
+      "scores": [
+        {
+          "value": 1,
+          "label_en": "Too Slow",
+          "label_es": "Tomó Demasiado Tiempo",
+          "emoji": "red_circle",
+          "description_en": "Time invested significantly exceeded expectations. Many iterations or restarts were necessary. Process was inefficient or frustratingly slow.",
+          "description_es": "El tiempo invertido superó significativamente la estimación. Muchas iteraciones o reinicios fueron necesarios. El proceso fue ineficiente o frustrantemente lento."
+        },
+        {
+          "value": 2,
+          "label_en": "On Time",
+          "label_es": "Tiempo Apropiado",
+          "emoji": "yellow_circle",
+          "description_en": "Time approximately matched expectations. Some iterations but within normal range. Adequate efficiency.",
+          "description_es": "El tiempo se ajustó aproximadamente a la estimación. Algunas iteraciones pero dentro de lo esperado. Eficiencia adecuada."
+        },
+        {
+          "value": 3,
+          "label_en": "Faster Than Expected",
+          "label_es": "Más Rápido de lo Esperado",
+          "emoji": "green_circle",
+          "description_en": "Completed in less time than expected. Smooth process with minimal iterations. High efficiency in AI tool use.",
+          "description_es": "Se completó en menos tiempo del estimado. Proceso fluido con mínimas iteraciones. Alta eficiencia en el uso de herramientas de IA."
+        }
+      ]
+    },
+    {
+      "id": "traceability",
+      "name_en": "Traceability",
+      "name_es": "Trazabilidad",
+      "question_en": "How well can you explain how this result was produced?",
+      "question_es": "¿Qué tan bien puede explicar cómo se produjo este resultado?",
+      "scores": [
+        {
+          "value": 1,
+          "label_en": "Can't Explain",
+          "label_es": "No Puedo Explicar",
+          "emoji": "red_circle",
+          "description_en": "Don't remember which prompts or tools were used. Cannot reproduce the process. Result appeared in an undocumented way.",
+          "description_es": "No recuerda qué prompts o herramientas utilizó. No puede reproducir el proceso. El resultado apareció de manera no documentada."
+        },
+        {
+          "value": 2,
+          "label_en": "Partially Traceable",
+          "label_es": "Parcialmente Trazable",
+          "emoji": "yellow_circle",
+          "description_en": "Remember main steps but not all details. Could reproduce with some experimentation. Basic but incomplete documentation.",
+          "description_es": "Recuerda pasos principales pero no todos los detalles. Podría reproducir el proceso con algo de experimentación. Documentación básica pero incompleta."
+        },
+        {
+          "value": 3,
+          "label_en": "Fully Documented",
+          "label_es": "Totalmente Documentado",
+          "emoji": "green_circle",
+          "description_en": "Process completely documented and reproducible. Prompts, configurations and decisions are recorded. Someone else could replicate the exact result.",
+          "description_es": "Proceso completamente documentado y reproducible. Prompts, configuraciones y decisiones están registradas. Otra persona podría replicar exactamente el resultado."
+        }
+      ]
+    }
+  ],
+  "scoring": {
+    "formula": "(completeness + quality + coherence + efficiency + traceability) / 5",
+    "range": "1.0 – 3.0",
+    "zones": [
+      {
+        "label_en": "Red Zone — Problematic sprint",
+        "label_es": "Zona Roja — Sprint problemático",
+        "min": 1.0,
+        "max": 1.6,
+        "emoji": "red_circle",
+        "action_en": "Review what went wrong. Consider logging the issue as a governance event.",
+        "action_es": "Revisar qué salió mal. Considerar registrar el problema como un evento de gobernanza."
+      },
+      {
+        "label_en": "Yellow Zone — Acceptable sprint",
+        "label_es": "Zona Amarilla — Sprint aceptable",
+        "min": 1.7,
+        "max": 2.3,
+        "emoji": "yellow_circle",
+        "action_en": "Identify the lowest-scoring dimension and focus improvement there.",
+        "action_es": "Identificar la dimensión de menor puntuación y enfocar la mejora allí."
+      },
+      {
+        "label_en": "Green Zone — Successful sprint",
+        "label_es": "Zona Verde — Sprint exitoso",
+        "min": 2.4,
+        "max": 3.0,
+        "emoji": "green_circle",
+        "action_en": "Well done. Document what made this sprint successful for future reference.",
+        "action_es": "Bien hecho. Documentar qué hizo exitoso este sprint para referencia futura."
+      }
+    ]
+  }
+}
