@@ -18,6 +18,16 @@ import json
 import os
 import sys
 import textwrap
+
+# Ensure UTF-8 output on Windows (box-drawing chars, etc.)
+if sys.platform == "win32":
+    for _stream_name in ("stdout", "stderr"):
+        _stream = getattr(sys, _stream_name, None)
+        if _stream and hasattr(_stream, "reconfigure"):
+            try:
+                _stream.reconfigure(encoding="utf-8", errors="replace")
+            except Exception:
+                pass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -64,10 +74,13 @@ def _supports_color() -> bool:
     """Check if the terminal supports ANSI colors."""
     if os.environ.get("NO_COLOR") or os.environ.get("PRAXIS_NO_COLOR"):
         return False
-    if not hasattr(sys.stdout, "isatty") or not sys.stdout.isatty():
-        # Allow color in Windows Terminal / CI that sets TERM
-        return bool(os.environ.get("COLORTERM") or os.environ.get("TERM"))
-    return True
+    try:
+        if not hasattr(sys.stdout, "isatty") or not sys.stdout.isatty():
+            # Allow color in Windows Terminal / CI that sets TERM
+            return bool(os.environ.get("COLORTERM") or os.environ.get("TERM"))
+        return True
+    except OSError:
+        return False
 
 
 _COLOR = _supports_color()
@@ -99,7 +112,6 @@ def _c(text: str, *codes: str) -> str:
 
 
 def print_header(title: str) -> None:
-    width = min(os.get_terminal_size().columns, 72) if hasattr(os, 'get_terminal_size') else 72
     try:
         width = min(os.get_terminal_size().columns, 72)
     except Exception:

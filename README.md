@@ -44,7 +44,7 @@ praxis survey pre
 
 After each significant AI-assisted task:
 ```bash
-praxis log "What you accomplished" -d 45 -m claude -q 4 -i 2 -h 1
+praxis log "What you accomplished" -d 45 -m claude -q 4 -i 2 -h2 1
 ```
 
 | Flag | Meaning | Example |
@@ -53,7 +53,7 @@ praxis log "What you accomplished" -d 45 -m claude -q 4 -i 2 -h 1
 | `-m` | AI model/tool used | `-m claude` `-m copilot` `-m cursor` |
 | `-q` | Quality 1-5 | `-q 4` |
 | `-i` | AI generation cycles | `-i 2` (2 tries) |
-| `-h` | Human corrections | `-h 1` (corrected once) |
+| `-h2` | Human corrections | `-h2 1` (corrected once) |
 
 ### 4. After 7+ days, activate PRAXIS governance
 ```bash
