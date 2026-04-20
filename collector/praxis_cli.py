@@ -914,7 +914,12 @@ def cmd_export(args: argparse.Namespace) -> int:
         )
         print()
         print_ok(f"Export complete: {_c(str(output_path), C.B_CYAN)}")
-        print_info("Send this ZIP to the researcher. It contains only anonymous metrics.")
+        print_info("This ZIP contains only anonymous metrics — no personal data.")
+        print_info("Send it to the researcher:")
+        print_info("  1. Email: hello@javierherreros.xyz (subject: PRAXIS data [your participant ID]")
+        print_info("  2. Or upload to: https://drive.google.com/drive/folders/PRAXIS_UPLOAD (TBD)")
+        print_info("  3. Or bring to your next session in person.")
+        print_info("Thank you for participating in this research!")
     except Exception as exc:
         print_err(f"Export failed: {exc}")
         return 1
