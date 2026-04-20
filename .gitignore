@@ -1,9 +1,39 @@
-__pycache__/
-*.pyc
+# PRAXIS-specific
 .praxis/
-*.jsonl
-.DS_Store
 .praxis_state/
-*.egg-info/
-dist/
+*.jsonl
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
 build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+*.egg
+
+# Environments
+.env
+.venv
+env/
+venv/
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
