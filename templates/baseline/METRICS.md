@@ -5,7 +5,7 @@ Welcome to Phase A of the PRAXIS research study.
 **Your job is simple:** after each significant AI-assisted task, run one command:
 
 ```bash
-praxis log "what you did" -d <minutes> -m <model> -q <1-5> -i <cycles> -h <corrections>
+praxis log "what you did" -d <minutes> -m <model> -q <1-5> -i <cycles> -h2 <corrections>
 ```
 
 ---
@@ -18,11 +18,11 @@ praxis log "what you did" -d <minutes> -m <model> -q <1-5> -i <cycles> -h <corre
 | `-m` | AI model/tool you used | `-m claude` or `-m copilot` |
 | `-q` | Output quality, 1–5 | `-q 4` |
 | `-i` | How many AI generation cycles | `-i 2` |
-| `-h` | Times you had to correct the AI | `-h 1` |
+| `-h2` | Times you had to correct the AI | `-h2 1` |
 
 **Example:**
 ```bash
-praxis log "Built the login page" -d 60 -m cursor -q 4 -i 3 -h 2
+praxis log "Built the login page" -d 60 -m cursor -q 4 -i 3 -h2 2
 ```
 
 ---
@@ -67,4 +67,4 @@ praxis platforms           # See which AI tools were detected
 ---
 
 *Phase A — no governance, natural workflow. Just log what you do.*
-*This file was created by PRAXIS Universal Kit v0.1*
+*This file was created by PRAXIS Universal Kit v0.2*

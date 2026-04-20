@@ -1,5 +1,5 @@
 {
-  "_comment": "PRAXIS Universal Kit — Platform Detection Signatures v0.1",
+  "_comment": "PRAXIS Universal Kit — Platform Detection Signatures v0.2",
   "_description": "Each platform entry defines how to detect the AI tool, where to inject governance files, and tier metadata.",
   "platforms": [
     {

@@ -758,6 +758,63 @@ def cmd_govern(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_incident(args: argparse.Namespace) -> int:
+    """Log a governance emergence incident with structured capture."""
+    praxis_dir = find_praxis_dir()
+    if praxis_dir is None:
+        print_err("PRAXIS not found. Run from your project directory.")
+        return 1
+
+    try:
+        state = load_state(praxis_dir)
+    except PraxisError as exc:
+        print_err(str(exc))
+        return 1
+
+    description = " ".join(args.description) if isinstance(args.description, list) else args.description
+    if not description:
+        print_header("Log Governance Emergence Incident")
+        description = ask("What happened? (describe the incident)")
+        if not description:
+            print_err("Description is required.")
+            return 1
+
+    print_info("Root cause analysis (optional, press Enter to skip):")
+    root_cause = ask("  What caused this?")
+
+    print_info("New rule proposal (optional, press Enter to skip):")
+    new_rule = ask("  What rule should prevent this?")
+
+    # Build incident entry
+    incident = {
+        "id": generate_participant_id()[:8] + "-" + datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S"),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "event_type": "incident",
+        "incident": description,
+        "root_cause": root_cause or None,
+        "new_rule_proposed": new_rule or None,
+        "rule_integrated": False,
+        "phase": state.get("phase", "unknown"),
+    }
+
+    # Append to governance events file
+    gov_file = praxis_dir / "governance_events.jsonl"
+    with open(gov_file, "a", encoding="utf-8") as f:
+        f.write(json.dumps(incident, ensure_ascii=False) + "\n")
+
+    print()
+    print_ok(f"Incident logged: {_c('incident', C.B_RED)}")
+    print_info(f"  What happened: {description[:80]}")
+    if root_cause:
+        print_info(f"  Root cause:    {root_cause[:80]}")
+    if new_rule:
+        print_info(f"  New rule:      {new_rule[:80]}")
+    print_info(f"  ID: {incident['id']}")
+    print()
+    print_info("Use 'praxis govern \"rule text\"' once the rule is formally integrated.")
+    return 0
+
+
 # ---------------------------------------------------------------------------
 # Command: survey
 # ---------------------------------------------------------------------------
@@ -1136,6 +1193,11 @@ def build_parser() -> argparse.ArgumentParser:
                        default="rule_created",
                        help="Event type (default: rule_created)")
 
+    # incident
+    p_inc = sub.add_parser("incident", help="Log a governance emergence incident")
+    p_inc.add_argument("description", nargs="*",
+                       help="What happened (the incident)")
+
     # survey
     p_surv = sub.add_parser("survey", help="Launch pre or post survey")
     p_surv.add_argument("type", choices=["pre", "post"],
@@ -1173,6 +1235,7 @@ COMMAND_MAP = {
     "log":       cmd_log,
     "activate":  cmd_activate,
     "govern":    cmd_govern,
+    "incident":  cmd_incident,
     "survey":    cmd_survey,
     "export":    cmd_export,
     "platforms": cmd_platforms,

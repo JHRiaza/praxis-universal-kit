@@ -1,8 +1,8 @@
 # PRAXIS Universal Kit
 
-**Herramienta de investigación multiplataforma para medir flujos de trabajo con IA**
+**Herramienta de investigación multiplataforma para observar fenómenos de gobernanza en flujos de trabajo asistidos por IA**
 
-PRAXIS Kit te permite medir tu flujo de trabajo con IA — antes y después de adoptar estructura de gobernanza — usando una herramienta de línea de comandos que funciona con cualquier plataforma de IA.
+PRAXIS Kit instrumenta tu flujo de trabajo con IA para capturar lo que realmente ocurre: emergencia de gobernanza, efectos de personalidad, límites de sesión, patrones de calidad, antes y después de introducir gobernanza estructurada.
 
 **Parte de una investigación doctoral en la Universidad Complutense de Madrid.**
 
@@ -10,9 +10,14 @@ PRAXIS Kit te permite medir tu flujo de trabajo con IA — antes y después de a
 
 ## ¿Qué es PRAXIS?
 
-PRAXIS (Protocol for Rule Architecture in eXtended Intelligent Systems) es un framework de gobernanza para flujos de trabajo humano-IA. Este kit mide si añadir estructura de gobernanza cambia la efectividad con la que trabajas con herramientas de IA.
+PRAXIS (Protocol for Rule Architecture in eXtended Intelligent Systems) es un framework de investigación que documenta lo que sucede cuando humanos y sistemas de IA trabajan juntos en condiciones de producción sostenidas.
 
-La investigación usa un **diseño de medidas repetidas**: tú eres tu propio grupo control. Primero trabajas normalmente (Fase A, línea base), luego añades gobernanza (Fase B, tratamiento). Comparamos tu propio antes/después.
+Este kit es el **instrumento de medición**: captura datos para que los investigadores puedan estudiar fenómenos de gobernanza como:
+- Reglas que emergen orgánicamente de los fallos (emergencia de gobernanza)
+- Cómo la personalidad de la IA afecta tu confianza y comportamiento (gobernanza relacional)
+- Qué ocurre al cambiar de modelo de IA manteniendo la misma configuración de gobernanza (portabilidad de personalidad)
+- Cómo se recuperan la memoria y la calibración entre sesiones
+- Si la estructura del flujo de trabajo tiene influencia medible en los resultados
 
 ---
 
@@ -22,52 +27,76 @@ La investigación usa un **diseño de medidas repetidas**: tú eres tu propio gr
 
 **macOS / Linux:**
 ```bash
-bash install.sh --lang es
+bash install.sh
 ```
 
 **Windows (PowerShell):**
 ```powershell
-.\install.ps1 -Lang es
+.\install.ps1
 ```
 
 **Manual (cualquier plataforma con Python 3.8+):**
 ```bash
-python collector/praxis_cli.py init --lang es
+python collector/praxis_cli.py init
 ```
 
-### 2. Completa la encuesta inicial (~10 minutos)
+### 2. Completar la encuesta previa (~10 minutos)
 ```bash
-praxis survey pre --lang es
+praxis survey pre
 ```
 
-### 3. Trabaja normalmente y registra tus tareas de IA
+### 3. Registrar tus tareas con IA
 
 Después de cada tarea significativa asistida por IA:
 ```bash
-praxis log "Lo que lograste" -d 45 -m claude -q 4 -i 2 -h 1
+praxis log "Lo que lograste" -d 45 -m claude -q 4 -i 2 -h2 1
 ```
 
 | Flag | Significado | Ejemplo |
 |------|------------|---------|
 | `-d` | Duración en minutos | `-d 45` |
 | `-m` | Modelo/herramienta de IA | `-m claude` `-m copilot` `-m cursor` |
-| `-q` | Calidad 1-5 | `-q 4` |
+| `-q` | Calidad autoevaluada 1-5 | `-q 4` |
 | `-i` | Ciclos de generación de IA | `-i 2` (2 intentos) |
-| `-h` | Correcciones humanas | `-h 1` (corregido una vez) |
+| `-h2` | Correcciones humanas | `-h2 1` (corregido una vez) |
+| `--l1r` | Registrar observaciones de gobernanza relacional | `--l1r` (preguntas interactivas) |
 
-### 4. Después de 7+ días, activa la gobernanza PRAXIS
+### 4. Registrar eventos de gobernanza
+
+Cuando algo falla y aprendes de ello:
+```bash
+praxis incident "La IA usó una versión obsoleta de la librería"
+```
+Esto pregunta: qué pasó, causa raíz, y si debe crearse una nueva regla.
+
+### 5. Activar la gobernanza estructurada (cuando estés listo)
 ```bash
 praxis activate
 ```
 
-Esto inyecta archivos de gobernanza en tus herramientas de IA (CLAUDE.md, .cursorrules, AGENTS.md, etc.) e inicia la Fase B.
+Esto inyecta archivos de gobernanza en tus herramientas de IA y transiciona a la Fase B.
 
-### 5. Exporta tus datos al finalizar
+### 6. Exportar tus datos
 ```bash
 praxis export
 ```
 
-Envía el archivo ZIP generado al investigador.
+Genera un archivo ZIP anonimizado para el análisis de investigación.
+
+---
+
+## Novedades en v0.2
+
+| Característica | Descripción |
+|---------------|-------------|
+| **L1-R: Gobernanza Relacional** | Registra seguridad percibida, calidez, confianza del usuario y tendencia a la complacencia por sprint (`--l1r`) |
+| **P9: Independencia de Arquitectura** | Funciona tanto para un solo modelo (Copilot, Aider) como para multi-agente (OpenClaw, Cowork) |
+| **Plantillas de autogobernanza** | Protocolos para sistemas de un solo modelo sin orquestador externo |
+| **Calibración de personalidad** | Mecanismo integrado para detectar cuándo el comportamiento de la IA difiere de la configuración de gobernanza |
+| **Registro de incidentes** | Captura estructurada de eventos de emergencia de gobernanza (`praxis incident`) |
+| **Observaciones de límite de sesión** | Seguimiento de recuperación de memoria y degradación de calibración entre sesiones |
+| **Diseño factorial 2x2** | Condiciones experimentales: Modelo (Sonnet/Opus) x Estructura (estructurado/no estructurado) |
+| **Enfoque descriptivo** | El kit documenta fenómenos en lugar de evaluar si la gobernanza "mejora" las cosas |
 
 ---
 
@@ -75,99 +104,71 @@ Envía el archivo ZIP generado al investigador.
 
 ```
 praxis status          Muestra fase, días activos, conteo de entradas, promedios
-praxis log "tarea"     Registra una tarea (interactivo si no hay argumentos)
+praxis log "tarea"     Registra una tarea (interactivo sin argumentos)
+praxis incident "desc" Registra un evento de emergencia de gobernanza
 praxis activate        Transición Fase A → Fase B (gobernanza activa)
 praxis govern "regla"  Registra un evento de gobernanza (Fase B)
-praxis survey pre      Encuesta basal pre-estudio
-praxis survey post     Encuesta post-estudio (después de la Fase B)
-praxis export          Genera ZIP de datos anónimos para el investigador
-praxis platforms       Muestra qué herramientas de IA fueron detectadas
-praxis withdraw        Elimina todos los datos y retira la participación
+praxis survey pre      Encuesta previa al estudio
+praxis survey post     Encuesta posterior al estudio
+praxis export          Genera ZIP de datos anonimizados para investigación
+praxis platforms       Muestra las plataformas de IA detectadas
 ```
 
 ---
 
-## Plataformas de IA Soportadas
+## Plataformas Soportadas
 
-PRAXIS detecta automáticamente e integra con:
-
-| Plataforma | Integración | Archivo de Gobernanza |
-|------------|------------|----------------------|
-| Claude Code | Profunda | CLAUDE.md |
-| OpenAI Codex | Profunda | AGENTS.md |
-| Cursor | Profunda | .cursor/rules/praxis.md |
-| Windsurf | Profunda | .windsurfrules |
-| GitHub Copilot | Estándar | .github/copilot-instructions.md |
-| Aider | Estándar | CONVENTIONS.md |
-| Continue.dev | Estándar | .continue/rules/praxis.md |
-| Cline | Estándar | .clinerules |
-| Roo Code | Estándar | .roorules |
-| Cualquier otra herramienta de IA | Genérica | PRAXIS_GOVERNANCE.md |
-
----
-
-## Fase A — Línea Base (1-2 semanas)
-
-Trabaja exactamente como lo haces hoy. Sin gobernanza, sin cambios.
-
-Registra cada tarea asistida por IA con `praxis log`. Esto captura tus métricas naturales de flujo de trabajo: tiempo, calidad, iteraciones, correcciones.
-
-Verifica tu progreso: `praxis status`
+| Plataforma | Archivo de Gobernanza | Tipo |
+|------------|----------------------|------|
+| OpenClaw | SOUL.md + AGENTS.md + HEARTBEAT.md | Orquestador multi-agente |
+| Claude Cowork | CLAUDE.md | Multi-agente |
+| Codex | AGENTS.md | Agente en sandbox |
+| Cursor | .cursorrules / .cursor/rules/ | IDE con IA |
+| Windsurf | .windsurfrules | IDE con IA |
+| Copilot | .github/copilot-instructions.md | Asistente de IA |
+| Aider | .aider.conf.yml + conventions | Agente CLI |
+| Continue.dev | .continue/config.json | Extensión de IDE |
+| Cline | .cline/instructions.md | Extensión de IDE |
+| Roo Code | .roo/rules.md | Extensión de IDE |
+| Genérica | PRAXIS_GOVERNANCE.md | Cualquier sistema |
 
 ---
 
-## Fase B — Gobernanza PRAXIS (2+ semanas)
+## Contexto de Investigación
 
-Después de ejecutar `praxis activate`:
+Este kit forma parte de una tesis doctoral que documenta fenómenos de gobernanza en sistemas de producción asistidos por IA durante el período 2025-2027. Las preguntas de investigación:
 
-1. Los archivos de gobernanza se inyectan en tus herramientas de IA
-2. Personaliza SOUL.md / AGENTS.md según tu trabajo
-3. Continúa registrando con `praxis log` (se añade la rúbrica de calidad PRAXIS-Q)
-4. Registra eventos de gobernanza: `praxis govern "Añadida regla: testear después de cada despliegue"`
+1. ¿Qué fenómenos de gobernanza emergen cuando los sistemas de IA operan bajo instrumentación estructurada?
+2. ¿Cómo afecta la personalidad de la IA (tono, seguridad, calidez) a la confianza y el comportamiento del usuario?
+3. ¿Muestra la estructura del flujo de trabajo una influencia medible en los resultados, independientemente de la capacidad del modelo?
+4. ¿Qué aspectos no cubren los marcos de gobernanza de IA actuales (AI Act de la UE, OCDE, NIST)?
 
----
-
-## Privacidad
-
-- Todos los datos se almacenan **localmente** en `.praxis/` en el directorio de tu proyecto
-- **Sin telemetría**, sin subidas a la nube, sin internet requerido después de la instalación
-- `praxis export` crea un ZIP anonimizado — las descripciones de tareas se pueden eliminar
-- `praxis withdraw` elimina todo permanentemente en cualquier momento
-
-Qué se recopila:
-- Duraciones de tareas, calificaciones de calidad, conteos de iteraciones
-- Nombres de modelos de IA que reportas
-- Respuestas a encuestas
-- Reglas de gobernanza que registras
-
-Qué **nunca** se recopila:
-- Contenido de archivos o código fuente
-- Registros de conversaciones con IA
-- Información de identificación personal
+**Información importante:**
+- Las evaluaciones de calidad en la Fase A son autoevaluadas por el participante
+- La evaluación externa ciega (PRAXIS-Q) está disponible para los resultados de la Fase B
+- Todos los datos se anonimizan y almacenan localmente — nada se envía a ningún servidor automáticamente
+- Los participantes pueden retirarse en cualquier momento
 
 ---
 
-## Requisitos
+## Citar este trabajo
 
-- Python 3.8+
-- macOS, Linux o Windows
-- No se requiere conexión a internet
-- No se requieren permisos de administrador/root
-- Sin dependencias de pip — Python stdlib puro
+```bibtex
+@software{herreros2026praxis,
+  author = {Herreros Riaza, Javier},
+  title = {PRAXIS Universal Kit},
+  version = {0.2.0},
+  year = {2026},
+  publisher = {Universidad Complutense de Madrid},
+  url = {https://github.com/jhriaza/praxis-universal-kit}
+}
+```
 
----
+## Licencia
 
-## Contexto de la Investigación
-
-**Título:** "Arquitectura metodológica para sistemas autónomos asistidos por IA"
-**Investigador:** Javier Herreros Riaza
-**Institución:** Universidad Complutense de Madrid — Programa Doctoral CAVP
-**Framework:** PRAXIS v1.0
-
-**Licencia:** CC BY-SA 4.0
-
-¿Preguntas? Contacta al investigador a través del documento de información del estudio.
+CC BY-SA 4.0 — ver [LICENSE](LICENSE)
 
 ---
 
-*PRAXIS Universal Kit v0.1 — 2026*
+*PRAXIS Universal Kit v0.2 — 2026-04-15*
+*Investigación doctoral — Universidad Complutense de Madrid*

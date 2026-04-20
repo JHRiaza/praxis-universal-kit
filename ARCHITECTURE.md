@@ -1,14 +1,28 @@
 # PRAXIS Universal Kit — Architecture Spec
-## Version 0.1 — 2026-04-06
+## Version 0.2 — 2026-04-15
 
 ### Purpose
-Cross-platform, platform-agnostic PRAXIS research package that enables within-subjects quasi-experimental comparison of AI-assisted workflows BEFORE and AFTER PRAXIS governance adoption. Designed for distribution to external participants (Claude Cowork, Codex, OpenClaw, Cursor, Copilot, Hermes, Aider, Continue.dev, Cline, Roo Code, etc.).
+Cross-platform, platform-agnostic research package for observing and documenting governance phenomena in AI-assisted workflows. Designed for distribution to external participants using any AI platform (Claude Cowork, Codex, OpenClaw, Cursor, Copilot, Aider, Continue.dev, Cline, Roo Code, etc.).
+
+The kit instruments workflows to capture what happens — governance emergence, relational governance effects, personality portability, session boundary behavior — before and after introducing structured governance.
 
 ### Research Design
 - **Type:** Within-subjects quasi-experiment (ABA' possible, AB minimum)
 - **Phase A (Baseline):** 1-2 weeks. Metrics collector active. NO governance injection. User works naturally.
 - **Phase B (Treatment):** 2+ weeks. PRAXIS governance activated via `praxis activate`. Same metrics continue. PRAXIS-Q rubric added per sprint.
-- **Comparison:** Same user, same projects, same tools. Delta on autonomy, iterations, intervention frequency, quality, governance emergence.
+- **Comparison:** Same user, same projects, same tools. Observations on autonomy, iterations, intervention frequency, quality, governance emergence, and relational governance effects.
+- **2×2 Factorial (optional):** Conditions A1, A2, B1, B2. Model (Sonnet/Opus) × Structure (unstructured/PRAXIS-lite). Supported via `condition` field in metrics schema.
+
+### P9: Architecture Independence
+The kit works for both single-model and multi-agent setups:
+
+| Architecture | Example | Governance mechanism |
+|-------------|---------|---------------------|
+| Single-model | Copilot, Aider, Cursor | Self-governance protocols (SELF_GOVERNANCE_TEMPLATE.md) |
+| Multi-agent | OpenClaw, Cowork | External orchestrator + governance files (SOUL + AGENTS) |
+| Hybrid | Cursor + Claude review | Mixed: self-governance for execution, orchestrator for review |
+
+Single-model users receive self-governance templates that encode monitoring, escalation, validation, and calibration protocols directly into the model's configuration file.
 
 ### Directory Structure
 ```
@@ -20,13 +34,15 @@ praxis-kit/
 ├── CONSENT.md                    # Research consent form (EN)
 ├── CONSENTIMIENTO.md             # Research consent form (ES)
 ├── LICENSE                       # CC BY-SA 4.0
+├── CHANGELOG.md                  # Version history
+├── CITATION.cff                  # Citation metadata (Zenodo/DOI)
 ├── config/
 │   ├── platforms.json            # Platform detection signatures
-│   └── metrics_schema.json       # Sprint metrics JSON schema (from PRAXIS v1.0)
+│   └── metrics_schema.json       # Sprint metrics JSON schema (v0.2, L1-R + factorial)
 ├── collector/
-│   ├── praxis_collector.py       # Metrics collector daemon (Python 3.8+)
-│   ├── requirements.txt          # Minimal deps (none if possible, stdlib only)
-│   └── praxis_cli.py             # CLI: praxis status|activate|export|log
+│   ├── praxis_collector.py       # Metrics collector (Python 3.8+)
+│   ├── requirements.txt          # Minimal deps (none — stdlib only)
+│   └── praxis_cli.py             # CLI: status|log|incident|activate|govern|survey|export|platforms
 ├── surveys/
 │   ├── pre_survey.json           # Pre-PRAXIS baseline survey (JSON, 23 items)
 │   ├── post_survey.json          # Post-PRAXIS survey (JSON, 15+10 items)
@@ -38,9 +54,10 @@ praxis-kit/
 │   │       ├── state.json        # Kit state (phase, install date, participant ID)
 │   │       └── metrics.jsonl     # Collected sprint metrics (JSONL)
 │   └── governance/               # Phase B files (injected on `praxis activate`)
-│       ├── SOUL_TEMPLATE.md      # PRAXIS governance personality template
-│       ├── AGENTS_TEMPLATE.md    # PRAXIS operational procedures template
-│       ├── MEMORY_TEMPLATE.md    # PRAXIS memory protocol template
+│       ├── SOUL_TEMPLATE.md      # Governance personality + L1-R parameters
+│       ├── AGENTS_TEMPLATE.md    # Operational procedures + self-governance protocol
+│       ├── SELF_GOVERNANCE_TEMPLATE.md  # Single-model self-governance protocols (v0.2)
+│       ├── MEMORY_TEMPLATE.md    # Memory protocol template
 │       └── SPRINT_PROTOCOL.md    # How to run PRAXIS sprints
 ├── adapters/                     # Platform-specific integration adapters
 │   ├── openclaw.py               # OpenClaw: workspace files + cron + heartbeat
@@ -73,7 +90,6 @@ Each adapter checks for platform-specific signals:
 | Continue.dev | `.continue/` dir | `.continue/config.json` | VSCode/JetBrains extension |
 | Cline | `.cline/` dir | `.cline/instructions.md` | VSCode extension |
 | Roo Code | `.roo/` dir | `.roo/rules.md` | VSCode extension |
-| Hermes | TBD (research needed) | TBD | Need to identify config mechanism |
 | Generic | Fallback | `PRAXIS_GOVERNANCE.md` | Plain markdown, works anywhere |
 
 ### Metrics Collection (Both Phases)
@@ -89,7 +105,7 @@ After each significant task, the CLI prompts (or user runs `praxis log`):
 praxis log "Built auth system" --duration 45 --model sonnet --quality 4 --iterations 2 --interventions 1
 ```
 
-Shorthand: `praxis log "task" -d 45 -m sonnet -q 4 -i 2 -h 1`
+Shorthand: `praxis log "task" -d 45 -m sonnet -q 4 -i 2 -h2 1`
 
 Fields:
 - task: description (string)
@@ -97,22 +113,41 @@ Fields:
 - model: AI model used (string, free text)
 - quality: self-rated 1-5 (int)
 - iterations: how many AI generation cycles (int)
-- interventions: human corrections/overrides (int)
+- interventions: human corrections/overrides (int) — flag: `-h2`
 - autonomous: did AI complete without human help? (bool, derived: interventions==0)
-- layer: PRAXIS layer (L1-L5, Phase B only)
+- layer: PRAXIS layer (L1, L1-R, L2-L5, Phase B only)
 - praxis_q: PRAXIS-Q score (Phase B only, prompted if phase==B)
+
+#### L1-R observations (v0.2)
+When using the `--l1r` flag, the CLI prompts for relational governance observations:
+- Perceived confidence (Likert 1-7): How confident did the AI seem?
+- Perceived warmth (Likert 1-7): How warm/supportive did the AI feel?
+- Trust willingness (Likert 1-7): Would you follow the AI's advice without verifying?
+- Skepticism activation (Likert 1-7): Did you feel the need to verify independently?
+- Perceived authority (Likert 1-7): How expert did the AI seem?
+- Compliance tendency (boolean): Did you accept the AI's output without questioning?
+- Personality mismatch (boolean + notes): Did the AI's behavior differ from SOUL_TEMPLATE settings?
+
+These observations capture the relational governance layer — how the AI's personality affects user trust and behavior.
 
 #### Phase B additions
 - PRAXIS-Q rubric (3-point scale per dimension, <15 seconds)
 - Governance events (new rules created, rules modified, incidents)
 - `praxis govern "Added rule: always test after deploy"` — logs governance emergence
+- `praxis incident "description"` — structured incident capture with root cause analysis
+
+#### Session boundary observations (v0.2)
+When a session starts after a break, the schema captures:
+- Memory recovery: instant / partial / lost
+- Calibration recovery: immediate / gradual / significant_degradation
 
 ### CLI Commands
 
 ```bash
 praxis status          # Show current phase, days active, metrics count
 praxis log "task"      # Log a sprint/task with metrics
-praxis activate        # Transition from Phase A → Phase B (irreversible)
+praxis incident "desc" # Log a governance emergence incident (structured)
+praxis activate        # Transition from Phase A → Phase B
 praxis govern "rule"   # Log a governance event (Phase B)
 praxis survey pre      # Launch pre-survey (Phase A, first run)
 praxis survey post     # Launch post-survey (after Phase B)
@@ -128,11 +163,21 @@ When user runs `praxis activate`:
 3. For each detected platform, inject governance files via adapter:
    - Copy SOUL_TEMPLATE → platform's governance file location
    - Copy AGENTS_TEMPLATE → platform's operational file location
-   - Prompt user to customize (name, role, principles)
+   - For single-model platforms, also inject SELF_GOVERNANCE_TEMPLATE
+   - Prompt user to customize (name, role, principles, L1-R parameters)
 4. Enable PRAXIS-Q prompts after each `praxis log`
 5. Enable governance event logging
 6. Update `.praxis/state.json`: phase="B", activated_at=now
 7. Print "PRAXIS activated. Your AI systems now have governance structure."
+
+### Incident Logging (v0.2)
+
+`praxis incident "description"` provides structured capture of governance emergence:
+1. Prompts: What happened? Root cause? Should a new rule be created?
+2. Logs the incident as a governance event with type `incident`
+3. If a rule is proposed, user can integrate it via `praxis govern`
+
+This captures the **Governance Emergence Cycle (GEC)**: incident → analysis → rule → integration.
 
 ### Surveys
 
@@ -187,8 +232,36 @@ Surveys rendered in terminal (interactive CLI) or exportable as web form URL.
 - Governance files injected into platform's convention file
 - All metrics via manual CLI logging
 - Minimal platform hooks
+- Self-governance template injected for single-model platforms
 
 **Tier 4 — Generic (any system)**
 - Plain PRAXIS_GOVERNANCE.md in project root
 - Full manual CLI logging
 - Works with ANY AI tool, even ChatGPT web
+
+### PRAXIS Layers
+
+| Layer | Name | Scope |
+|-------|------|-------|
+| L1 | Governance | Rules, principles, identity, incident response |
+| L1-R | Relational Governance | Personality parameters, trust calibration, compliance tendency (v0.2) |
+| L2 | Orchestration | Task planning, decomposition, delegation |
+| L3 | Execution | Coding, writing, design, analysis |
+| L4 | Memory | Knowledge persistence, episodic/semantic/hardened facts |
+| L5 | Production | Final validation, delivery, quality review |
+
+### Experimental Conditions (2×2 factorial, v0.2)
+
+| Condition | Model | Structure | Description |
+|-----------|-------|-----------|-------------|
+| A1 | Sonnet-class | Unstructured | Lower-capability model, no governance |
+| A2 | Opus-class | Unstructured | Higher-capability model, no governance |
+| B1 | Sonnet-class | PRAXIS-lite | Lower-capability model, governance active |
+| B2 | Opus-class | PRAXIS-lite | Higher-capability model, governance active |
+
+This design separates model capability effects from governance structure effects. The `condition` field in metrics_schema.json tracks which condition each sprint belongs to.
+
+### Framework Version
+- **Kit version:** 0.2.0
+- **PRAXIS framework:** v1.1 (includes L1-R, P9)
+- **License:** CC BY-SA 4.0

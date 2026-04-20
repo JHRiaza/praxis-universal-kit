@@ -86,7 +86,7 @@ If validation fails twice in a row → **stop and reassess**, don't keep trying.
 ### Step 7: RECORD
 
 ```bash
-praxis log "Task description" -d <minutes> -m <model> -q <1-5> -i <cycles> -h <corrections> -l <L1-L5>
+praxis log "Task description" -d <minutes> -m <model> -q <1-5> -i <cycles> -h2 <corrections> -l <L1-L5>
 ```
 
 Always record — even partial failures. An unrecorded failure will repeat.
@@ -102,17 +102,19 @@ with explicit corrections in the brief. Don't silently iterate — each iteratio
 
 ```bash
 # Log a successful sprint
-praxis log "Built auth module" -d 45 -m claude -q 4 -i 1 -h 0 -l L3
+praxis log "Built auth module" -d 45 -m claude -q 4 -i 1 -h2 0 -l L3
 
 # Log a sprint that needed corrections
-praxis log "Fixed navigation bug" -d 30 -m copilot -q 3 -i 3 -h 2 -l L3
+praxis log "Fixed navigation bug" -d 30 -m copilot -q 3 -i 3 -h2 2 -l L3
 
 # Log a governance-heavy sprint (rule creation, planning)
-praxis log "Defined delegation policy" -d 20 -m claude -q 5 -i 1 -h 0 -l L1
+praxis log "Defined delegation policy" -d 20 -m claude -q 5 -i 1 -h2 0 -l L1
 
 # Log a governance event
 praxis govern "Added rule: always test after each deploy" --type rule_created
-praxis govern "Incident: API key was exposed in logs" --type incident
+
+# Log a governance emergence incident
+praxis incident "API key was exposed in logs"
 ```
 
 ---
@@ -122,13 +124,14 @@ praxis govern "Incident: API key was exposed in logs" --type incident
 | Layer | Type of work | Examples |
 |-------|-------------|---------|
 | L1 | Governance | Creating rules, defining roles, incident response |
+| L1-R | Relational governance | Personality calibration, trust observations, tone adjustment |
 | L2 | Orchestration | Planning, decomposing tasks, delegation decisions |
 | L3 | Execution | Coding, writing, design, analysis, research |
 | L4 | Memory | Documenting lessons, updating knowledge base |
 | L5 | Production | Final validation, delivery, quality review |
 
 Most of your day-to-day work will be **L3**. Planning sprints are **L2**.
-After an incident, log the fix as **L1**.
+After an incident, log the fix as **L1**. When you notice personality or trust effects, log L1-R observations with the `--l1r` flag.
 
 ---
 
@@ -150,15 +153,21 @@ After an incident, log the fix as **L1**.
 The most powerful part of PRAXIS is that **rules emerge from practice**.
 
 When a sprint fails, ask: "What rule, if it had existed, would have prevented this?"
-Then add that rule to your SOUL.md or AGENTS.md, and log the governance event:
 
+First, capture the incident:
+```bash
+praxis incident "What went wrong"
+```
+This prompts for: what happened, root cause, and whether a new rule should be created.
+
+Then, if a new rule emerges, add it to your SOUL.md or AGENTS.md and log it:
 ```bash
 praxis govern "Added rule: [new rule]" --type rule_created
 ```
 
-Over time, your governance system becomes a record of your accumulated wisdom.
+Over time, your governance system becomes a record of your accumulated wisdom — this is the **Governance Emergence Cycle (GEC)**: incident → analysis → rule → integration.
 
 ---
 
-*PRAXIS Universal Kit v0.1 — UCM Doctoral Research*
-*Framework reference: PRAXIS v1.0 (Herreros Riaza, 2026)*
+*PRAXIS Universal Kit v0.2 — UCM Doctoral Research*
+*Framework reference: PRAXIS v1.1 (Herreros Riaza, 2026)*

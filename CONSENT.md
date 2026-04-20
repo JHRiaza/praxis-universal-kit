@@ -6,15 +6,15 @@
 
 **Principal Researcher:** Javier Herreros Riaza
 **Institution:** Universidad Complutense de Madrid — Doctoral Program in Audiovisual Communication and Advertising (CAVP)
-**Framework:** PRAXIS v1.0
+**Framework:** PRAXIS v1.1
 
 ---
 
 ## Purpose of the Study
 
-This research investigates whether adopting a governance framework (PRAXIS) changes how effectively people work with AI tools. The study uses a within-subjects design: you serve as your own control group, first working without governance (Phase A baseline), then with PRAXIS governance active (Phase B treatment).
+This research documents what happens when people adopt a governance framework (PRAXIS) for AI-assisted work. The study uses a within-subjects design: you serve as your own control group, first working without governance (Phase A baseline), then with PRAXIS governance active (Phase B treatment).
 
-The study compares metrics from the same person, same projects, same tools — before and after governance adoption. This measures the effect of structure, not the effect of changing tools.
+The study captures metrics from the same person, same projects, same tools — before and after governance adoption — to observe governance phenomena such as rule emergence, relational governance effects, and personality portability across AI models.
 
 ---
 
@@ -41,9 +41,13 @@ The study compares metrics from the same person, same projects, same tools — b
 - Task metrics: description, duration, quality rating (1-5), AI generation cycles, human corrections
 - AI model/tool names you report
 - PRAXIS-Q quality scores (Phase B)
+- L1-R observations (optional): your perceptions of AI confidence, warmth, trust, and compliance tendency per task
 - Governance events: rules you create, incidents, modifications
+- Session boundary observations: memory and calibration recovery across sessions
 - Survey responses (both pre and post)
 - Phase dates and session counts
+- Experimental condition assignment (if participating in the 2×2 factorial study)
+- External quality evaluation: an independent evaluator may score your anonymized outputs using PRAXIS-Q
 
 **Never collected:**
 - The content of your source code, documents, or files
@@ -135,6 +139,6 @@ Your consent is recorded with a timestamp in `.praxis/state.json` on your local 
 
 ---
 
-*PRAXIS Universal Kit v0.1*
+*PRAXIS Universal Kit v0.2*
 *Universidad Complutense de Madrid — Doctoral Research*
 *Framework: CC BY-SA 4.0*

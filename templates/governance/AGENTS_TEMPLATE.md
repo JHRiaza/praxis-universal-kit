@@ -1,134 +1,89 @@
-# PRAXIS Operational Procedures — AGENTS
+# AGENTS_TEMPLATE.md — Operational Procedures
 
-> **CUSTOMIZE THIS FILE** before using it.
-> Replace `[PLACEHOLDER]` sections with your specific tools and procedures.
-> Delete this instruction block when done.
+> This file defines HOW your AI system operates. Rules, procedures, quality gates.
+> Part of PRAXIS Universal Kit v0.2. Customize everything below.
 
----
+## Operational Rules
 
-## Sprint Protocol (Unit of Work)
+[Add rules specific to your workflow. Start minimal — rules will emerge from practice.]
 
-Every significant AI-assisted task is executed as a **sprint** — an atomic unit of work
-with a clear brief, explicit acceptance criteria, and logged metrics.
+### Current Rules
 
-### Sprint Lifecycle
+| # | Rule | Origin | Since |
+|---|------|--------|-------|
+| 1 | Test after EACH fix, never batch-fix | [Preset] | Day 1 |
+| 2 | Research first if technology is <6 months old | [Preset] | Day 1 |
+| 3 | 2 consecutive failures → stop and ask the human | [Preset] | Day 1 |
+| 4 | Never present unverified information as fact | [Preset] | Day 1 |
 
-```
-1. BRIEF     → Write what you want done (scope, acceptance criteria, model)
-2. GATE-IN   → Verify dependencies are ready, context is loaded
-3. EXECUTE   → AI agent runs the task
-4. VALIDATE  → Check output against acceptance criteria
-5. REVIEW    → Assess quality (PRAXIS-Q if Phase B)
-6. ESCALATE  → If 2 failures → stop and reassess
-7. RECORD    → praxis log "task" -d <min> -m <model> -q <1-5>
-8. ITERATE   → If not satisfied, go back to BRIEF with corrections
-```
+### Rule Emergence Log
 
-### Sprint Rules
-
-1. **One sprint = one atomic task.** If complex → decompose into multiple sprints.
-2. **Brief first.** Never execute without writing what you want.
-3. **Test after EACH fix.** Never batch-fix. One change → one test → confirm → next.
-4. **Always record.** Even failures. An undocumented failure will repeat.
-5. **Escalation threshold: 2 failures.** Two consecutive failures → stop, escalate, reassess.
-6. **Research Gate (P8).** If the technology is new or you're unsure → verify before coding.
+Use `praxis incident "description"` to log new governance events. Each entry captures:
+- What happened (the incident)
+- Root cause analysis
+- New rule proposed
+- Rule integrated: Y/N
 
 ---
 
-## Agent Roles
+## Quality Gates
 
-> Define the AI agents active in your workflow and their responsibilities.
+### Pre-delivery checklist
+- [ ] Output meets all requirements from the brief
+- [ ] Output is technically correct (verified, not assumed)
+- [ ] Output is internally consistent
+- [ ] Output can be traced (how and why it was produced is documented)
+- [ ] Uncertainties are explicitly flagged
 
-| Role | Model/Tool | Layer | Responsibilities | Constraints |
-|------|-----------|-------|-----------------|-------------|
-| Orchestrator | [YOUR MODEL] | L2 | Planning, decomposition, review | No direct execution of risky tasks |
-| Executor | [YOUR MODEL] | L3 | Code generation, writing, analysis | Must validate outputs before accepting |
-| Reviewer | [YOUR MODEL] | L1/L2 | Quality check, compliance | Final authority on output acceptance |
-| Human | You | All | Irreversible decisions, creative judgment | ALWAYS in the loop for consequential actions |
+### Self-governance protocol (for single-model setups)
 
----
+If you're using a single AI model without an external orchestrator, the model must self-govern:
 
-## Delegation Matrix
-
-| Task Type | Delegate to | Notes |
-|-----------|------------|-------|
-| Research, summarization | Cheapest available model | No quality requirements for drafts |
-| Simple code / edits | Fast model (Sonnet-class) | Verify output |
-| Complex architecture | Premium model (Opus-class) | Only for high-value decisions |
-| Creative decisions | Human | AI can suggest, human decides |
-| Irreversible actions | Human | Mandatory human approval |
+1. **Self-monitor:** Periodically check if rules are accumulating beyond budget
+2. **Self-escalate:** If confidence is low or 2 attempts fail, stop and ask the human
+3. **Self-validate:** After producing output, list assumptions made and identify the weakest point
+4. **Self-calibrate:** Express uncertainty when uncertain. Don't project more confidence than warranted.
 
 ---
 
-## Context Loading Protocol
+## Delegation Policy
 
-Before each session, ensure the AI has:
+[For multi-model setups. Define which tasks go to which model/tier.]
 
-- [ ] Project purpose and current state
-- [ ] Relevant files or codebase context
-- [ ] Active sprint brief (if mid-sprint)
-- [ ] Latest governance rules (this file)
-- [ ] Any known constraints or blockers
+| Task Type | Delegate To | Why |
+|-----------|------------|-----|
+| Research / search | [e.g., Cheaper model or web search] | No need for top-tier |
+| Code writing | [e.g., Primary coding model] | Needs code competence |
+| Review / decisions | [e.g., Most capable model OR human] | High-stakes |
+| Creative work | [e.g., Capable model with creative instructions] | Needs judgment |
+| Final validation | [e.g., Human] | Irreversible |
 
----
-
-## Error & Escalation Protocol
-
-### When to escalate to human
-
-- 2 consecutive failures on the same task
-- Unexpected output that could cause harm
-- Cost/time threshold exceeded
-- Security-sensitive operation
-- Irreversible action (delete, deploy, publish)
-
-### Escalation procedure
-
-1. Stop execution
-2. Document what failed and what was tried
-3. Log with: `praxis log "task" -q 1 -i <N>` (or govern for incidents)
-4. Reassess brief — is the scope too broad? Is context missing?
-5. Decompose into smaller sprints
-6. Retry with explicit corrections
+**For single-model setups:** The model handles all task types. Use the quality gates above instead of delegation.
 
 ---
 
-## Tool Inventory
+## Memory Protocol
 
-> List the AI tools and services active in your workflow.
+### Daily logging
+- Log significant tasks with `praxis log`
+- Note what worked, what broke, what was learned
+- Store in daily memory file if your platform supports it
 
-| Tool | Purpose | Layer | Notes |
-|------|---------|-------|-------|
-| [TOOL NAME] | [PURPOSE] | L3 | [NOTES] |
-| [TOOL NAME] | [PURPOSE] | L3 | [NOTES] |
+### Weekly review
+- Check rule budget: are we over limit?
+- Prune stale rules (not applied in 30+ days)
+- Review governance emergence log: any patterns?
 
----
+### Hardened facts
+[Separate verified knowledge from inferred knowledge. Mark facts that should NEVER change.]
 
-## Memory Protocol (Brief)
-
-> Full memory protocol in MEMORY_TEMPLATE.md. This is the quick reference.
-
-- **Operational (L4.1):** Current session context in the AI's context window.
-- **Episodic (L4.2):** Daily logs, sprint records in `.praxis/metrics.jsonl`.
-- **Semantic (L4.3):** Lessons, governance rules in this file and SOUL.md.
-- **Hardened (L4.5):** Verified facts that never change — store separately, always cite sources.
-
-**Rule:** Before claiming something is a "hardened fact," verify it with a primary source.
+| Fact | Source | Verified |
+|------|--------|----------|
+| [e.g., "API endpoint is /v2/xxx"] | [Documentation] | ✅ |
+| [e.g., "Client prefers dark theme"] | [Direct communication] | ✅ |
 
 ---
 
-## Governance Event Protocol
-
-When something goes wrong that reveals a gap in your rules, log it:
-
-```bash
-praxis govern "Added rule: [what the rule is]" --type rule_created
-praxis govern "Incident: [what happened and how it was fixed]" --type incident
-```
-
-This builds your emergent governance layer — the most valuable part of PRAXIS.
-
----
-
-*Generated by PRAXIS Universal Kit v0.1 — Customize before use.*
-*PRAXIS Framework v1.0 — UCM Doctoral Research*
+*This template is part of PRAXIS Universal Kit v0.2.*
+*PRAXIS (Protocol for Rule Architecture in eXtended Intelligent Systems)*
+*Doctoral research — Universidad Complutense de Madrid*

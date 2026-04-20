@@ -1,8 +1,8 @@
 # PRAXIS Universal Kit
 
-**Cross-platform research tool for AI-assisted workflow measurement**
+**Cross-platform research tool for observing governance phenomena in AI-assisted workflows**
 
-PRAXIS Kit lets you measure your AI workflow — before and after adopting governance structure — using a simple command-line tool that works with any AI platform.
+PRAXIS Kit instruments your AI workflow to capture what actually happens — governance emergence, personality effects, session boundaries, quality patterns — before and after introducing structured governance.
 
 **Part of doctoral research at Universidad Complutense de Madrid.**
 
@@ -10,9 +10,14 @@ PRAXIS Kit lets you measure your AI workflow — before and after adopting gover
 
 ## What is PRAXIS?
 
-PRAXIS (Protocol for Rule Architecture in eXtended Intelligent Systems) is a governance framework for human-AI workflows. This kit measures whether adding governance structure changes how effectively you work with AI tools.
+PRAXIS (Protocol for Rule Architecture in eXtended Intelligent Systems) is a research framework that documents what happens when humans and AI systems work together under sustained production conditions.
 
-The research uses a **within-subjects design**: you are your own control group. First you work normally (Phase A, baseline), then you add governance (Phase B, treatment). We compare your own before/after.
+This kit is the **measurement instrument** — it captures data so researchers can study governance phenomena like:
+- Rules that emerge organically from failures (governance emergence)
+- How AI personality affects your trust and behavior (relational governance)
+- What happens when you switch AI models with the same governance config (personality portability)
+- How memory and calibration recover across session boundaries
+- Whether workflow structure shows measurable influence on outcomes
 
 ---
 
@@ -40,7 +45,7 @@ python collector/praxis_cli.py init
 praxis survey pre
 ```
 
-### 3. Work normally and log your AI tasks
+### 3. Log your AI tasks
 
 After each significant AI-assisted task:
 ```bash
@@ -51,23 +56,47 @@ praxis log "What you accomplished" -d 45 -m claude -q 4 -i 2 -h2 1
 |------|---------|---------|
 | `-d` | Duration in minutes | `-d 45` |
 | `-m` | AI model/tool used | `-m claude` `-m copilot` `-m cursor` |
-| `-q` | Quality 1-5 | `-q 4` |
+| `-q` | Self-rated quality 1-5 | `-q 4` |
 | `-i` | AI generation cycles | `-i 2` (2 tries) |
 | `-h2` | Human corrections | `-h2 1` (corrected once) |
+| `--l1r` | Log relational governance observations | `--l1r` (interactive prompts) |
 
-### 4. After 7+ days, activate PRAXIS governance
+### 4. Log governance events
+
+When something breaks and you learn from it:
+```bash
+praxis incident "AI used outdated library version"
+```
+This prompts for: what happened, root cause, and whether a new rule should be created.
+
+### 5. Activate structured governance (when ready)
 ```bash
 praxis activate
 ```
 
-This injects governance files into your AI tools (CLAUDE.md, .cursorrules, AGENTS.md, etc.) and starts Phase B.
+This injects governance files into your AI tools and transitions to Phase B.
 
-### 5. Export your data at the end
+### 6. Export your data
 ```bash
 praxis export
 ```
 
-Send the generated ZIP file to the researcher.
+Generates an anonymized ZIP file for research analysis.
+
+---
+
+## What's new in v0.2
+
+| Feature | Description |
+|---------|-------------|
+| **L1-R: Relational Governance** | Log perceived AI confidence, warmth, trust, and compliance tendency per sprint (`--l1r` flag) |
+| **P9: Architecture Independence** | Works for single-model (Copilot, Aider) and multi-agent (OpenClaw, Cowork) setups |
+| **Self-governance templates** | Protocols for single-model systems without external orchestrator |
+| **Personality calibration** | Built-in mechanism to detect when AI behavior differs from governance config |
+| **Incident logging** | Structured capture of governance emergence events (`praxis incident`) |
+| **Session boundary observations** | Track memory recovery and calibration degradation across sessions |
+| **2×2 factorial support** | Experimental conditions: Model (Sonnet/Opus) × Structure (structured/unstructured) |
+| **Descriptive framing** | Kit documents phenomena rather than testing whether governance "improves" things |
 
 ---
 
@@ -76,98 +105,70 @@ Send the generated ZIP file to the researcher.
 ```
 praxis status          Show phase, days active, entry count, averages
 praxis log "task"      Log a task (interactive if no args given)
+praxis incident "desc" Log a governance emergence event
 praxis activate        Transition Phase A → Phase B (governance on)
-praxis govern "rule"   Log a governance event (Phase B)
-praxis survey pre      Pre-study baseline survey
-praxis survey post     Post-study survey (after Phase B)
-praxis export          Generate anonymized data ZIP for researcher
-praxis platforms       Show which AI tools were detected
-praxis withdraw        Delete all data and withdraw from the study
+praxis govern "rule"   Log a governance rule event (Phase B)
+praxis survey pre      Launch pre-survey
+praxis survey post     Launch post-survey
+praxis export          Generate anonymized data ZIP for research
+praxis platforms       Show detected AI platforms
 ```
 
 ---
 
-## Supported AI Platforms
+## Supported Platforms
 
-PRAXIS automatically detects and integrates with:
-
-| Platform | Integration | Governance File |
-|----------|------------|-----------------|
-| Claude Code | Deep | CLAUDE.md |
-| OpenAI Codex | Deep | AGENTS.md |
-| Cursor | Deep | .cursor/rules/praxis.md |
-| Windsurf | Deep | .windsurfrules |
-| GitHub Copilot | Standard | .github/copilot-instructions.md |
-| Aider | Standard | CONVENTIONS.md |
-| Continue.dev | Standard | .continue/rules/praxis.md |
-| Cline | Standard | .clinerules |
-| Roo Code | Standard | .roorules |
-| Any other AI tool | Generic | PRAXIS_GOVERNANCE.md |
-
----
-
-## Phase A — Baseline (1-2 weeks)
-
-Work exactly as you do today. No governance, no changes.
-
-Log each AI-assisted task with `praxis log`. This captures your natural workflow metrics: time, quality, iterations, corrections.
-
-Check your progress: `praxis status`
-
----
-
-## Phase B — PRAXIS Governance (2+ weeks)
-
-After running `praxis activate`:
-
-1. Governance files are injected into your AI tools
-2. Customize SOUL.md / AGENTS.md to match your work
-3. Continue logging with `praxis log` (PRAXIS-Q quality rubric is added)
-4. Log governance events: `praxis govern "Added rule: test after every deploy"`
-
----
-
-## Privacy
-
-- All data is stored **locally** in `.praxis/` in your project directory
-- **No telemetry**, no cloud uploads, no internet required after install
-- `praxis export` creates an anonymized ZIP — task descriptions can be redacted
-- `praxis withdraw` deletes everything permanently at any time
-
-What is collected:
-- Task durations, quality ratings, iteration counts
-- AI model names you report
-- Survey responses
-- Governance rules you log
-
-What is **never** collected:
-- File contents or source code
-- AI conversation logs
-- Personal identifiable information
-
----
-
-## Requirements
-
-- Python 3.8+
-- macOS, Linux, or Windows
-- No internet connection required
-- No admin/root access required
-- No pip dependencies — pure Python stdlib
+| Platform | Governance File | Type |
+|----------|-----------------|------|
+| OpenClaw | SOUL.md + AGENTS.md + HEARTBEAT.md | Multi-agent orchestrator |
+| Claude Cowork | CLAUDE.md | Multi-agent |
+| Codex | AGENTS.md | Sandbox agent |
+| Cursor | .cursorrules / .cursor/rules/ | AI IDE |
+| Windsurf | .windsurfrules | AI IDE |
+| Copilot | .github/copilot-instructions.md | AI assistant |
+| Aider | .aider.conf.yml + conventions | CLI agent |
+| Continue.dev | .continue/config.json | IDE extension |
+| Cline | .cline/instructions.md | IDE extension |
+| Roo Code | .roo/rules.md | IDE extension |
+| Generic | PRAXIS_GOVERNANCE.md | Any system |
 
 ---
 
 ## Research Context
 
-**Title:** "Methodological Architecture for Autonomous AI-Assisted Systems"
-**Researcher:** Javier Herreros Riaza
-**Institution:** Universidad Complutense de Madrid — Doctoral Program CAVP
-**Framework:** PRAXIS v1.0
+This kit is part of a doctoral thesis that documents governance phenomena in AI-assisted production systems during the 2025-2027 period. The research questions:
 
-**License:** CC BY-SA 4.0
+1. What governance phenomena emerge when AI systems operate under structured instrumentation?
+2. How does AI personality (tone, confidence, warmth) affect user trust and behavior?
+3. Does workflow structure show measurable influence on outcomes independent of model capability?
+4. What do current AI governance frameworks (EU AI Act, OECD, NIST) fail to cover?
 
-Questions? Contact the researcher via the study information document.
+**Important disclosures:**
+- Quality assessments in Phase A are self-rated by the participant
+- External blind evaluation (PRAXIS-Q) is available for Phase B outputs
+- All data is anonymized and stored locally — nothing is sent to any server automatically
+- Participants can withdraw at any time
 
 ---
 
-*PRAXIS Universal Kit v0.1 — 2026*
+## Citing this work
+
+```bibtex
+@software{herreros2026praxis,
+  author = {Herreros Riaza, Javier},
+  title = {PRAXIS Universal Kit},
+  version = {0.2.0},
+  year = {2026},
+  publisher = {Universidad Complutense de Madrid},
+  url = {https://github.com/jhriaza/praxis-universal-kit}
+}
+```
+
+## License
+
+CC BY-SA 4.0 — see [LICENSE](LICENSE)
+
+---
+
+*PRAXIS Universal Kit v0.2 — 2026-04-15*
+*Doctoral research — Universidad Complutense de Madrid*

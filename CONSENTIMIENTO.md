@@ -6,15 +6,15 @@
 
 **Investigador principal:** Javier Herreros Riaza
 **Institución:** Universidad Complutense de Madrid — Programa de Doctorado en Comunicación Audiovisual y Publicidad (CAVP)
-**Framework:** PRAXIS v1.0
+**Framework:** PRAXIS v1.1
 
 ---
 
 ## Propósito del Estudio
 
-Esta investigación estudia si adoptar un framework de gobernanza (PRAXIS) cambia la efectividad con la que las personas trabajan con herramientas de IA. El estudio utiliza un diseño de medidas repetidas: usted es su propio grupo control, trabajando primero sin gobernanza (Fase A, línea base) y luego con gobernanza PRAXIS activa (Fase B, tratamiento).
+Esta investigación documenta qué sucede cuando las personas adoptan un framework de gobernanza (PRAXIS) para su trabajo asistido por IA. El estudio utiliza un diseño de medidas repetidas: usted es su propio grupo control, trabajando primero sin gobernanza (Fase A, línea base) y luego con gobernanza PRAXIS activa (Fase B, tratamiento).
 
-El estudio compara métricas de la misma persona, los mismos proyectos y las mismas herramientas — antes y después de la adopción de gobernanza. Esto mide el efecto de la estructura, no el efecto de cambiar herramientas.
+El estudio captura métricas de la misma persona, los mismos proyectos y las mismas herramientas — antes y después de adoptar gobernanza — para observar fenómenos como la emergencia de reglas, los efectos de la gobernanza relacional y la portabilidad de la personalidad entre modelos de IA.
 
 ---
 
@@ -41,9 +41,13 @@ El estudio compara métricas de la misma persona, los mismos proyectos y las mis
 - Métricas de tareas: descripción, duración, calificación de calidad (1-5), ciclos de generación de IA, correcciones humanas
 - Nombres de modelos/herramientas de IA que usted reporta
 - Puntuaciones de calidad PRAXIS-Q (Fase B)
+- Observaciones L1-R (opcionales): sus percepciones sobre la seguridad, calidez, confianza y tendencia a la complacencia de la IA por tarea
 - Eventos de gobernanza: reglas que crea, incidentes, modificaciones
+- Observaciones de límite de sesión: recuperación de memoria y calibración entre sesiones
 - Respuestas a encuestas (pre y post)
 - Fechas de fase y conteos de sesión
+- Asignación de condición experimental (si participa en el estudio factorial 2×2)
+- Evaluación externa de calidad: un evaluador independiente puede puntuar sus resultados anonimizados mediante PRAXIS-Q
 
 **Nunca se recopila:**
 - El contenido de su código fuente, documentos o archivos
@@ -135,6 +139,6 @@ Su consentimiento se registra con una marca de tiempo en `.praxis/state.json` en
 
 ---
 
-*PRAXIS Universal Kit v0.1*
+*PRAXIS Universal Kit v0.2*
 *Universidad Complutense de Madrid — Investigación Doctoral*
 *Framework: CC BY-SA 4.0*
