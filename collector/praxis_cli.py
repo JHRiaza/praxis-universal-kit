@@ -102,6 +102,7 @@ class C:
     B_GREEN   = "\033[92m" if _COLOR else ""
     B_YELLOW  = "\033[93m" if _COLOR else ""
     B_BLUE    = "\033[94m" if _COLOR else ""
+    B_MAGENTA = "\033[95m" if _COLOR else ""
     B_CYAN    = "\033[96m" if _COLOR else ""
 
 
@@ -460,14 +461,20 @@ def cmd_log(args: argparse.Namespace) -> int:
     if state["phase"] == "B":
         if not layer:
             print()
-            print_info("PRAXIS layer (L1=Governance, L2=Orchestration, L3=Execution, L4=Memory, L5=Production)")
-            layer_input = ask("Layer (L1-L5, or skip)", "")
+            print_info("PRAXIS layer (L1=Governance, L1-R=Relational, L2=Orchestration, L3=Execution, L4=Memory, L5=Production)")
+            layer_input = ask("Layer (L1/L1-R/L2-L5, or skip)", "")
             if layer_input.upper() in VALID_LAYERS:
                 layer = layer_input.upper()
 
         # PRAXIS-Q prompt
         if ask_yn("Rate this task with PRAXIS-Q? (<15 seconds)", True):
             praxis_q = _collect_praxis_q(lang=getattr(args, "lang", "en"))
+
+    l1r_observations = None
+    if getattr(args, "l1r", False):
+        l1r_observations = _collect_l1r_observations(lang=getattr(args, "lang", "en"))
+        if not layer:
+            layer = "L1-R"
 
     notes = getattr(args, "notes", None)
 
@@ -482,6 +489,7 @@ def cmd_log(args: argparse.Namespace) -> int:
             interventions=interventions,
             layer=layer,
             praxis_q=praxis_q,
+            l1r_observations=l1r_observations,
             project=getattr(args, "project", None),
             notes=notes,
         )
@@ -499,6 +507,8 @@ def cmd_log(args: argparse.Namespace) -> int:
         total = entry["praxis_q"]["total"]
         zone_color = C.B_GREEN if total >= 2.4 else (C.B_YELLOW if total >= 1.7 else C.B_RED)
         print_info(f"PRAXIS-Q: {_c(str(total), zone_color)}/3.0")
+    if l1r_observations:
+        print_info("L1-R observations captured")
 
     # Phase A progress reminder
     if state["phase"] == "A":
@@ -539,6 +549,37 @@ def _collect_praxis_q(lang: str = "en") -> Dict[str, int]:
         scores[dim_id] = ask_int(f"  {prompt}", 1, 3, 2)
 
     return scores
+
+def _collect_l1r_observations(lang: str = "en") -> Dict[str, Any]:
+    """Interactive L1-R relational governance collection."""
+    prompts = [
+        ("perceived_confidence", "How confident did the AI seem?", "¿Qué tan seguro parecía el AI?"),
+        ("perceived_warmth", "How warm/supportive did the AI feel?", "¿Qué tan cálido o colaborativo se sintió el AI?"),
+        ("trust_willingness", "Would you follow this AI's advice without verifying?", "¿Seguirías el consejo del AI sin verificarlo?"),
+        ("skepticism_activation", "Did you feel the need to verify independently?", "¿Sentiste necesidad de verificar independientemente?"),
+        ("perceived_authority", "How expert did the AI seem?", "¿Qué tan experto parecía el AI?"),
+    ]
+
+    print()
+    print(f"  {_c('L1-R', C.BOLD, C.B_MAGENTA)}  {_c('Relational governance observations | 1=low, 7=high', C.DIM)}")
+
+    observations: Dict[str, Any] = {}
+    for field, prompt_en, prompt_es in prompts:
+        prompt = prompt_es if lang == "es" else prompt_en
+        observations[field] = ask_int(f"  {prompt}", 1, 7, 4)
+
+    observations["compliance_tendency"] = ask_yn(
+        "Did you accept the AI output without questioning?", False
+    )
+    observations["personality_mismatch"] = ask_yn(
+        "Did the AI behavior differ from what SOUL_TEMPLATE specified?", False
+    )
+    if observations["personality_mismatch"]:
+        notes = ask("Describe the personality mismatch", "")
+        if notes:
+            observations["personality_mismatch_notes"] = notes
+
+    return observations
 
 
 # ---------------------------------------------------------------------------
@@ -797,8 +838,8 @@ def cmd_incident(args: argparse.Namespace) -> int:
         "phase": state.get("phase", "unknown"),
     }
 
-    # Append to governance events file
-    gov_file = praxis_dir / "governance_events.jsonl"
+    # Append to canonical governance events file
+    gov_file = praxis_dir / GOVERNANCE_FILE
     with open(gov_file, "a", encoding="utf-8") as f:
         f.write(json.dumps(incident, ensure_ascii=False) + "\n")
 
@@ -1179,8 +1220,10 @@ def build_parser() -> argparse.ArgumentParser:
                        help="AI generation cycles (1=first try worked)")
     p_log.add_argument("-h2", "--interventions", type=int, dest="interventions", metavar="N",
                        help="Human corrections/overrides")
-    p_log.add_argument("-l", "--layer", choices=list(VALID_LAYERS), metavar="L1-L5",
-                       help="PRAXIS layer (Phase B only)")
+    p_log.add_argument("-l", "--layer", choices=list(VALID_LAYERS), metavar="LAYER",
+                       help="PRAXIS layer (Phase B only; includes L1-R)")
+    p_log.add_argument("--l1r", action="store_true",
+                       help="Log L1-R relational governance observations")
     p_log.add_argument("-p", "--project", type=str, help="Project name")
     p_log.add_argument("-n", "--notes", type=str, help="Optional notes")
 

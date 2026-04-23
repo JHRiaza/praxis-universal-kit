@@ -33,8 +33,9 @@ METRICS_FILE = "metrics.jsonl"
 GOVERNANCE_FILE = "governance.jsonl"
 SESSIONS_FILE = "sessions.jsonl"
 
+VALID_CONDITIONS = ("A1", "A2", "B1", "B2")
 VALID_PHASES = ("A", "B")
-VALID_LAYERS = ("L1", "L2", "L3", "L4", "L5")
+VALID_LAYERS = ("L1", "L1-R", "L2", "L3", "L4", "L5")
 VALID_GOVERNANCE_TYPES = (
     "rule_created",
     "rule_modified",
@@ -236,6 +237,18 @@ def _get_session_id(state: Dict[str, Any]) -> str:
     return f"session_{date_str}_{count:04d}"
 
 
+def _derive_condition(state: Dict[str, Any], model: str) -> str:
+    """Map legacy phase/model inputs to v0.2 2x2 experimental condition."""
+    condition = state.get("condition")
+    if condition in VALID_CONDITIONS:
+        return condition
+
+    structure = "B" if state.get("phase") == "B" else "A"
+    model_name = model.lower()
+    model_axis = "2" if "opus" in model_name else "1"
+    return f"{structure}{model_axis}"
+
+
 def validate_metric_entry(entry: Dict[str, Any]) -> List[str]:
     """
     Validate a metrics entry against the schema.
@@ -243,8 +256,8 @@ def validate_metric_entry(entry: Dict[str, Any]) -> List[str]:
     """
     errors: List[str] = []
     required_fields = [
-        "id", "timestamp", "phase", "task",
-        "duration", "model", "quality", "iterations", "interventions",
+        "id", "timestamp", "participant_id", "condition", "task",
+        "duration_minutes", "quality_self",
     ]
     for field in required_fields:
         if field not in entry:
@@ -253,15 +266,35 @@ def validate_metric_entry(entry: Dict[str, Any]) -> List[str]:
     if "phase" in entry and entry["phase"] not in VALID_PHASES:
         errors.append(f"Invalid phase '{entry['phase']}'. Must be one of: {VALID_PHASES}")
 
+    if "condition" in entry and entry["condition"] not in VALID_CONDITIONS:
+        errors.append(
+            f"Invalid condition '{entry['condition']}'. Must be one of: {VALID_CONDITIONS}"
+        )
+
     if "quality" in entry:
         q = entry["quality"]
         if not isinstance(q, int) or not (1 <= q <= 5):
-            errors.append(f"'quality' must be an integer 1–5, got: {q!r}")
+            errors.append(f"'quality' must be an integer 1-5, got: {q!r}")
+
+    if "quality_self" in entry:
+        q = entry["quality_self"]
+        if not isinstance(q, int) or not (1 <= q <= 5):
+            errors.append(f"'quality_self' must be an integer 1-5, got: {q!r}")
+
+    if "quality_external" in entry and entry["quality_external"] is not None:
+        q = entry["quality_external"]
+        if not isinstance(q, int) or not (1 <= q <= 5):
+            errors.append(f"'quality_external' must be an integer 1-5, got: {q!r}")
 
     if "duration" in entry:
         d = entry["duration"]
         if not isinstance(d, int) or d < 1:
             errors.append(f"'duration' must be a positive integer (minutes), got: {d!r}")
+
+    if "duration_minutes" in entry:
+        d = entry["duration_minutes"]
+        if not isinstance(d, int) or d < 1:
+            errors.append(f"'duration_minutes' must be a positive integer, got: {d!r}")
 
     if "iterations" in entry:
         i = entry["iterations"]
@@ -273,9 +306,26 @@ def validate_metric_entry(entry: Dict[str, Any]) -> List[str]:
         if not isinstance(h, int) or h < 0:
             errors.append(f"'interventions' must be a non-negative integer, got: {h!r}")
 
+    if "human_interventions" in entry:
+        h = entry["human_interventions"]
+        if not isinstance(h, int) or h < 0:
+            errors.append(f"'human_interventions' must be a non-negative integer, got: {h!r}")
+
     if "layer" in entry and entry["layer"] is not None:
         if entry["layer"] not in VALID_LAYERS:
             errors.append(f"Invalid layer '{entry['layer']}'. Must be one of: {VALID_LAYERS}")
+
+    if "praxis_layer" in entry and entry["praxis_layer"] is not None:
+        if entry["praxis_layer"] not in VALID_LAYERS:
+            errors.append(
+                f"Invalid praxis_layer '{entry['praxis_layer']}'. Must be one of: {VALID_LAYERS}"
+            )
+
+    if "l1r_observations" in entry and entry["l1r_observations"] is not None:
+        errors.extend(_validate_l1r_observations(entry["l1r_observations"]))
+
+    if "session_boundary" in entry and entry["session_boundary"] is not None:
+        errors.extend(_validate_session_boundary(entry["session_boundary"]))
 
     if "praxis_q" in entry and entry["praxis_q"] is not None:
         errors.extend(_validate_praxis_q(entry["praxis_q"]))
@@ -297,6 +347,67 @@ def _validate_praxis_q(pq: Dict[str, Any]) -> List[str]:
     return errors
 
 
+def _validate_l1r_observations(observations: Dict[str, Any]) -> List[str]:
+    """Validate an L1-R observations object."""
+    errors: List[str] = []
+    likert_fields = [
+        "perceived_confidence",
+        "perceived_warmth",
+        "trust_willingness",
+        "skepticism_activation",
+        "perceived_authority",
+    ]
+    bool_fields = ["compliance_tendency", "personality_mismatch"]
+
+    if not isinstance(observations, dict):
+        return ["'l1r_observations' must be an object"]
+
+    for field in likert_fields:
+        if field in observations and observations[field] is not None:
+            val = observations[field]
+            if not isinstance(val, int) or not (1 <= val <= 7):
+                errors.append(f"L1-R '{field}' must be an integer 1-7, got: {val!r}")
+
+    for field in bool_fields:
+        if field in observations and observations[field] is not None:
+            if not isinstance(observations[field], bool):
+                errors.append(f"L1-R '{field}' must be boolean, got: {observations[field]!r}")
+
+    notes = observations.get("personality_mismatch_notes")
+    if notes is not None and not isinstance(notes, str):
+        errors.append("L1-R 'personality_mismatch_notes' must be a string")
+
+    return errors
+
+
+def _validate_session_boundary(boundary: Dict[str, Any]) -> List[str]:
+    """Validate a session boundary observation object."""
+    errors: List[str] = []
+    if not isinstance(boundary, dict):
+        return ["'session_boundary' must be an object"]
+
+    memory_recovery = boundary.get("memory_recovery")
+    if memory_recovery is not None and memory_recovery not in ("instant", "partial", "lost"):
+        errors.append("'session_boundary.memory_recovery' must be instant, partial, or lost")
+
+    calibration_recovery = boundary.get("calibration_recovery")
+    if calibration_recovery is not None and calibration_recovery not in (
+        "immediate",
+        "gradual",
+        "significant_degradation",
+    ):
+        errors.append(
+            "'session_boundary.calibration_recovery' must be immediate, gradual, "
+            "or significant_degradation"
+        )
+
+    notes = boundary.get("notes")
+    if notes is not None and not isinstance(notes, str):
+        errors.append("'session_boundary.notes' must be a string")
+
+    return errors
+
+
 def build_metric_entry(
     state: Dict[str, Any],
     task: str,
@@ -307,6 +418,10 @@ def build_metric_entry(
     interventions: int,
     layer: Optional[str] = None,
     praxis_q: Optional[Dict[str, int]] = None,
+    l1r_observations: Optional[Dict[str, Any]] = None,
+    session_boundary: Optional[Dict[str, Any]] = None,
+    quality_external: Optional[int] = None,
+    quality_evaluator_id: Optional[str] = None,
     project: Optional[str] = None,
     notes: Optional[str] = None,
     project_dir: Optional[Path] = None,
@@ -319,19 +434,43 @@ def build_metric_entry(
         "id": _generate_entry_id(task),
         "timestamp": _now_iso(),
         "schema_version": SCHEMA_VERSION,
-        "phase": state["phase"],
+        "participant_id": state["participant_id"],
+        "condition": _derive_condition(state, model),
         "task": task.strip(),
+        "duration_minutes": duration,
+        "model_executor": model.strip(),
+        "quality_self": quality,
+        "human_interventions": interventions,
+        "autonomous": interventions == 0,
+        "first_attempt": iterations == 1,
+        "session_id": _get_session_id(state),
+        # Legacy aliases retained for existing analysis/export code.
+        "phase": state["phase"],
         "duration": duration,
         "model": model.strip(),
         "quality": quality,
         "iterations": iterations,
         "interventions": interventions,
-        "autonomous": interventions == 0,
-        "session_id": _get_session_id(state),
     }
 
     if layer is not None:
+        entry["praxis_layer"] = layer
         entry["layer"] = layer
+
+    if l1r_observations is not None:
+        entry["l1r_observations"] = l1r_observations
+        if layer is None:
+            entry["praxis_layer"] = "L1-R"
+            entry["layer"] = "L1-R"
+
+    if session_boundary is not None:
+        entry["session_boundary"] = session_boundary
+
+    if quality_external is not None:
+        entry["quality_external"] = quality_external
+
+    if quality_evaluator_id:
+        entry["quality_evaluator_id"] = quality_evaluator_id.strip()
 
     if praxis_q is not None:
         # Calculate total
