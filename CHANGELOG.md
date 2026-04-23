@@ -23,6 +23,7 @@
 ### Fixed
 - Sprint count references updated from 98 to 120+ where applicable
 - Framework references updated from v1.0 to v1.1
+- Collector, CLI, and export version constants updated from 0.1 to 0.2 to match the documented kit version.
 
 ## v0.1.0 (2026-04-07)
 - Initial release

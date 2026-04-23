@@ -34,7 +34,7 @@ from typing import Any, Dict, List, Optional
 # Constants
 # ---------------------------------------------------------------------------
 
-EXPORT_VERSION = "0.1"
+EXPORT_VERSION = "0.2"
 PII_FIELDS_TO_REDACT = ["name", "email", "phone", "ip_address", "machine_name"]
 FILES_TO_INCLUDE = [
     "metrics.jsonl",

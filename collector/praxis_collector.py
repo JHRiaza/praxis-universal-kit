@@ -25,8 +25,8 @@ from typing import Any, Dict, List, Optional, Tuple
 # Constants
 # ---------------------------------------------------------------------------
 
-KIT_VERSION = "0.1"
-SCHEMA_VERSION = "0.1"
+KIT_VERSION = "0.2"
+SCHEMA_VERSION = "0.2"
 PRAXIS_DIR = ".praxis"
 STATE_FILE = "state.json"
 METRICS_FILE = "metrics.jsonl"

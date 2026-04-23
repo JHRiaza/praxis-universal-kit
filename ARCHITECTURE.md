@@ -24,6 +24,11 @@ The kit works for both single-model and multi-agent setups:
 
 Single-model users receive self-governance templates that encode monitoring, escalation, validation, and calibration protocols directly into the model's configuration file.
 
+### Known Limitation: OpenClaw to Cowork Bridge
+OpenClaw and Claude Cowork are detected as separate platform targets. The kit can inject governance files into each environment independently, but it does not yet provide an automatic bridge that transfers runtime state, memory summaries, heartbeat outputs, task queues, or escalation context from OpenClaw into Cowork.
+
+For studies that use both systems, researchers should treat OpenClaw-to-Cowork handoff as a manual boundary. Log the handoff as a session boundary observation and include any bridge failure, missing context, or manual rehydration work as a governance event or incident when it affects task outcome.
+
 ### Directory Structure
 ```
 praxis-kit/
