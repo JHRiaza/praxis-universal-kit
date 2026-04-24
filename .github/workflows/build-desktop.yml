@@ -61,6 +61,9 @@ jobs:
           </dict>
           </plist>
           PLIST
+          # Ad-hoc codesign (removes "corrupted" Gatekeeper warning)
+          codesign --force --deep -s - "dist/PRAXIS Kit.app"
+          
           hdiutil create -volname "PRAXIS Kit" -srcfolder "dist/PRAXIS Kit.app" -ov -format UDZO dist/PRAXIS-Kit-macOS-arm64.dmg
       - uses: actions/upload-artifact@v4
         with:
