@@ -944,3 +944,95 @@ def _which(name: str) -> Optional[str]:
     """Cross-platform which/where — stdlib only."""
     import shutil
     return shutil.which(name)
+
+
+# ---------------------------------------------------------------------------
+# PraxisCollector — facade class
+# ---------------------------------------------------------------------------
+
+class PraxisCollector:
+    """
+    Facade class providing an OO interface to the PRAXIS collector.
+    Delegates all methods to the module-level functions.
+    Exists for backward compatibility with code that imports::
+
+        from collector.praxis_collector import PraxisCollector
+    """
+
+    def __init__(self, project_dir: Optional[Path] = None) -> None:
+        self.project_dir = Path(project_dir or Path.cwd()).resolve()
+
+    @property
+    def praxis_dir(self) -> Optional[Path]:
+        return find_praxis_dir(self.project_dir)
+
+    def init(self, participant_id: str, consent: bool = False) -> Dict[str, Any]:
+        pdir = get_or_create_praxis_dir(self.project_dir)
+        return initialize_state(pdir, participant_id, consent)
+
+    def status(self) -> Optional[Dict[str, Any]]:
+        pdir = self.praxis_dir
+        if pdir is None:
+            return None
+        return load_state(pdir)
+
+    def log(
+        self,
+        task: str,
+        duration: int,
+        model: str,
+        quality: int,
+        iterations: int = 1,
+        interventions: int = 0,
+        **kwargs: Any,
+    ) -> Dict[str, Any]:
+        pdir = find_praxis_dir(self.project_dir)
+        if pdir is None:
+            raise StateNotFoundError("PRAXIS not initialized")
+        state = load_state(pdir)
+        entry = build_metric_entry(
+            state=state, task=task, duration=duration, model=model,
+            quality=quality, iterations=iterations, interventions=interventions,
+            project_dir=self.project_dir, **kwargs,
+        )
+        append_metric_entry(pdir, entry)
+        return entry
+
+    def incident(
+        self,
+        description: str,
+        category: Optional[str] = None,
+        root_cause: Optional[str] = None,
+        new_rule: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        pdir = find_praxis_dir(self.project_dir)
+        if pdir is None:
+            raise StateNotFoundError("PRAXIS not initialized")
+        state = load_state(pdir)
+        return append_incident_event(pdir, state, description, category, root_cause, new_rule)
+
+    def govern(self, event_type: str, description: str) -> Dict[str, Any]:
+        pdir = find_praxis_dir(self.project_dir)
+        if pdir is None:
+            raise StateNotFoundError("PRAXIS not initialized")
+        state = load_state(pdir)
+        return append_governance_event(pdir, event_type, description, state)
+
+    def metrics(self) -> List[Dict[str, Any]]:
+        pdir = self.praxis_dir
+        if pdir is None:
+            return []
+        return load_all_metrics(pdir)
+
+    def summary(self) -> Dict[str, Any]:
+        return compute_summary(self.metrics())
+
+    def activate(self, force: bool = False) -> Tuple[Dict[str, Any], List[str]]:
+        pdir = find_praxis_dir(self.project_dir)
+        if pdir is None:
+            raise StateNotFoundError("PRAXIS not initialized")
+        state = load_state(pdir)
+        return activate_phase_b(pdir, state, force=force)
+
+    def detect_platforms(self) -> List[str]:
+        return detect_platforms(self.project_dir)
