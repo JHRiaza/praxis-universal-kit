@@ -55,8 +55,8 @@ class ContinueDevAdapter(PraxisAdapter):
         continue_dir = workspace_dir / ".continue"
         continue_dir.mkdir(parents=True, exist_ok=True)
 
-        soul = self._soul(templates_dir)
-        agents = self._agents(templates_dir)
+        soul = self._soul(templates_dir, workspace_dir)
+        agents = self._agents(templates_dir, workspace_dir)
 
         # 1. Create .continue/rules/praxis.md
         rules_dir = continue_dir / "rules"

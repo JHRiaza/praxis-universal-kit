@@ -51,8 +51,8 @@ class CopilotAdapter(PraxisAdapter):
         github_dir.mkdir(parents=True, exist_ok=True)
         dest = github_dir / "copilot-instructions.md"
 
-        soul = self._soul(templates_dir)
-        agents = self._agents(templates_dir)
+        soul = self._soul(templates_dir, workspace_dir)
+        agents = self._agents(templates_dir, workspace_dir)
         content = _COPILOT_HEADER + soul + "\n\n---\n\n## Operational Procedures\n\n" + agents
 
         if dest.is_file():

@@ -4,7 +4,7 @@
 ### Purpose
 Cross-platform, platform-agnostic research package for observing and documenting governance phenomena in AI-assisted workflows. Designed for distribution to external participants using any AI platform (Claude Cowork, Codex, OpenClaw, Cursor, Copilot, Aider, Continue.dev, Cline, Roo Code, etc.).
 
-The kit instruments workflows to capture what happens — governance emergence, relational governance effects, personality portability, session boundary behavior — before and after introducing structured governance.
+The kit instruments workflows to capture what happens — governance emergence, relational governance effects, personality portability, session boundary behavior — before and after introducing structured governance. It now supports both software production and creative/design workflows such as game design, writing, and narrative iteration.
 
 ### Research Design
 - **Type:** Within-subjects quasi-experiment (ABA' possible, AB minimum)
@@ -58,6 +58,8 @@ praxis-kit/
 │   │   └── .praxis/
 │   │       ├── state.json        # Kit state (phase, install date, participant ID)
 │   │       └── metrics.jsonl     # Collected sprint metrics (JSONL)
+│   ├── creative/                 # Domain-specific creative/design templates
+│   │   └── CLAUDE_DESIGN_TEMPLATE.md  # Creative critique + governance template
 │   └── governance/               # Phase B files (injected on `praxis activate`)
 │       ├── SOUL_TEMPLATE.md      # Governance personality + L1-R parameters
 │       ├── AGENTS_TEMPLATE.md    # Operational procedures + self-governance protocol
@@ -120,6 +122,9 @@ Fields:
 - iterations: how many AI generation cycles (int)
 - interventions: human corrections/overrides (int) — flag: `-h2`
 - autonomous: did AI complete without human help? (bool, derived: interventions==0)
+- iteration_type: software or creative cycle subtype (`implementation`, `design_cycle`, `playtest`, etc.)
+- design_quality: optional clarity/tension/balance/elegance scores for creative work
+- reviewer_feedback: optional external feedback object for playtests, editors, and reviewers
 - layer: PRAXIS layer (L1, L1-R, L2-L5, Phase B only)
 - praxis_q: PRAXIS-Q score (Phase B only, prompted if phase==B)
 
@@ -139,7 +144,7 @@ These observations capture the relational governance layer — how the AI's pers
 - PRAXIS-Q rubric (3-point scale per dimension, <15 seconds)
 - Governance events (new rules created, rules modified, incidents)
 - `praxis govern "Added rule: always test after deploy"` — logs governance emergence
-- `praxis incident "description"` — structured incident capture with root cause analysis
+- `praxis incident "description"` — structured incident capture with root cause analysis and categories (`OPS`, `GOV`, `COM`, `PRD`, `RES`, `DES`)
 
 #### Session boundary observations (v0.2)
 When a session starts after a break, the schema captures:
@@ -166,8 +171,8 @@ When user runs `praxis activate`:
 1. Confirm Phase A has ≥7 days of data (warn if less, allow override)
 2. Present consent reminder
 3. For each detected platform, inject governance files via adapter:
-   - Copy SOUL_TEMPLATE → platform's governance file location
-   - Copy AGENTS_TEMPLATE → platform's operational file location
+   - Detect whether the project is software or creative/design based on workspace files
+   - Copy SOUL_TEMPLATE / AGENTS_TEMPLATE or a domain-specific template to the platform's governance location
    - For single-model platforms, also inject SELF_GOVERNANCE_TEMPLATE
    - Prompt user to customize (name, role, principles, L1-R parameters)
 4. Enable PRAXIS-Q prompts after each `praxis log`
@@ -178,8 +183,8 @@ When user runs `praxis activate`:
 ### Incident Logging (v0.2)
 
 `praxis incident "description"` provides structured capture of governance emergence:
-1. Prompts: What happened? Root cause? Should a new rule be created?
-2. Logs the incident as a governance event with type `incident`
+1. Prompts: What happened? Root cause? Incident category? Should a new rule be created?
+2. Logs the incident as a governance event with type `incident` and optional category metadata
 3. If a rule is proposed, user can integrate it via `praxis govern`
 
 This captures the **Governance Emergence Cycle (GEC)**: incident → analysis → rule → integration.

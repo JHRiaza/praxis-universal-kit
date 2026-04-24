@@ -59,9 +59,13 @@ class ClaudeCoworkAdapter(PraxisAdapter):
         created: List[str] = []
         dest = workspace_dir / "CLAUDE.md"
 
-        soul = self._soul(templates_dir)
-        agents = self._agents(templates_dir)
-        content = _CLAUDE_HEADER + soul + "\n\n---\n\n## Operational Procedures\n\n" + agents
+        creative_template = self._creative_claude(templates_dir, workspace_dir)
+        if creative_template is not None:
+            content = _CLAUDE_HEADER + creative_template
+        else:
+            soul = self._soul(templates_dir, workspace_dir)
+            agents = self._agents(templates_dir, workspace_dir)
+            content = _CLAUDE_HEADER + soul + "\n\n---\n\n## Operational Procedures\n\n" + agents
 
         if dest.is_file():
             existing = dest.read_text(encoding="utf-8")

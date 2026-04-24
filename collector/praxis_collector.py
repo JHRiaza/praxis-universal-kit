@@ -36,6 +36,16 @@ SESSIONS_FILE = "sessions.jsonl"
 VALID_CONDITIONS = ("A1", "A2", "B1", "B2")
 VALID_PHASES = ("A", "B")
 VALID_LAYERS = ("L1", "L1-R", "L2", "L3", "L4", "L5")
+VALID_ITERATION_TYPES = (
+    "implementation",
+    "debug",
+    "refactor",
+    "research",
+    "design_cycle",
+    "playtest",
+    "revision",
+    "refinement",
+)
 VALID_GOVERNANCE_TYPES = (
     "rule_created",
     "rule_modified",
@@ -44,6 +54,7 @@ VALID_GOVERNANCE_TYPES = (
     "escalation",
     "other",
 )
+VALID_INCIDENT_CATEGORIES = ("OPS", "GOV", "COM", "PRD", "RES", "DES")
 
 
 # ---------------------------------------------------------------------------
@@ -301,6 +312,13 @@ def validate_metric_entry(entry: Dict[str, Any]) -> List[str]:
         if not isinstance(i, int) or i < 1:
             errors.append(f"'iterations' must be a positive integer, got: {i!r}")
 
+    if "iteration_type" in entry and entry["iteration_type"] is not None:
+        iteration_type = entry["iteration_type"]
+        if iteration_type not in VALID_ITERATION_TYPES:
+            errors.append(
+                f"'iteration_type' must be one of {VALID_ITERATION_TYPES}, got: {iteration_type!r}"
+            )
+
     if "interventions" in entry:
         h = entry["interventions"]
         if not isinstance(h, int) or h < 0:
@@ -329,6 +347,12 @@ def validate_metric_entry(entry: Dict[str, Any]) -> List[str]:
 
     if "praxis_q" in entry and entry["praxis_q"] is not None:
         errors.extend(_validate_praxis_q(entry["praxis_q"]))
+
+    if "design_quality" in entry and entry["design_quality"] is not None:
+        errors.extend(_validate_design_quality(entry["design_quality"]))
+
+    if "reviewer_feedback" in entry and entry["reviewer_feedback"] is not None:
+        errors.extend(_validate_reviewer_feedback(entry["reviewer_feedback"]))
 
     return errors
 
@@ -380,6 +404,50 @@ def _validate_l1r_observations(observations: Dict[str, Any]) -> List[str]:
     return errors
 
 
+
+def _validate_design_quality(design_quality: Dict[str, Any]) -> List[str]:
+    """Validate creative/design quality sub-metrics."""
+    errors: List[str] = []
+    metrics = ("clarity", "tension", "balance", "elegance")
+    if not isinstance(design_quality, dict):
+        return ["'design_quality' must be an object"]
+
+    for metric in metrics:
+        if metric in design_quality and design_quality[metric] is not None:
+            value = design_quality[metric]
+            if not isinstance(value, int) or not (1 <= value <= 5):
+                errors.append(f"'design_quality.{metric}' must be an integer 1-5, got: {value!r}")
+
+    notes = design_quality.get("notes")
+    if notes is not None and not isinstance(notes, str):
+        errors.append("'design_quality.notes' must be a string")
+
+    return errors
+
+
+def _validate_reviewer_feedback(feedback: Dict[str, Any]) -> List[str]:
+    """Validate external reviewer feedback."""
+    errors: List[str] = []
+    if not isinstance(feedback, dict):
+        return ["'reviewer_feedback' must be an object"]
+
+    for field in ("reviewer_id", "source", "summary"):
+        value = feedback.get(field)
+        if value is not None and not isinstance(value, str):
+            errors.append(f"'reviewer_feedback.{field}' must be a string")
+
+    action_items = feedback.get("action_items")
+    if action_items is not None:
+        if not isinstance(action_items, list) or not all(isinstance(item, str) for item in action_items):
+            errors.append("'reviewer_feedback.action_items' must be an array of strings")
+
+    sentiment = feedback.get("sentiment")
+    if sentiment is not None and sentiment not in ("positive", "mixed", "negative"):
+        errors.append("'reviewer_feedback.sentiment' must be positive, mixed, or negative")
+
+    return errors
+
+
 def _validate_session_boundary(boundary: Dict[str, Any]) -> List[str]:
     """Validate a session boundary observation object."""
     errors: List[str] = []
@@ -419,6 +487,9 @@ def build_metric_entry(
     layer: Optional[str] = None,
     praxis_q: Optional[Dict[str, int]] = None,
     l1r_observations: Optional[Dict[str, Any]] = None,
+    iteration_type: Optional[str] = None,
+    design_quality: Optional[Dict[str, Any]] = None,
+    reviewer_feedback: Optional[Dict[str, Any]] = None,
     session_boundary: Optional[Dict[str, Any]] = None,
     quality_external: Optional[int] = None,
     quality_evaluator_id: Optional[str] = None,
@@ -463,6 +534,15 @@ def build_metric_entry(
             entry["praxis_layer"] = "L1-R"
             entry["layer"] = "L1-R"
 
+    if iteration_type is not None:
+        entry["iteration_type"] = iteration_type
+
+    if design_quality is not None:
+        entry["design_quality"] = design_quality
+
+    if reviewer_feedback is not None:
+        entry["reviewer_feedback"] = reviewer_feedback
+
     if session_boundary is not None:
         entry["session_boundary"] = session_boundary
 
@@ -489,6 +569,46 @@ def build_metric_entry(
         entry["git_commit"] = git_commit
 
     return entry
+
+
+def append_incident_event(
+    praxis_dir: Path,
+    state: Dict[str, Any],
+    description: str,
+    category: Optional[str] = None,
+    root_cause: Optional[str] = None,
+    new_rule: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Append a structured incident entry to governance.jsonl."""
+    if category is not None and category not in VALID_INCIDENT_CATEGORIES:
+        raise ValidationError(
+            f"Invalid incident category '{category}'. "
+            f"Must be one of: {', '.join(VALID_INCIDENT_CATEGORIES)}"
+        )
+
+    incident: Dict[str, Any] = {
+        "id": generate_participant_id()[:8] + "-" + datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S"),
+        "timestamp": _now_iso(),
+        "event_type": "incident",
+        "incident": description.strip(),
+        "phase": state.get("phase", "unknown"),
+        "rule_integrated": False,
+    }
+    if category is not None:
+        incident["incident_category"] = category
+    if root_cause:
+        incident["root_cause"] = root_cause.strip()
+    if new_rule:
+        incident["new_rule_proposed"] = new_rule.strip()
+
+    gov_path = praxis_dir / GOVERNANCE_FILE
+    try:
+        with gov_path.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps(incident, ensure_ascii=False) + "\n")
+    except OSError as exc:
+        raise PraxisError(f"Failed to write incident event: {exc}") from exc
+
+    return incident
 
 
 def append_metric_entry(praxis_dir: Path, entry: Dict[str, Any]) -> None:

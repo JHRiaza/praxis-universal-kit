@@ -40,12 +40,15 @@ from praxis_collector import (
     GOVERNANCE_FILE,
     METRICS_FILE,
     VALID_GOVERNANCE_TYPES,
+    VALID_INCIDENT_CATEGORIES,
+    VALID_ITERATION_TYPES,
     VALID_LAYERS,
     PraxisError,
     InvalidPhaseError,
     StateNotFoundError,
     ValidationError,
     activate_phase_b,
+    append_incident_event,
     append_governance_event,
     append_metric_entry,
     build_metric_entry,
@@ -490,6 +493,13 @@ def cmd_log(args: argparse.Namespace) -> int:
             layer=layer,
             praxis_q=praxis_q,
             l1r_observations=l1r_observations,
+            iteration_type=getattr(args, "iteration_type", None),
+            design_quality=_parse_design_quality(getattr(args, "design_quality", None)),
+            reviewer_feedback=_build_reviewer_feedback(
+                getattr(args, "reviewer_feedback", None),
+                getattr(args, "reviewer_id", None),
+                getattr(args, "reviewer_source", None),
+            ),
             project=getattr(args, "project", None),
             notes=notes,
         )
@@ -656,7 +666,7 @@ def _inject_governance(praxis_dir: Path, state: Dict[str, Any]) -> None:
     Handles both function-based adapters (legacy) and class-based adapters
     (new, inherit from base.PraxisAdapter).
     """
-    templates_dir = _HERE.parent / "templates" / "governance"
+    templates_dir = _HERE.parent / "templates"
     workspace_dir = praxis_dir.parent  # project root
 
     detected = detect_platforms(workspace_dir)
@@ -826,25 +836,32 @@ def cmd_incident(args: argparse.Namespace) -> int:
     print_info("New rule proposal (optional, press Enter to skip):")
     new_rule = ask("  What rule should prevent this?")
 
-    # Build incident entry
-    incident = {
-        "id": generate_participant_id()[:8] + "-" + datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S"),
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-        "event_type": "incident",
-        "incident": description,
-        "root_cause": root_cause or None,
-        "new_rule_proposed": new_rule or None,
-        "rule_integrated": False,
-        "phase": state.get("phase", "unknown"),
-    }
+    category = getattr(args, "category", None)
+    if not category:
+        print_info(
+            "Incident category: OPS=operations, GOV=governance, COM=communication, "
+            "PRD=product, RES=research, DES=design."
+        )
+        category_input = ask("  Category (optional)", "").upper()
+        category = category_input or None
 
-    # Append to canonical governance events file
-    gov_file = praxis_dir / GOVERNANCE_FILE
-    with open(gov_file, "a", encoding="utf-8") as f:
-        f.write(json.dumps(incident, ensure_ascii=False) + "\n")
+    try:
+        incident = append_incident_event(
+            praxis_dir=praxis_dir,
+            state=state,
+            description=description,
+            category=category,
+            root_cause=root_cause or None,
+            new_rule=new_rule or None,
+        )
+    except (PraxisError, ValidationError) as exc:
+        print_err(str(exc))
+        return 1
 
     print()
     print_ok(f"Incident logged: {_c('incident', C.B_RED)}")
+    if category:
+        print_info(f"  Category:      {category}")
     print_info(f"  What happened: {description[:80]}")
     if root_cause:
         print_info(f"  Root cause:    {root_cause[:80]}")
@@ -1172,6 +1189,47 @@ def _days_of_data(entries: List[Dict[str, Any]]) -> int:
     return len(dates)
 
 
+def _parse_design_quality(raw: Optional[str]) -> Optional[Dict[str, Any]]:
+    if not raw:
+        return None
+    parts = [part.strip() for part in raw.split(",")]
+    if len(parts) != 4:
+        raise ValidationError(
+            "--design-quality must contain four comma-separated scores: clarity,tension,balance,elegance"
+        )
+
+    metrics = ("clarity", "tension", "balance", "elegance")
+    values: Dict[str, Any] = {}
+    for metric, part in zip(metrics, parts):
+        try:
+            score = int(part)
+        except ValueError as exc:
+            raise ValidationError(
+                f"Invalid {metric} score '{part}'. Must be an integer 1-5."
+            ) from exc
+        if not (1 <= score <= 5):
+            raise ValidationError(f"Invalid {metric} score '{score}'. Must be between 1 and 5.")
+        values[metric] = score
+    return values
+
+
+def _build_reviewer_feedback(
+    summary: Optional[str],
+    reviewer_id: Optional[str],
+    reviewer_source: Optional[str],
+) -> Optional[Dict[str, Any]]:
+    if not any([summary, reviewer_id, reviewer_source]):
+        return None
+    feedback: Dict[str, Any] = {}
+    if reviewer_id:
+        feedback["reviewer_id"] = reviewer_id.strip()
+    if reviewer_source:
+        feedback["source"] = reviewer_source.strip()
+    if summary:
+        feedback["summary"] = summary.strip()
+    return feedback
+
+
 # ---------------------------------------------------------------------------
 # Argument parser
 # ---------------------------------------------------------------------------
@@ -1220,6 +1278,16 @@ def build_parser() -> argparse.ArgumentParser:
                        help="AI generation cycles (1=first try worked)")
     p_log.add_argument("-h2", "--interventions", type=int, dest="interventions", metavar="N",
                        help="Human corrections/overrides")
+    p_log.add_argument("--iteration-type", choices=list(VALID_ITERATION_TYPES), metavar="TYPE",
+                       help="Iteration type for software or creative/design work")
+    p_log.add_argument("--design-quality", type=str, metavar="C,T,B,E",
+                       help="Creative scores as clarity,tension,balance,elegance (1-5)")
+    p_log.add_argument("--reviewer-feedback", type=str, metavar="TEXT",
+                       help="External reviewer summary for creative/design outputs")
+    p_log.add_argument("--reviewer-id", type=str, metavar="ID",
+                       help="External reviewer identifier")
+    p_log.add_argument("--reviewer-source", type=str, metavar="SOURCE",
+                       help="Feedback source, e.g. playtest, editor, art director")
     p_log.add_argument("-l", "--layer", choices=list(VALID_LAYERS), metavar="LAYER",
                        help="PRAXIS layer (Phase B only; includes L1-R)")
     p_log.add_argument("--l1r", action="store_true",
@@ -1245,6 +1313,8 @@ def build_parser() -> argparse.ArgumentParser:
     p_inc = sub.add_parser("incident", help="Log a governance emergence incident")
     p_inc.add_argument("description", nargs="*",
                        help="What happened (the incident)")
+    p_inc.add_argument("-c", "--category", choices=list(VALID_INCIDENT_CATEGORIES),
+                       help="Incident category: OPS, GOV, COM, PRD, RES, DES")
 
     # survey
     p_surv = sub.add_parser("survey", help="Launch pre or post survey")

@@ -3,7 +3,15 @@
   "title": "PRAXIS Sprint Metrics Schema v0.2",
   "description": "Sprint-level metrics for PRAXIS quasi-experiment. Supports 2x2 factorial design (Model x Structure) and L1-R observations.",
   "type": "object",
-  "required": ["id", "timestamp", "participant_id", "condition", "task", "duration_minutes", "quality_self"],
+  "required": [
+    "id",
+    "timestamp",
+    "participant_id",
+    "condition",
+    "task",
+    "duration_minutes",
+    "quality_self"
+  ],
   "properties": {
     "id": {
       "type": "string",
@@ -20,12 +28,20 @@
     },
     "condition": {
       "type": "string",
-      "enum": ["A1", "A2", "B1", "B2"],
+      "enum": [
+        "A1",
+        "A2",
+        "B1",
+        "B2"
+      ],
       "description": "Experimental condition: A=unstructured, B=PRAXIS-lite; 1=Sonnet, 2=Opus"
     },
     "phase": {
       "type": "string",
-      "enum": ["A", "B"],
+      "enum": [
+        "A",
+        "B"
+      ],
       "description": "Legacy field: Phase A (baseline) or Phase B (governance active)"
     },
     "task": {
@@ -77,7 +93,9 @@
     },
     "corrections": {
       "type": "array",
-      "items": {"type": "string"},
+      "items": {
+        "type": "string"
+      },
       "description": "List of corrections applied"
     },
     "first_attempt": {
@@ -86,15 +104,23 @@
     },
     "praxis_layer": {
       "type": "string",
-      "enum": ["L1", "L1-R", "L2", "L3", "L4", "L5"],
+      "enum": [
+        "L1",
+        "L1-R",
+        "L2",
+        "L3",
+        "L4",
+        "L5"
+      ],
       "description": "Dominant PRAXIS layer (Phase B only)"
     },
     "outputs": {
       "type": "array",
-      "items": {"type": "string"},
+      "items": {
+        "type": "string"
+      },
       "description": "Artifacts produced"
     },
-
     "l1r_observations": {
       "type": "object",
       "description": "L1-R Relational governance observations (v0.2)",
@@ -143,7 +169,6 @@
         }
       }
     },
-
     "governance_events": {
       "type": "array",
       "description": "Governance emergence events (Phase B only)",
@@ -152,7 +177,13 @@
         "properties": {
           "event_type": {
             "type": "string",
-            "enum": ["rule_created", "rule_modified", "rule_pruned", "incident", "escalation"]
+            "enum": [
+              "rule_created",
+              "rule_modified",
+              "rule_pruned",
+              "incident",
+              "escalation"
+            ]
           },
           "description": {
             "type": "string"
@@ -166,27 +197,128 @@
           "timestamp": {
             "type": "string",
             "format": "date-time"
+          },
+          "incident_category": {
+            "type": "string",
+            "enum": [
+              "OPS",
+              "GOV",
+              "COM",
+              "PRD",
+              "RES",
+              "DES"
+            ],
+            "description": "Optional incident domain. DES is used for design, writing, and game-design failures."
           }
         }
       }
     },
-
     "session_boundary": {
       "type": "object",
       "description": "Session boundary observation (if applicable)",
       "properties": {
         "memory_recovery": {
           "type": "string",
-          "enum": ["instant", "partial", "lost"],
+          "enum": [
+            "instant",
+            "partial",
+            "lost"
+          ],
           "description": "How quickly did stored memory recover across session boundary?"
         },
         "calibration_recovery": {
           "type": "string",
-          "enum": ["immediate", "gradual", "significant_degradation"],
+          "enum": [
+            "immediate",
+            "gradual",
+            "significant_degradation"
+          ],
           "description": "How well did execution calibration recover?"
         },
         "notes": {
           "type": "string"
+        }
+      }
+    },
+    "iteration_type": {
+      "type": "string",
+      "enum": [
+        "implementation",
+        "debug",
+        "refactor",
+        "research",
+        "design_cycle",
+        "playtest",
+        "revision",
+        "refinement"
+      ],
+      "description": "Optional subtype of iteration. Supports both software and creative/design cycles."
+    },
+    "design_quality": {
+      "type": "object",
+      "description": "Creative/design quality sub-metrics inspired by tabletop and game design evaluation.",
+      "properties": {
+        "clarity": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5,
+          "description": "How clearly rules, content, or design intent are communicated."
+        },
+        "tension": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5,
+          "description": "How much meaningful friction, stakes, or dramatic pull the work creates."
+        },
+        "balance": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5,
+          "description": "How well the system or piece avoids dominant strategies or lopsided outcomes."
+        },
+        "elegance": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5,
+          "description": "How efficiently the design achieves its goals without unnecessary complexity."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Optional note explaining the design-quality scores."
+        }
+      }
+    },
+    "reviewer_feedback": {
+      "type": "object",
+      "description": "Optional external evaluation notes, useful for playtests, editorial review, and design critique.",
+      "properties": {
+        "reviewer_id": {
+          "type": "string",
+          "description": "Identifier for the reviewer or playtester."
+        },
+        "source": {
+          "type": "string",
+          "description": "Origin of feedback, e.g. playtest, editor, art director."
+        },
+        "summary": {
+          "type": "string",
+          "description": "High-level summary of the external review."
+        },
+        "action_items": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Concrete changes requested by the reviewer."
+        },
+        "sentiment": {
+          "type": "string",
+          "enum": [
+            "positive",
+            "mixed",
+            "negative"
+          ],
+          "description": "Optional overall sentiment of the feedback."
         }
       }
     }

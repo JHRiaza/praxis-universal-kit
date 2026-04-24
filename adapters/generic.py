@@ -49,8 +49,8 @@ class GenericAdapter(PraxisAdapter):
         created: List[str] = []
         dest = workspace_dir / "PRAXIS_GOVERNANCE.md"
 
-        soul = self._soul(templates_dir)
-        agents = self._agents(templates_dir)
+        soul = self._soul(templates_dir, workspace_dir)
+        agents = self._agents(templates_dir, workspace_dir)
         content = (
             _GOVERNANCE_HEADER
             + soul

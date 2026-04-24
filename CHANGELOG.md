@@ -1,5 +1,18 @@
 # PRAXIS Universal Kit — Changelog
 
+## v0.2.1 (2026-04-24)
+
+### Added
+- **Creative/design domain support** — project-type detection in adapters with creative template auto-selection for design-heavy Claude workflows
+- **`templates/creative/CLAUDE_DESIGN_TEMPLATE.md`** — PRAXIS adaptation of the Barrunto design-critique pattern
+- **Creative metrics fields** — `iteration_type`, `design_quality`, and `reviewer_feedback`
+- **`DES` incident category** — structured logging for design, writing, game-design, and playtest failures
+
+### Changed
+- **README and architecture docs updated** — creative/design workflows documented alongside software workflows
+- **Sprint and metrics templates updated** — examples now include playtests, revisions, and design-quality logging
+
+
 ## v0.2.0 (2026-04-15)
 
 ### Added

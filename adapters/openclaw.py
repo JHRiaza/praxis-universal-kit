@@ -102,9 +102,9 @@ class OpenClawAdapter(PraxisAdapter):
     ) -> List[str]:
         created: List[str] = []
 
-        soul = self._soul(templates_dir)
-        agents = self._agents(templates_dir)
-        memory_tmpl = self._memory(templates_dir)
+        soul = self._soul(templates_dir, workspace_dir)
+        agents = self._agents(templates_dir, workspace_dir)
+        memory_tmpl = self._memory(templates_dir, workspace_dir)
 
         # Wrap template content with PRAXIS marker if not a placeholder
         def _wrap(header: str, body: str) -> str:

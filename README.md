@@ -59,6 +59,9 @@ praxis log "What you accomplished" -d 45 -m claude -q 4 -i 2 -h2 1
 | `-q` | Self-rated quality 1-5 | `-q 4` |
 | `-i` | AI generation cycles | `-i 2` (2 tries) |
 | `-h2` | Human corrections | `-h2 1` (corrected once) |
+| `--iteration-type` | Type of cycle | `--iteration-type design_cycle` |
+| `--design-quality` | Creative quality lens | `--design-quality 4,3,4,5` |
+| `--reviewer-feedback` | External review summary | `--reviewer-feedback "Playtesters found pacing flat"` |
 | `--l1r` | Log relational governance observations | `--l1r` (interactive prompts) |
 
 ### 4. Log governance events
@@ -67,7 +70,7 @@ When something breaks and you learn from it:
 ```bash
 praxis incident "AI used outdated library version"
 ```
-This prompts for: what happened, root cause, and whether a new rule should be created.
+This prompts for: what happened, root cause, incident category (`OPS`, `GOV`, `COM`, `PRD`, `RES`, `DES`), and whether a new rule should be created.
 
 ### 5. Activate structured governance (when ready)
 ```bash
@@ -131,6 +134,26 @@ praxis platforms       Show detected AI platforms
 | Cline | .cline/instructions.md | IDE extension |
 | Roo Code | .roo/rules.md | IDE extension |
 | Generic | PRAXIS_GOVERNANCE.md | Any system |
+
+---
+
+## Beyond Software: Creative and Design Work
+
+PRAXIS can now instrument creative workflows alongside software work. If your project contains files such as `project.godot`, `game_design.md`, narrative docs, or design artifacts, adapters can detect it as a creative project and select design-oriented governance.
+
+Creative support includes:
+- `templates/creative/CLAUDE_DESIGN_TEMPLATE.md` for Claude/Cowork style design critique and governance
+- Creative iteration types: `design_cycle`, `playtest`, `revision`, `refinement`
+- Design-quality sub-metrics: clarity, tension, balance, elegance
+- External reviewer tracking for playtests, editors, art direction, and design critique
+- `DES` incident category for design-specific failures and governance emergence
+
+Example logging commands:
+```bash
+praxis log "Reworked encounter economy" -d 55 -m claude --iteration-type design_cycle --design-quality 4,3,2,4
+praxis log "Ran external narrative review" -d 40 -m codex --iteration-type revision --reviewer-feedback "Readers found Act 2 unclear" --reviewer-source editor
+praxis incident "Tutorial wording obscured the core loop" --category DES
+```
 
 ---
 

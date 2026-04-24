@@ -20,6 +20,7 @@
 
 Use `praxis incident "description"` to log new governance events. Each entry captures:
 - What happened (the incident)
+- Incident category: `OPS`, `GOV`, `COM`, `PRD`, `RES`, or `DES`
 - Root cause analysis
 - New rule proposed
 - Rule integrated: Y/N

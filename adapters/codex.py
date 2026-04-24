@@ -58,8 +58,8 @@ class CodexAdapter(PraxisAdapter):
         created: List[str] = []
         dest = workspace_dir / "AGENTS.md"
 
-        agents = self._agents(templates_dir)
-        soul = self._soul(templates_dir)
+        agents = self._agents(templates_dir, workspace_dir)
+        soul = self._soul(templates_dir, workspace_dir)
         content = _AGENTS_HEADER + agents + "\n\n---\n\n## Governance Principles\n\n" + soul
 
         if dest.is_file():

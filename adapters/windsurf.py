@@ -53,8 +53,8 @@ class WindsurfAdapter(PraxisAdapter):
         created: List[str] = []
         dest = workspace_dir / ".windsurfrules"
 
-        soul = self._soul(templates_dir)
-        agents = self._agents(templates_dir)
+        soul = self._soul(templates_dir, workspace_dir)
+        agents = self._agents(templates_dir, workspace_dir)
         content = _WINDSURF_HEADER + soul + "\n\n---\n\n## Operational Procedures\n\n" + agents
 
         if dest.is_file():

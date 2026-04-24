@@ -10,7 +10,7 @@ This guide shows you how to run PRAXIS sprints in Phase B.
 ## What is a sprint?
 
 A sprint is any AI-assisted task that:
-- Has a clear objective ("build X", "write Y", "analyze Z")
+- Has a clear objective ("build X", "write Y", "analyze Z", "rebalance encounter W")
 - Takes 5–120 minutes
 - Produces a measurable output
 - Can be validated against acceptance criteria
@@ -87,6 +87,7 @@ If validation fails twice in a row → **stop and reassess**, don't keep trying.
 
 ```bash
 praxis log "Task description" -d <minutes> -m <model> -q <1-5> -i <cycles> -h2 <corrections> -l <L1-L5>
+praxis log "Task description" --iteration-type <type> --design-quality <clarity,tension,balance,elegance>
 ```
 
 Always record — even partial failures. An unrecorded failure will repeat.
@@ -114,7 +115,10 @@ praxis log "Defined delegation policy" -d 20 -m claude -q 5 -i 1 -h2 0 -l L1
 praxis govern "Added rule: always test after each deploy" --type rule_created
 
 # Log a governance emergence incident
-praxis incident "API key was exposed in logs"
+praxis incident "API key was exposed in logs" --category OPS
+
+# Log a design incident
+praxis incident "Encounter pacing collapsed after round 3" --category DES
 ```
 
 ---
@@ -158,7 +162,7 @@ First, capture the incident:
 ```bash
 praxis incident "What went wrong"
 ```
-This prompts for: what happened, root cause, and whether a new rule should be created.
+This prompts for: what happened, root cause, incident category, and whether a new rule should be created.
 
 Then, if a new rule emerges, add it to your SOUL.md or AGENTS.md and log it:
 ```bash

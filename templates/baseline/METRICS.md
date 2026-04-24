@@ -23,6 +23,7 @@ praxis log "what you did" -d <minutes> -m <model> -q <1-5> -i <cycles> -h2 <corr
 **Example:**
 ```bash
 praxis log "Built the login page" -d 60 -m cursor -q 4 -i 3 -h2 2
+praxis log "Revised onboarding scene" -d 45 -m claude --iteration-type revision
 ```
 
 ---
@@ -34,6 +35,7 @@ Log anything significant you did with AI assistance:
 - Drafting content, editing, translating
 - Analysis, research, summarization
 - Design, planning, architecture decisions
+- Playtesting, encounter tuning, narrative rewrites, visual exploration
 - Any other AI-assisted work that took 10+ minutes
 
 If you forget to log right away, that's okay — log it later with an approximate duration.
@@ -46,7 +48,7 @@ This is **Phase A (Baseline)**. You're working normally, without any governance 
 After 7+ days, you'll run `praxis activate` to start Phase B, where PRAXIS governance
 is added to your AI workflow. The research measures what changes.
 
-**Data collected:** task description, duration, model used, quality rating, iteration count.
+**Data collected:** task description, duration, model used, quality rating, iteration count, and optional creative cycle metadata such as `iteration_type`.
 **Data NOT collected:** your file contents, conversations, project code, personal information.
 
 Check your progress anytime:

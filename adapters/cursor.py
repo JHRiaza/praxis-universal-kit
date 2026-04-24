@@ -51,8 +51,8 @@ class CursorAdapter(PraxisAdapter):
         workspace_dir: Path,
     ) -> List[str]:
         created: List[str] = []
-        soul = self._soul(templates_dir)
-        agents = self._agents(templates_dir)
+        soul = self._soul(templates_dir, workspace_dir)
+        agents = self._agents(templates_dir, workspace_dir)
         content = _RULES_HEADER + soul + "\n\n---\n\n## Operational Procedures\n\n" + agents
 
         cursor_dir = workspace_dir / ".cursor"

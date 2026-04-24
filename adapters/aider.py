@@ -74,8 +74,8 @@ class AiderAdapter(PraxisAdapter):
         created: List[str] = []
 
         # 1. Create / update CONVENTIONS.md
-        soul = self._soul(templates_dir)
-        agents = self._agents(templates_dir)
+        soul = self._soul(templates_dir, workspace_dir)
+        agents = self._agents(templates_dir, workspace_dir)
         conventions_content = (
             _CONVENTIONS_HEADER
             + soul
