@@ -191,6 +191,53 @@ This kit is part of a doctoral thesis that documents governance phenomena in AI-
 
 CC BY-SA 4.0 — see [LICENSE](LICENSE)
 
+## Desktop App (GUI)
+
+PRAXIS Kit also ships with a desktop GUI built with CustomTkinter. It provides the same functionality as the CLI through a visual interface with forms, sliders, and buttons — ideal for researchers who prefer not to use the terminal.
+
+### Install
+
+```bash
+pip install customtkinter
+cd D:\PRAXIS\universal-kit
+python desktop\app.py
+```
+
+### Features
+
+- **Init Wizard** — First-run setup: consent + participant ID generation
+- **Dashboard** — Live status view with phase, metrics summary, days active
+- **Log Sprint** — Visual form with dropdowns, sliders, and number inputs
+- **Export** — One-click anonymized ZIP generation
+- **Creative mode** — Automatically detects creative projects (Godot, game design) and shows extra design quality sub-metrics
+
+### Build standalone .exe
+
+```bash
+pip install customtkinter pyinstaller
+desktop\build_exe.bat
+```
+
+Produces `dist/praxis-desktop.exe` — a single-file Windows executable with no Python installation required.
+
+### Architecture
+
+The desktop app imports `praxis_collector` directly (no subprocess, no CLI parsing). Both the CLI and the GUI can be used interchangeably on the same `.praxis/` directory.
+
+```
+desktop/
+├── app.py              # Main entry point
+├── viewmodel.py        # Controller layer (bridges views ↔ collector)
+├── views/
+│   ├── init_wizard.py  # First-run setup
+│   ├── dashboard.py    # Status overview
+│   ├── log_sprint.py   # Sprint logging form
+│   └── export.py       # ZIP export
+├── build.spec          # PyInstaller spec
+├── build_exe.bat       # Windows build script
+└── requirements.txt    # customtkinter
+```
+
 ---
 
 *PRAXIS Universal Kit v0.2 — 2026-04-15*

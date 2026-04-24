@@ -915,16 +915,16 @@ def detect_platforms(project_dir: Optional[Path] = None) -> List[str]:
     detected: List[str] = []
 
     checks = [
-        ("openclaw", [home / ".openclaw"], []),
-        ("claude_cowork", [root / "CLAUDE.md", home / ".claude"], []),
-        ("codex", [root / "AGENTS.md", root / ".codex"], []),
-        ("cursor", [root / ".cursorrules", root / ".cursor"], []),
-        ("windsurf", [root / ".windsurfrules", root / ".windsurf"], []),
-        ("copilot", [root / ".github" / "copilot-instructions.md"], []),
-        ("aider", [root / ".aider.conf.yml", root / ".aider.conf.yaml"], ["aider"]),
-        ("continue_dev", [root / ".continue"], []),
-        ("cline", [root / ".clinerules", root / ".cline"], []),
-        ("roo_code", [root / ".roorules", root / ".roo"], []),
+        ("openclaw", [home / ".openclaw"], ["openclaw"]),
+        ("claude_cowork", [root / "CLAUDE.md", home / ".claude"], ["claude"]),
+        ("codex", [root / "AGENTS.md", root / ".codex", home / ".codex"], ["codex"]),
+        ("cursor", [root / ".cursorrules", root / ".cursor", home / ".cursor"], ["cursor"]),
+        ("windsurf", [root / ".windsurfrules", root / ".windsurf", home / ".windsurf"], ["windsurf"]),
+        ("copilot", [root / ".github" / "copilot-instructions.md"], ["github-copilot-cli"]),
+        ("aider", [root / ".aider.conf.yml", root / ".aider.conf.yaml", home / ".aider.conf.yml"], ["aider"]),
+        ("continue_dev", [root / ".continue", home / ".continue"], []),
+        ("cline", [root / ".clinerules", root / ".cline", home / ".cline"], ["cline"]),
+        ("roo_code", [root / ".roorules", root / ".roo", home / ".roo"], []),
     ]
 
     for platform_id, paths, executables in checks:
