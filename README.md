@@ -180,7 +180,7 @@ This kit is part of a doctoral thesis that documents governance phenomena in AI-
 @software{herreros2026praxis,
   author = {Herreros Riaza, Javier},
   title = {PRAXIS Universal Kit},
-  version = {0.2.0},
+  version = {0.3.1},
   year = {2026},
   publisher = {Universidad Complutense de Madrid},
   url = {https://github.com/jhriaza/praxis-universal-kit}
@@ -195,12 +195,40 @@ CC BY-SA 4.0 — see [LICENSE](LICENSE)
 
 PRAXIS Kit also ships with a desktop GUI built with CustomTkinter. It provides the same functionality as the CLI through a visual interface with forms, sliders, and buttons — ideal for researchers who prefer not to use the terminal.
 
-### Install
+### Download
+
+Download the latest release for your platform:
+
+| Platform | File | Architecture |
+|----------|------|-------------|
+| **Windows** | `praxis-desktop.exe` | x64 |
+| **macOS** | `PRAXIS-Kit-macOS-arm64.dmg` | Apple Silicon (M1/M2/M3/M4) |
+
+👉 **[Download from GitHub Releases](https://github.com/JHRiaza/praxis-universal-kit/releases/latest)**
+
+No Python installation required — the binaries are self-contained.
+
+### Installation
+
+**Windows:**
+1. Download `praxis-desktop.exe`
+2. You may see a **"Windows protected your PC"** SmartScreen warning — this is normal for unsigned apps
+3. Click **"More info"** → **"Run anyway"**
+4. The app launches directly — no installer needed
+
+**macOS:**
+1. Download and open `PRAXIS-Kit-macOS-arm64.dmg`
+2. Drag **PRAXIS Kit** to your Applications folder
+3. On first launch, macOS will block it ("cannot be verified")
+4. Go to **System Settings → Privacy & Security** → scroll down → click **"Open Anyway"**
+5. Alternatively, right-click (or Control-click) the app → **Open** → confirm
+6. Or run in Terminal: `xattr -cr /Applications/PRAXIS\ Kit.app`
+
+### Run from source (any platform)
 
 ```bash
 pip install customtkinter
-cd D:\PRAXIS\universal-kit
-python desktop\app.py
+python desktop/app.py
 ```
 
 ### Features
@@ -240,5 +268,20 @@ desktop/
 
 ---
 
-*PRAXIS Universal Kit v0.2 — 2026-04-15*
+## Disclaimer & Limitation of Liability
+
+PRAXIS Universal Kit is a **research instrument** developed as part of doctoral work at Universidad Complutense de Madrid. It is provided **"as is"** without warranty of any kind, express or implied.
+
+- **No guarantee of fitness** for any particular purpose. The kit is designed for academic research and may contain bugs or unexpected behavior.
+- **Data is stored locally** on your machine. The developers are not responsible for any data loss, corruption, or unintended exposure.
+- **No automatic data transmission.** The kit does not send any data to external servers. Data export is user-initiated and manually submitted.
+- **Unsigned binaries.** The Windows and macOS desktop apps are not code-signed with developer certificates. Your operating system may display security warnings (see installation instructions above).
+- **Research use only.** This tool is not intended for production environments, critical workflows, or commercial deployment.
+- **Participant autonomy.** All data collection requires explicit consent. Participants can withdraw at any time and request deletion of their data.
+
+By using PRAXIS Universal Kit, you acknowledge that the authors and Universidad Complutense de Madrid shall not be held liable for any damages arising from its use.
+
+---
+
+*PRAXIS Universal Kit v0.3.1 — 2026-04-24*
 *Doctoral research — Universidad Complutense de Madrid*
