@@ -31,10 +31,20 @@ jobs:
         run: brew install python-tk@3.12
       - run: pip install customtkinter pyinstaller
       - run: pyinstaller desktop/build.spec --noconfirm --clean
-      - name: Create .dmg
+      - name: List dist contents (debug)
+        run: find dist -type f | head -30
+      - name: Create .dmg from .app bundle
         run: |
+          # PyInstaller on macOS with console=False creates an .app bundle
+          APP_PATH=$(find dist -name "*.app" -maxdepth 2 | head -1)
+          if [ -z "$APP_PATH" ]; then
+            echo "No .app bundle found, checking for flat binary..."
+            ls -la dist/
+            exit 1
+          fi
+          echo "Found app: $APP_PATH"
           mkdir -p dist/dmg
-          cp -r dist/praxis-desktop.app "dist/dmg/PRAXIS Kit.app"
+          cp -r "$APP_PATH" "dist/dmg/PRAXIS Kit.app"
           hdiutil create -volname "PRAXIS Kit" -srcfolder dist/dmg -ov -format UDZO dist/PRAXIS-Kit-macOS-arm64.dmg
       - uses: actions/upload-artifact@v4
         with:
