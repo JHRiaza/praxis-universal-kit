@@ -21,18 +21,20 @@ jobs:
           path: dist/praxis-desktop.exe
 
   build-macos:
-    runs-on: macos-14  # Apple Silicon (M1)
+    runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Install tkinter (macOS)
+        run: brew install python-tk@3.12
       - run: pip install customtkinter pyinstaller
       - run: pyinstaller desktop/build.spec --noconfirm --clean
       - name: Create .dmg
         run: |
           mkdir -p dist/dmg
-          cp -r dist/praxis-desktop.app dist/dmg/PRAXIS\ Kit.app
+          cp -r dist/praxis-desktop.app "dist/dmg/PRAXIS Kit.app"
           hdiutil create -volname "PRAXIS Kit" -srcfolder dist/dmg -ov -format UDZO dist/PRAXIS-Kit-macOS-arm64.dmg
       - uses: actions/upload-artifact@v4
         with:
@@ -43,17 +45,19 @@ jobs:
     needs: [build-windows, build-macos]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
     steps:
       - uses: actions/download-artifact@v4
         with:
           name: praxis-desktop-windows
-          path: ./artifacts/
+          path: ./artifacts/windows/
       - uses: actions/download-artifact@v4
         with:
           name: praxis-desktop-macos-arm64
-          path: ./artifacts/
+          path: ./artifacts/macos/
       - uses: softprops/action-gh-release@v2
         with:
           files: |
-            ./artifacts/praxis-desktop.exe
-            ./artifacts/PRAXIS-Kit-macOS-arm64.dmg
+            ./artifacts/windows/praxis-desktop.exe
+            ./artifacts/macos/PRAXIS-Kit-macOS-arm64.dmg
