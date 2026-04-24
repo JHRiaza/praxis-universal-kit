@@ -32,20 +32,49 @@ jobs:
       - run: pip install customtkinter pyinstaller
       - run: pyinstaller desktop/build.spec --noconfirm --clean
       - name: List dist contents (debug)
-        run: find dist -type f | head -30
-      - name: Create .dmg from .app bundle
+        run: ls -laR dist/ | head -50
+      - name: Create macOS .app bundle and .dmg
         run: |
-          # PyInstaller on macOS with console=False creates an .app bundle
-          APP_PATH=$(find dist -name "*.app" -maxdepth 2 | head -1)
-          if [ -z "$APP_PATH" ]; then
-            echo "No .app bundle found, checking for flat binary..."
-            ls -la dist/
-            exit 1
-          fi
-          echo "Found app: $APP_PATH"
-          mkdir -p dist/dmg
-          cp -r "$APP_PATH" "dist/dmg/PRAXIS Kit.app"
-          hdiutil create -volname "PRAXIS Kit" -srcfolder dist/dmg -ov -format UDZO dist/PRAXIS-Kit-macOS-arm64.dmg
+          # PyInstaller single-file on macOS creates a flat binary, not .app
+          # We need to wrap it in a proper .app bundle
+          mkdir -p "dist/PRAXIS Kit.app/Contents/MacOS"
+          mkdir -p "dist/PRAXIS Kit.app/Contents/Resources"
+
+          # Copy the binary
+          cp dist/praxis-desktop "dist/PRAXIS Kit.app/Contents/MacOS/PRAXIS Kit"
+
+          # Create Info.plist
+          cat > "dist/PRAXIS Kit.app/Contents/Info.plist" << 'EOF'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>CFBundleName</key>
+            <string>PRAXIS Kit</string>
+            <key>CFBundleDisplayName</key>
+            <string>PRAXIS Kit</string>
+            <key>CFBundleIdentifier</key>
+            <string>com.praxis-kit.desktop</string>
+            <key>CFBundleVersion</key>
+            <string>0.3.0</string>
+            <key>CFBundleShortVersionString</key>
+            <string>0.3.0</string>
+            <key>CFBundleExecutable</key>
+            <string>PRAXIS Kit</string>
+            <key>CFBundlePackageType</key>
+            <string>APPL</string>
+            <key>LSMinimumSystemVersion</key>
+            <string>11.0</string>
+            <key>NSHighResolutionCapable</key>
+            <true/>
+            <key>LSUIElement</key>
+            <false/>
+          </dict>
+          </plist>
+          EOF
+
+          # Create .dmg
+          hdiutil create -volname "PRAXIS Kit" -srcfolder "dist/PRAXIS Kit.app" -ov -format UDZO dist/PRAXIS-Kit-macOS-arm64.dmg
       - uses: actions/upload-artifact@v4
         with:
           name: praxis-desktop-macos-arm64
