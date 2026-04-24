@@ -916,7 +916,7 @@ def detect_platforms(project_dir: Optional[Path] = None) -> List[str]:
 
     checks = [
         ("openclaw", [home / ".openclaw"], ["openclaw"]),
-        ("claude_cowork", [root / "CLAUDE.md", home / ".claude"], ["claude"]),
+        ("claude_cowork", [root / "CLAUDE.md", home / ".claude", home / ".claude.json", home / ".config" / "claude"], ["claude"]),
         ("codex", [root / "AGENTS.md", root / ".codex", home / ".codex"], ["codex"]),
         ("cursor", [root / ".cursorrules", root / ".cursor", home / ".cursor"], ["cursor"]),
         ("windsurf", [root / ".windsurfrules", root / ".windsurf", home / ".windsurf"], ["windsurf"]),
@@ -941,9 +941,28 @@ def detect_platforms(project_dir: Optional[Path] = None) -> List[str]:
 
 
 def _which(name: str) -> Optional[str]:
-    """Cross-platform which/where — stdlib only."""
+    """Cross-platform which/where — stdlib only.
+    On macOS, .app bundles get a minimal PATH, so we expand it."""
     import shutil
-    return shutil.which(name)
+    result = shutil.which(name)
+    if result:
+        return result
+    # macOS .app bundles don't inherit shell PATH — search common locations
+    if sys.platform == "darwin":
+        extra_dirs = [
+            "/usr/local/bin",
+            "/opt/homebrew/bin",
+            str(Path.home() / ".npm/bin"),
+            str(Path.home() / ".local/bin"),
+            str(Path.home() / "Library" / "Python" / "3.12" / "bin"),
+            str(Path.home() / "Library" / "Python" / "3.11" / "bin"),
+            "/opt/local/bin",
+        ]
+        for d in extra_dirs:
+            candidate = Path(d) / name
+            if candidate.is_file():
+                return str(candidate)
+    return None
 
 
 # ---------------------------------------------------------------------------
