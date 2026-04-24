@@ -5,6 +5,12 @@ on:
     tags: ['v*']
   workflow_dispatch:
 
+permissions:
+  contents: write
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   build-windows:
     runs-on: windows-latest
@@ -30,21 +36,21 @@ jobs:
       - name: Install tkinter (macOS)
         run: brew install python-tk@3.12
       - run: pip install customtkinter pyinstaller
-      - run: pyinstaller desktop/build.spec --noconfirm --clean
-      - name: List dist contents (debug)
-        run: ls -laR dist/ | head -50
+      - name: Build with PyInstaller
+        run: pyinstaller desktop/build.spec --noconfirm --clean
+      - name: Debug - list dist
+        run: ls -laR dist/ | head -60
       - name: Create macOS .app bundle and .dmg
         run: |
-          # PyInstaller single-file on macOS creates a flat binary, not .app
-          # We need to wrap it in a proper .app bundle
+          # PyInstaller single-file on macOS creates a flat binary at dist/praxis-desktop
+          # Wrap it in a proper .app bundle
           mkdir -p "dist/PRAXIS Kit.app/Contents/MacOS"
           mkdir -p "dist/PRAXIS Kit.app/Contents/Resources"
-
-          # Copy the binary
+          
           cp dist/praxis-desktop "dist/PRAXIS Kit.app/Contents/MacOS/PRAXIS Kit"
-
-          # Create Info.plist
-          cat > "dist/PRAXIS Kit.app/Contents/Info.plist" << 'EOF'
+          chmod +x "dist/PRAXIS Kit.app/Contents/MacOS/PRAXIS Kit"
+          
+          cat > "dist/PRAXIS Kit.app/Contents/Info.plist" << 'PLIST'
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
           <plist version="1.0">
@@ -67,36 +73,12 @@ jobs:
             <string>11.0</string>
             <key>NSHighResolutionCapable</key>
             <true/>
-            <key>LSUIElement</key>
-            <false/>
           </dict>
           </plist>
-          EOF
-
-          # Create .dmg
+          PLIST
+          
           hdiutil create -volname "PRAXIS Kit" -srcfolder "dist/PRAXIS Kit.app" -ov -format UDZO dist/PRAXIS-Kit-macOS-arm64.dmg
       - uses: actions/upload-artifact@v4
         with:
           name: praxis-desktop-macos-arm64
           path: dist/PRAXIS-Kit-macOS-arm64.dmg
-
-  release:
-    needs: [build-windows, build-macos]
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          name: praxis-desktop-windows
-          path: ./artifacts/windows/
-      - uses: actions/download-artifact@v4
-        with:
-          name: praxis-desktop-macos-arm64
-          path: ./artifacts/macos/
-      - uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            ./artifacts/windows/praxis-desktop.exe
-            ./artifacts/macos/PRAXIS-Kit-macOS-arm64.dmg
