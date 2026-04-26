@@ -256,6 +256,27 @@ class CodexAdapter(PlatformAdapter):
         return _build_manifest_text(phase)
 
 
+class OpenClawAdapter(PlatformAdapter):
+    """OpenClaw adapter — writes to ~/.openclaw/workspace/PRAXIS.md.
+    
+    OpenClaw doesn't use project-level config files. Instead it reads
+    workspace governance files (SOUL.md, AGENTS.md). PRAXIS injects into
+    a dedicated PRAXIS.md in the OpenClaw workspace, which gets loaded
+    as project context automatically.
+    """
+    name = "OpenClaw"
+    filename = "PRAXIS.md"
+    description = "OpenClaw workspace governance (PRAXIS.md)"
+    
+    def __init__(self, project_dir: Path):
+        # Override: OpenClaw lives in ~/.openclaw/workspace/, not project dir
+        super().__init__(project_dir)
+        self._openclaw_dir = Path.home() / ".openclaw" / "workspace"
+    
+    def get_path(self) -> Path:
+        return self._openclaw_dir / self.filename
+
+
 # Registry of all supported platforms
 PLATFORM_ADAPTERS: List[type] = [
     ClaudeAdapter,
@@ -263,6 +284,7 @@ PLATFORM_ADAPTERS: List[type] = [
     CopilotAdapter,
     WindsurfAdapter,
     CodexAdapter,
+    OpenClawAdapter,
 ]
 
 
