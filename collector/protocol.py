@@ -275,6 +275,9 @@ class OpenClawAdapter(PlatformAdapter):
     
     def get_path(self) -> Path:
         return self._openclaw_dir / self.filename
+    
+    def build_content(self, phase: str) -> str:
+        return _build_manifest_text(phase)
 
 
 # Registry of all supported platforms
