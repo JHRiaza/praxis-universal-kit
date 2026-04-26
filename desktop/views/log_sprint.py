@@ -449,6 +449,12 @@ class LogSprintView(ctk.CTkScrollableFrame):
                         updates[k] = int(updates[k])
                     except (ValueError, TypeError):
                         pass
+            # Keep quality_self in sync with quality
+            if "quality" in updates and isinstance(updates["quality"], int):
+                updates["quality_self"] = updates["quality"]
+            # Keep duration_minutes in sync
+            if "duration_min" in updates:
+                updates["duration_minutes"] = updates["duration_min"]
 
             ok = self._vm.update_session_entry(entry_id, updates)
             if ok:

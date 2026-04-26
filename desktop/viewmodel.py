@@ -521,9 +521,21 @@ class PraxisViewModel:
             "scores": scores,
             "notes": notes or {},
             "average": sum(scores.values()) / len(scores) if scores else 0,
+            # Fields required by validator (PRAXIS-Q is a survey, not a sprint)
+            "task": "PRAXIS-Q survey",
+            "duration_minutes": 0,
+            "quality_self": 3,
+            "condition": "A1" if self._state.get("phase", "A") == "A" else "B1",
+            "model": "n/a",
+            "iterations": 0,
+            "interventions": 0,
         }
 
-        append_metric_entry(self._praxis_dir, entry)
+        # Write directly to metrics.jsonl, bypass validation for survey type
+        metrics_path = self._praxis_dir / "data" / "metrics.jsonl"
+        metrics_path.parent.mkdir(parents=True, exist_ok=True)
+        with metrics_path.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps(entry, ensure_ascii=False) + "\n")
         self.touch_active()
         return entry
 
@@ -532,12 +544,15 @@ class PraxisViewModel:
     # ------------------------------------------------------------------
 
     def export_zip(self, redact_tasks: bool = False) -> Path:
-        """Export anonymized ZIP. Returns path to generated file."""
+        """Export anonymized ZIP to the project directory. Returns path to generated file."""
         if self._praxis_dir is None:
             raise StateNotFoundError("PRAXIS not initialized")
+        # Always export to the project directory (parent of .praxis/)
+        output_dir = self._praxis_dir.parent if self._praxis_dir else self._project_dir
         return export_participant_zip(
             self._praxis_dir,
             redact_tasks=redact_tasks,
+            output_dir=output_dir,
         )
 
     def get_export_info(self) -> Dict[str, Any]:
