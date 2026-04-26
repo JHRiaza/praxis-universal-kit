@@ -232,7 +232,7 @@ class PraxisApp(ctk.CTk):
 
         version_label = ctk.CTkLabel(
             self._sidebar,
-            text="v0.4 Desktop",
+            text="v0.4.2 Desktop",
             font=ctk.CTkFont(size=11),
             text_color="gray",
         )

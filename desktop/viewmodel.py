@@ -349,7 +349,7 @@ class PraxisViewModel:
         Returns True if found and updated."""
         if not self._praxis_dir:
             return False
-        metrics_path = self._praxis_dir / "data" / "metrics.jsonl"
+        metrics_path = self._praxis_dir / "metrics.jsonl"
         if not metrics_path.is_file():
             return False
         lines = metrics_path.read_text(encoding="utf-8").splitlines()
@@ -532,7 +532,7 @@ class PraxisViewModel:
         }
 
         # Write directly to metrics.jsonl, bypass validation for survey type
-        metrics_path = self._praxis_dir / "data" / "metrics.jsonl"
+        metrics_path = self._praxis_dir / "metrics.jsonl"
         metrics_path.parent.mkdir(parents=True, exist_ok=True)
         with metrics_path.open("a", encoding="utf-8") as fh:
             fh.write(json.dumps(entry, ensure_ascii=False) + "\n")
