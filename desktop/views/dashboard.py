@@ -1,6 +1,7 @@
 """PRAXIS Desktop — Dashboard View (status overview)
 
 Shows phase, participant ID, days active, metrics summary, session status.
+Sprint 2: session timer indicator, phase badge, unreviewed count.
 """
 
 from __future__ import annotations
@@ -36,29 +37,61 @@ class DashboardView(ctk.CTkScrollableFrame):
         )
         self._subtitle.grid(row=self._next_row(), column=0, columnspan=3, padx=20, pady=(0, 12), sticky="w")
 
-        # --- Session status bar ---
+        # --- Session status bar (Sprint 2: shows live timer) ---
         self._session_bar = ctk.CTkFrame(self, height=44)
         self._session_bar.grid(
             row=self._next_row(), column=0, columnspan=3,
-            padx=20, pady=(0, 16), sticky="ew",
+            padx=20, pady=(0, 8), sticky="ew",
         )
         self._session_bar.grid_propagate(False)
 
         self._session_dot = ctk.CTkLabel(
             self._session_bar,
-            text="● Active",
+            text="● No Session",
             font=ctk.CTkFont(size=13, weight="bold"),
-            text_color="#2ecc71",
+            text_color="gray",
         )
         self._session_dot.pack(side="left", padx=(16, 0), pady=10)
 
+        self._session_timer = ctk.CTkLabel(
+            self._session_bar,
+            text="",
+            font=ctk.CTkFont(size=13, weight="bold"),
+            text_color="white",
+        )
+        self._session_timer.pack(side="left", padx=(12, 0), pady=10)
+
         self._session_msg = ctk.CTkLabel(
             self._session_bar,
-            text="Logging is active",
+            text="",
             font=ctk.CTkFont(size=12),
             text_color="gray",
         )
-        self._session_msg.pack(side="left", padx=(8, 0), pady=10)
+        self._session_msg.pack(side="right", padx=(0, 16), pady=10)
+
+        # --- Phase indicator bar (Sprint 2) ---
+        self._phase_bar = ctk.CTkFrame(self, height=40)
+        self._phase_bar.grid(
+            row=self._next_row(), column=0, columnspan=3,
+            padx=20, pady=(0, 16), sticky="ew",
+        )
+        self._phase_bar.grid_propagate(False)
+
+        self._phase_label = ctk.CTkLabel(
+            self._phase_bar,
+            text="🔴 PRAXIS OFF — Phase A (baseline)",
+            font=ctk.CTkFont(size=13, weight="bold"),
+            text_color="#e74c3c",
+        )
+        self._phase_label.pack(side="left", padx=(16, 0), pady=8)
+
+        self._unreviewed_label = ctk.CTkLabel(
+            self._phase_bar,
+            text="",
+            font=ctk.CTkFont(size=12),
+            text_color="#f39c12",
+        )
+        self._unreviewed_label.pack(side="right", padx=(0, 16), pady=8)
 
         # --- Status cards ---
         self._cards: dict[str, ctk.CTkLabel] = {}
@@ -154,19 +187,51 @@ class DashboardView(ctk.CTkScrollableFrame):
 
         self._subtitle.configure(text="Last updated just now")
 
-        # Session status
-        logging_active = data.get("logging_active", True)
-        if logging_active:
-            self._session_dot.configure(text="● Active", text_color="#2ecc71")
-            self._session_msg.configure(text="Logging is active")
+        # Session status (Sprint 2)
+        session_active = data.get("session_active", False)
+        session_min = data.get("session_elapsed_min", 0)
+        if session_active:
+            mins = int(session_min)
+            hours = mins // 60
+            timer_text = f"{hours}h {mins % 60}m" if hours > 0 else f"{mins} min"
+            self._session_dot.configure(text="🟢", text_color="#2ecc71")
+            self._session_timer.configure(text=f"Session: {timer_text}")
+            self._session_msg.configure(text="Session active")
         else:
-            self._session_dot.configure(text="● Paused", text_color="#e74c3c")
-            self._session_msg.configure(text="Logging is paused")
+            self._session_dot.configure(text="⚫", text_color="gray")
+            self._session_timer.configure(text="")
+            self._session_msg.configure(text="No active session")
+
+        # Phase indicator (Sprint 2)
+        phase = data.get("phase", "A")
+        praxis_on = data.get("praxis_mode_on", False)
+        if phase == "B" and praxis_on:
+            self._phase_label.configure(
+                text="🟢 PRAXIS ON — Phase B (governance active)",
+                text_color="#2ecc71",
+            )
+        elif phase == "B":
+            self._phase_label.configure(
+                text="🟡 Phase B — Governance ready (toggle PRAXIS ON in Settings)",
+                text_color="#f39c12",
+            )
+        else:
+            self._phase_label.configure(
+                text="🔴 PRAXIS OFF — Phase A (baseline)",
+                text_color="#e74c3c",
+            )
+
+        # Unreviewed badge (Sprint 2)
+        unreviewed = data.get("unreviewed_count", 0)
+        if unreviewed > 0:
+            self._unreviewed_label.configure(text=f"⚠️ {unreviewed} unreviewed")
+        else:
+            self._unreviewed_label.configure(text="")
 
         # Update cards
         mapping = {
             "participant_id": data.get("participant_id", "—"),
-            "phase": f"Phase {data.get('phase', '—')}",
+            "phase": f"Phase {phase}",
             "days_active": str(data.get("days_active", 0)),
             "total_entries": str(data.get("total_entries", 0)),
             "avg_quality": (
@@ -200,3 +265,7 @@ class DashboardView(ctk.CTkScrollableFrame):
                 text="No platforms detected.",
                 text_color="gray",
             )
+
+    def timer_refresh(self) -> None:
+        """Called by the app's UI timer to refresh session indicator."""
+        self.refresh()

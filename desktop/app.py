@@ -2,11 +2,15 @@
 
 CustomTkinter GUI wrapping the PRAXIS Universal Kit collector.
 Works as both source (`python desktop/app.py`) and PyInstaller bundle.
+
+Sprint 2: background session timer, auto-save on close,
+settings dialog with PRAXIS ON/OFF toggle, session recovery.
 """
 
 from __future__ import annotations
 
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Optional
 
@@ -49,6 +53,151 @@ WINDOW_SIZE = (780, 620)
 MIN_SIZE = (600, 480)
 
 
+class SettingsDialog(ctk.CTkToplevel):
+    """Settings popup — PRAXIS mode toggle, threshold, project info."""
+
+    def __init__(self, master: Any, vm: PraxisViewModel, app: Any) -> None:
+        super().__init__(master)
+        self._vm = vm
+        self._app = app
+
+        self.title("⚙️ Settings")
+        self.geometry("400x420")
+        self.resizable(False, False)
+        self.transient(master)
+        self.grab_set()
+
+        self.grid_columnconfigure(0, weight=1)
+
+        row = 0
+
+        # Title
+        ctk.CTkLabel(
+            self, text="⚙️ PRAXIS Settings",
+            font=ctk.CTkFont(size=18, weight="bold"),
+        ).grid(row=row, column=0, padx=20, pady=(20, 15), sticky="w")
+        row += 1
+
+        # PRAXIS Mode toggle
+        mode_frame = ctk.CTkFrame(self, fg_color="transparent")
+        mode_frame.grid(row=row, column=0, padx=20, pady=(0, 10), sticky="ew")
+        mode_frame.grid_columnconfigure(1, weight=1)
+
+        ctk.CTkLabel(mode_frame, text="PRAXIS Mode:", font=ctk.CTkFont(size=13, weight="bold")).pack(side="left")
+
+        self._mode_var = ctk.StringVar(value="ON" if vm.is_praxis_mode_on() else "OFF")
+        self._mode_switch = ctk.CTkSwitch(
+            mode_frame,
+            text="",
+            variable=self._mode_var,
+            onvalue="ON",
+            offvalue="OFF",
+            command=self._on_mode_toggle,
+        )
+        self._mode_switch.pack(side="right")
+        if vm.is_praxis_mode_on():
+            self._mode_switch.select()
+        row += 1
+
+        # Phase display (read-only)
+        phase = vm.get_phase()
+        phase_frame = ctk.CTkFrame(self, fg_color="transparent")
+        phase_frame.grid(row=row, column=0, padx=20, pady=(0, 10), sticky="ew")
+
+        phase_color = "#2ecc71" if phase == "B" else "#f39c12"
+        phase_label_text = "Phase B (governance active)" if phase == "B" else "Phase A (baseline)"
+        ctk.CTkLabel(
+            phase_frame, text="Current Phase:",
+            font=ctk.CTkFont(size=13, weight="bold"),
+        ).pack(side="left")
+        self._phase_label = ctk.CTkLabel(
+            phase_frame, text=phase_label_text,
+            font=ctk.CTkFont(size=13, weight="bold"),
+            text_color=phase_color,
+        )
+        self._phase_label.pack(side="right")
+        row += 1
+
+        # Threshold setting
+        thresh_frame = ctk.CTkFrame(self, fg_color="transparent")
+        thresh_frame.grid(row=row, column=0, padx=20, pady=(0, 10), sticky="ew")
+
+        ctk.CTkLabel(
+            thresh_frame, text="Auto-transition after X sessions:",
+            font=ctk.CTkFont(size=13),
+        ).pack(side="left")
+        self._thresh_var = ctk.StringVar(value=str(vm.get_auto_transition_threshold()))
+        ctk.CTkEntry(
+            thresh_frame, textvariable=self._thresh_var, width=60, height=30,
+        ).pack(side="right")
+        row += 1
+
+        # Project directory
+        ctk.CTkLabel(
+            self, text="Project Directory:",
+            font=ctk.CTkFont(size=13, weight="bold"),
+        ).grid(row=row, column=0, padx=20, pady=(10, 4), sticky="w")
+        row += 1
+
+        proj_dir = str(vm.project_dir) if vm.project_dir else "Not set"
+        ctk.CTkLabel(
+            self, text=proj_dir, font=ctk.CTkFont(size=11),
+            text_color="gray", wraplength=360,
+        ).grid(row=row, column=0, padx=20, pady=(0, 10), sticky="w")
+        row += 1
+
+        # Participant ID (read-only)
+        state = vm.state or {}
+        pid = state.get("participant_id", "N/A")
+        ctk.CTkLabel(
+            self, text="Participant ID:",
+            font=ctk.CTkFont(size=13, weight="bold"),
+        ).grid(row=row, column=0, padx=20, pady=(10, 4), sticky="w")
+        row += 1
+        ctk.CTkLabel(
+            self, text=pid, font=ctk.CTkFont(size=11), text_color="gray",
+        ).grid(row=row, column=0, padx=20, pady=(0, 20), sticky="w")
+        row += 1
+
+        # Save button
+        ctk.CTkButton(
+            self, text="Save & Close", height=36,
+            font=ctk.CTkFont(size=13, weight="bold"),
+            command=self._save_and_close,
+        ).grid(row=row, column=0, padx=20, pady=(10, 20), sticky="ew")
+
+        # Warning label
+        self._warn_label = ctk.CTkLabel(
+            self, text="", font=ctk.CTkFont(size=12),
+            text_color="#f39c12",
+        )
+        self._warn_label.grid(row=row + 1, column=0, padx=20, pady=(0, 10), sticky="w")
+
+    def _on_mode_toggle(self) -> None:
+        if self._mode_var.get() == "OFF" and self._vm.get_phase() == "B":
+            # Can't go back to A
+            self._mode_var.set("ON")
+            self._mode_switch.select()
+            self._warn_label.configure(
+                text="⚠️ Cannot deactivate PRAXIS once Phase B is active."
+            )
+
+    def _save_and_close(self) -> None:
+        # Save threshold
+        try:
+            thresh = int(self._thresh_var.get())
+            self._vm.set_auto_transition_threshold(thresh)
+        except ValueError:
+            pass
+
+        # Save mode
+        self._vm.set_praxis_mode(self._mode_var.get() == "ON")
+
+        # Save config
+        self._app._save_app_config()
+        self.destroy()
+
+
 class PraxisApp(ctk.CTk):
     """Main application window."""
 
@@ -83,7 +232,7 @@ class PraxisApp(ctk.CTk):
 
         version_label = ctk.CTkLabel(
             self._sidebar,
-            text="v0.3 Desktop",
+            text="v0.4 Desktop",
             font=ctk.CTkFont(size=11),
             text_color="gray",
         )
@@ -92,13 +241,13 @@ class PraxisApp(ctk.CTk):
         # Sidebar buttons — new order:
         # 1. 📊 Dashboard
         # 2. 📝 PRAXIS-Q
-        # 3. ⚡ Log Sprint
+        # 3. 📋 Sessions
         # 4. 📦 Export
         self._nav_buttons: list[ctk.CTkButton] = []
         self._nav_labels = [
             "📊 Dashboard",
             "📝 PRAXIS-Q",
-            "⚡ Log Sprint",
+            "📋 Sessions",
             "📦 Export",
         ]
         self._nav_callbacks = [
@@ -136,37 +285,20 @@ class PraxisApp(ctk.CTk):
         # Session status indicator
         self._session_status = ctk.CTkLabel(
             self._session_frame,
-            text="● Active",
+            text="● No Session",
             font=ctk.CTkFont(size=12, weight="bold"),
-            text_color="#2ecc71",
+            text_color="gray",
         )
         self._session_status.pack(padx=8, pady=(4, 4), anchor="w")
 
-        # Start Logging button
-        self._start_btn = ctk.CTkButton(
+        # Session timer display
+        self._session_timer_label = ctk.CTkLabel(
             self._session_frame,
-            text="▶ Start Logging",
-            height=30,
-            font=ctk.CTkFont(size=12, weight="bold"),
-            fg_color="#2ecc71",
-            hover_color="#27ae60",
-            text_color="white",
-            command=self._start_logging,
+            text="",
+            font=ctk.CTkFont(size=11),
+            text_color="gray",
         )
-        self._start_btn.pack(padx=8, pady=(0, 4), fill="x")
-
-        # Stop PRAXIS button
-        self._stop_btn = ctk.CTkButton(
-            self._session_frame,
-            text="⏹ Stop PRAXIS",
-            height=30,
-            font=ctk.CTkFont(size=12, weight="bold"),
-            fg_color="#e74c3c",
-            hover_color="#c0392b",
-            text_color="white",
-            command=self._stop_logging,
-        )
-        self._stop_btn.pack(padx=8, pady=(0, 4), fill="x")
+        self._session_timer_label.pack(padx=8, pady=(0, 4), anchor="w")
 
         # Initialize PRAXIS button (re-init)
         self._reinit_btn = ctk.CTkButton(
@@ -183,6 +315,21 @@ class PraxisApp(ctk.CTk):
         )
         self._reinit_btn.pack(padx=8, pady=(4, 4), fill="x")
 
+        # Settings button at bottom of sidebar
+        self._settings_btn = ctk.CTkButton(
+            self._sidebar,
+            text="⚙️ Settings",
+            fg_color="transparent",
+            text_color=("gray10", "gray90"),
+            hover_color=("gray70", "gray30"),
+            anchor="w",
+            height=30,
+            font=ctk.CTkFont(size=13),
+            command=self._show_settings,
+        )
+        self._settings_btn.grid(row=11, column=0, padx=8, pady=(4, 12), sticky="ew")
+        self._settings_btn.grid_remove()  # hidden until initialized
+
         # Main content area
         self._content = ctk.CTkFrame(self, fg_color="transparent")
         self._content.grid(row=0, column=1, sticky="nsew", padx=4, pady=4)
@@ -192,64 +339,189 @@ class PraxisApp(ctk.CTk):
         # Current view
         self._current_view: Optional[ctk.CTkFrame] = None
 
+        # Background timer for session checkpoint (every 60s)
+        self._checkpoint_job = None
+        # Background timer for UI refresh (every 30s)
+        self._ui_timer_job = None
+
+        # Handle window close
+        self.protocol("WM_DELETE_WINDOW", self._on_close)
+
         # Try to auto-detect existing PRAXIS in cwd
         self._try_autoload()
 
-    def _try_autoload(self) -> None:
-        """Try to find and load an existing PRAXIS state.
-        Checks: 1) saved last-used path, 2) cwd walk-up, 3) home dir."""
-        from viewmodel import find_praxis_dir
+    # ------------------------------------------------------------------
+    # Window close — auto-save session
+    # ------------------------------------------------------------------
 
-        # 1. Check saved last-used path
-        config_path = self._get_config_path()
-        if config_path.is_file():
-            try:
-                cfg = json.loads(config_path.read_text(encoding="utf-8"))
-                saved_dir = cfg.get("last_project_dir")
-                if saved_dir:
-                    praxis_dir = Path(saved_dir) / ".praxis"
-                    if praxis_dir.is_dir() and (praxis_dir / "state.json").is_file():
-                        project_dir = Path(saved_dir)
-                        self._vm.set_project_dir(project_dir)
-                        if self._vm.is_initialized():
-                            self._show_main_tabs()
-                            self._show_dashboard()
-                            return
-            except Exception:
-                pass  # Ignore corrupt config, fall through
+    def _on_close(self) -> None:
+        """Handle window close: auto-save session, cancel timers."""
+        # Cancel timers
+        if self._checkpoint_job:
+            self.after_cancel(self._checkpoint_job)
+            self._checkpoint_job = None
+        if self._ui_timer_job:
+            self.after_cancel(self._ui_timer_job)
+            self._ui_timer_job = None
 
-        # 2. Check cwd walk-up
-        praxis_dir = find_praxis_dir()
-        if praxis_dir is not None:
-            project_dir = praxis_dir.parent
-            self._vm.set_project_dir(project_dir)
-            if self._vm.is_initialized():
-                self._save_last_project(project_dir)
-                self._show_main_tabs()
-                self._show_dashboard()
-                return
+        # Auto-save session
+        if self._vm.is_session_active():
+            entry = self._vm.auto_save_session()
+            if entry:
+                # Save session state to config for possible recovery
+                self._save_app_config()
+        else:
+            self._save_app_config()
 
-        # 3. No existing state — show init wizard
-        self._show_init_wizard()
+        self.destroy()
+
+    # ------------------------------------------------------------------
+    # Config persistence
+    # ------------------------------------------------------------------
 
     def _get_config_path(self) -> Path:
         """Return path to the app config file (persists across sessions)."""
-        if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
-            base = Path.home()
-        else:
-            base = Path.home()
-        return base / ".praxis_desktop_config.json"
+        return Path.home() / ".praxis_desktop_config.json"
 
     def _save_last_project(self, project_dir: Path) -> None:
         """Save the last-used project directory for auto-load on next launch."""
+        self._save_app_config()
+
+    def _save_app_config(self) -> None:
+        """Save full app config including session state."""
         config_path = self._get_config_path()
+        config = {
+            "last_project_dir": str(self._vm._project_dir) if self._vm._project_dir else None,
+            "praxis_mode_on": self._vm.is_praxis_mode_on(),
+            "auto_transition_threshold": self._vm.get_auto_transition_threshold(),
+        }
+        # Save active session state for recovery
+        if self._vm.is_session_active() and self._vm.get_session_start():
+            config["active_session_start"] = (
+                self._vm.get_session_start().isoformat()
+            )
         try:
             config_path.write_text(
-                json.dumps({"last_project_dir": str(project_dir)}),
+                json.dumps(config, indent=2),
                 encoding="utf-8",
             )
         except Exception:
             pass
+
+    def _load_app_config(self) -> dict:
+        """Load app config. Returns empty dict on failure."""
+        config_path = self._get_config_path()
+        if config_path.is_file():
+            try:
+                return json.loads(config_path.read_text(encoding="utf-8"))
+            except Exception:
+                pass
+        return {}
+
+    # ------------------------------------------------------------------
+    # Background timer
+    # ------------------------------------------------------------------
+
+    def _start_checkpoint_timer(self) -> None:
+        """Start the 60-second checkpoint timer for session state."""
+        if self._checkpoint_job:
+            self.after_cancel(self._checkpoint_job)
+        self._checkpoint_job = self.after(60000, self._checkpoint_tick)
+
+    def _checkpoint_tick(self) -> None:
+        """Write session checkpoint to config every 60s."""
+        if self._vm.is_session_active():
+            self._save_app_config()
+        self._checkpoint_job = self.after(60000, self._checkpoint_tick)
+
+    def _start_ui_timer(self) -> None:
+        """Start the 30-second UI refresh timer."""
+        if self._ui_timer_job:
+            self.after_cancel(self._ui_timer_job)
+        self._ui_timer_job = self.after(30000, self._ui_tick)
+
+    def _ui_tick(self) -> None:
+        """Refresh UI elements that need periodic updates (timer, session status)."""
+        self._update_session_controls()
+        # Update current view if it has a timer_refresh method
+        if self._current_view and hasattr(self._current_view, "timer_refresh"):
+            self._current_view.timer_refresh()
+        self._ui_timer_job = self.after(30000, self._ui_tick)
+
+    # ------------------------------------------------------------------
+    # Auto-load & session recovery
+    # ------------------------------------------------------------------
+
+    def _try_autoload(self) -> None:
+        """Try to find and load an existing PRAXIS state.
+        Checks: 1) saved last-used path, 2) cwd walk-up, 3) home dir.
+        Also handles session recovery from interrupted sessions."""
+        from viewmodel import find_praxis_dir
+
+        cfg = self._load_app_config()
+
+        # Restore PRAXIS mode settings
+        self._vm._praxis_mode_on = cfg.get("praxis_mode_on", False)
+        self._vm.set_auto_transition_threshold(cfg.get("auto_transition_threshold", 10))
+
+        loaded = False
+
+        # 1. Check saved last-used path
+        saved_dir = cfg.get("last_project_dir")
+        if saved_dir:
+            praxis_dir = Path(saved_dir) / ".praxis"
+            if praxis_dir.is_dir() and (praxis_dir / "state.json").is_file():
+                project_dir = Path(saved_dir)
+                self._vm.set_project_dir(project_dir)
+                if self._vm.is_initialized():
+                    loaded = True
+
+        # 2. Check cwd walk-up
+        if not loaded:
+            praxis_dir = find_praxis_dir()
+            if praxis_dir is not None:
+                project_dir = praxis_dir.parent
+                self._vm.set_project_dir(project_dir)
+                if self._vm.is_initialized():
+                    self._save_last_project(project_dir)
+                    loaded = True
+
+        if loaded:
+            # Session recovery: check for interrupted session
+            active_session_start = cfg.get("active_session_start")
+            if active_session_start:
+                try:
+                    start_dt = datetime.fromisoformat(active_session_start)
+                    # Check if there's already a matching entry in metrics
+                    recovered = self._vm.recover_session(start_dt)
+                    if recovered:
+                        dur = recovered.get("duration_min", 0)
+                        ts = recovered.get("timestamp", "")[:16]
+                        # Show recovery notification after UI is ready
+                        self.after(500, lambda: self._show_recovery_notification(ts, dur))
+                except Exception:
+                    pass
+
+            # Start a new session
+            self._vm.start_session()
+            self._show_main_tabs()
+            self._show_dashboard()
+            self._start_checkpoint_timer()
+            self._start_ui_timer()
+            return
+
+        # 3. No existing state — show init wizard
+        self._show_init_wizard()
+
+    def _show_recovery_notification(self, timestamp: str, duration: int) -> None:
+        """Show a brief notification about a recovered session."""
+        # Just update the session status briefly
+        self._session_status.configure(
+            text=f"↻ Recovered session from {timestamp}",
+            text_color="#f39c12",
+        )
+        # Reset after 5 seconds
+        self.after(5000, self._update_session_controls)
 
     # ------------------------------------------------------------------
     # Navigation helpers
@@ -271,6 +543,7 @@ class PraxisApp(ctk.CTk):
         self._clear_content()
         self._set_nav_visible(False)
         self._session_frame.grid_remove()
+        self._settings_btn.grid_remove()
         self._current_view = InitWizardView(
             self._content,
             vm=self._vm,
@@ -280,48 +553,46 @@ class PraxisApp(ctk.CTk):
 
     def _on_init_complete(self) -> None:
         """Called when the init wizard finishes."""
-        # Save project dir for auto-load on next launch
         if self._vm._project_dir:
             self._save_last_project(self._vm._project_dir)
+        # Start a new session
+        self._vm.start_session()
         self._show_main_tabs()
         self._show_dashboard()
+        self._start_checkpoint_timer()
+        self._start_ui_timer()
 
     def _show_main_tabs(self) -> None:
         """Enable sidebar navigation after initialization."""
         self._set_nav_visible(True)
         self._session_frame.grid()
+        self._settings_btn.grid()
         self._update_session_controls()
 
     def _update_session_controls(self) -> None:
-        """Update session control button states based on logging status."""
+        """Update session control button states based on session status."""
         if not self._vm.is_initialized():
             return
 
-        active = self._vm.is_logging_active()
-        if active:
-            self._session_status.configure(text="● Active", text_color="#2ecc71")
-            self._start_btn.configure(state="disabled", fg_color="#1a7a42")
-            self._stop_btn.configure(state="normal", fg_color="#e74c3c")
+        if self._vm.is_session_active():
+            elapsed = self._vm.get_session_elapsed_minutes()
+            mins = int(elapsed)
+            self._session_status.configure(
+                text="🟢 Session active", text_color="#2ecc71"
+            )
+            self._session_timer_label.configure(
+                text=f"⏱ {mins} min elapsed"
+            )
         else:
-            self._session_status.configure(text="● Paused", text_color="#e74c3c")
-            self._start_btn.configure(state="normal", fg_color="#2ecc71")
-            self._stop_btn.configure(state="disabled", fg_color="#7a1a1a")
-
-    def _start_logging(self) -> None:
-        """Start PRAXIS session logging."""
-        self._vm.start_logging()
-        self._update_session_controls()
-
-    def _stop_logging(self) -> None:
-        """Stop/pause PRAXIS session logging."""
-        self._vm.stop_logging()
-        self._update_session_controls()
+            self._session_status.configure(
+                text="● No active session", text_color="gray"
+            )
+            self._session_timer_label.configure(text="")
 
     def _show_dashboard(self) -> None:
         self._clear_content()
         self._current_view = DashboardView(self._content, vm=self._vm)
         self._current_view.grid(row=0, column=0, sticky="nsew")
-        # Refresh data
         if hasattr(self._current_view, "refresh"):
             self._current_view.refresh()
 
@@ -332,13 +603,30 @@ class PraxisApp(ctk.CTk):
 
     def _show_log_sprint(self) -> None:
         self._clear_content()
-        self._current_view = LogSprintView(self._content, vm=self._vm)
+        self._current_view = LogSprintView(self._content, vm=self._vm, app=self)
         self._current_view.grid(row=0, column=0, sticky="nsew")
 
     def _show_export(self) -> None:
         self._clear_content()
         self._current_view = ExportView(self._content, vm=self._vm)
         self._current_view.grid(row=0, column=0, sticky="nsew")
+
+    def _show_settings(self) -> None:
+        SettingsDialog(self, vm=self._vm, app=self)
+
+    # ------------------------------------------------------------------
+    # Legacy compatibility (start/stop logging → session controls)
+    # ------------------------------------------------------------------
+
+    def _start_logging(self) -> None:
+        """Start PRAXIS session logging."""
+        self._vm.start_logging()
+        self._update_session_controls()
+
+    def _stop_logging(self) -> None:
+        """Stop/pause PRAXIS session logging."""
+        self._vm.stop_logging()
+        self._update_session_controls()
 
 
 def main() -> None:

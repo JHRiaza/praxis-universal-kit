@@ -2,11 +2,16 @@
 
 Bridges CustomTkinter views to praxis_collector functions.
 No subprocess, no CLI parsing — direct Python imports.
+
+Sprint 2 additions: background session timer, auto-save on close,
+phase management, auto-transition logic, session recovery.
 """
 
 from __future__ import annotations
 
+import json
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -90,6 +95,15 @@ class PraxisViewModel:
         self._praxis_dir: Optional[Path] = None
         self._state: Optional[Dict[str, Any]] = None
 
+        # Sprint 2: session timer state
+        self._session_start: Optional[datetime] = None
+        self._session_active: bool = False
+
+        # Sprint 2: PRAXIS phase settings
+        self._praxis_mode_on: bool = False
+        self._auto_transition_threshold: int = 10
+        self._transition_prompted: bool = False
+
     # ------------------------------------------------------------------
     # Project / state management
     # ------------------------------------------------------------------
@@ -171,6 +185,197 @@ class PraxisViewModel:
             touch_last_active(self._praxis_dir)
 
     # ------------------------------------------------------------------
+    # Sprint 2: Session Timer & Auto-Save
+    # ------------------------------------------------------------------
+
+    def start_session(self) -> None:
+        """Start a new background session timer."""
+        self._session_start = datetime.now(timezone.utc)
+        self._session_active = True
+
+    def end_session(self) -> Optional[Dict[str, Any]]:
+        """End the current session and return the auto-saved entry, or None."""
+        if not self._session_active or self._session_start is None:
+            return None
+        entry = self._build_auto_session_entry()
+        if entry and self._praxis_dir:
+            append_metric_entry(self._praxis_dir, entry)
+        self._session_active = False
+        self._session_start = None
+        return entry
+
+    def discard_session(self) -> None:
+        """Discard the current session without saving."""
+        self._session_active = False
+        self._session_start = None
+
+    def get_session_elapsed_minutes(self) -> float:
+        """Return elapsed minutes since session start, or 0 if no session."""
+        if not self._session_active or self._session_start is None:
+            return 0.0
+        delta = datetime.now(timezone.utc) - self._session_start
+        return max(0.0, delta.total_seconds() / 60.0)
+
+    def is_session_active(self) -> bool:
+        return self._session_active
+
+    def get_session_start(self) -> Optional[datetime]:
+        return self._session_start
+
+    def set_session_start(self, start: datetime) -> None:
+        """Resume a session from a given start time (for recovery)."""
+        self._session_start = start
+        self._session_active = True
+
+    def _build_auto_session_entry(self) -> Optional[Dict[str, Any]]:
+        """Build an auto-logged session entry with null fields."""
+        if self._session_start is None:
+            return None
+        now = datetime.now(timezone.utc)
+        duration = max(1, round((now - self._session_start).total_seconds() / 60.0))
+        phase = self._state.get("phase", "A") if self._state else "A"
+        participant_id = self._state.get("participant_id") if self._state else None
+        entry = {
+            "id": praxis_collector._generate_entry_id("sprint"),
+            "type": "sprint",
+            "timestamp": self._session_start.isoformat().replace("+00:00", "Z"),
+            "duration_min": duration,
+            "model": None,
+            "quality": None,
+            "task": None,
+            "iterations": None,
+            "interventions": None,
+            "platforms": [],
+            "phase": phase,
+            "participant_id": participant_id,
+            "reviewed": False,
+            "notes": None,
+        }
+        return entry
+
+    def auto_save_session(self) -> Optional[Dict[str, Any]]:
+        """Auto-save current session on close. Returns the entry or None."""
+        return self.end_session()
+
+    def recover_session(self, start_time: datetime) -> Optional[Dict[str, Any]]:
+        """Recover an interrupted session and auto-save it."""
+        self._session_start = start_time
+        self._session_active = True
+        entry = self._build_auto_session_entry()
+        if entry and self._praxis_dir:
+            append_metric_entry(self._praxis_dir, entry)
+        self._session_active = False
+        self._session_start = None
+        return entry
+
+    # ------------------------------------------------------------------
+    # Sprint 2: Phase Management & Auto-Transition
+    # ------------------------------------------------------------------
+
+    def get_phase(self) -> str:
+        """Get the current phase (A or B)."""
+        if self._state:
+            return self._state.get("phase", "A")
+        return "A"
+
+    def is_praxis_mode_on(self) -> bool:
+        return self._praxis_mode_on
+
+    def set_praxis_mode(self, on: bool) -> str:
+        """Toggle PRAXIS mode. Returns current phase after toggle.
+        Once Phase B is activated, you can't go back to A."""
+        if on:
+            self._praxis_mode_on = True
+            if self._state and self._state.get("phase") != "B":
+                self._state["phase"] = "B"
+                if self._praxis_dir:
+                    save_state(self._praxis_dir, self._state)
+        else:
+            if self._state and self._state.get("phase") == "B":
+                # Can't go back to A once activated
+                self._praxis_mode_on = True  # keep on
+                return "B"
+            self._praxis_mode_on = False
+        return self.get_phase()
+
+    def get_auto_transition_threshold(self) -> int:
+        return self._auto_transition_threshold
+
+    def set_auto_transition_threshold(self, value: int) -> None:
+        self._auto_transition_threshold = max(1, value)
+
+    def check_auto_transition(self) -> Optional[int]:
+        """Check if Phase A session count meets the threshold.
+        Returns the count if threshold met and not yet prompted, else None."""
+        if not self._state or self._state.get("phase") == "B":
+            return None
+        if self._transition_prompted:
+            return None
+        entries = load_all_metrics(self._praxis_dir) if self._praxis_dir else []
+        phase_a_count = sum(
+            1 for e in entries
+            if e.get("type") == "sprint" and e.get("phase") == "A"
+        )
+        if phase_a_count >= self._auto_transition_threshold:
+            self._transition_prompted = True
+            return phase_a_count
+        return None
+
+    def activate_phase_b(self) -> None:
+        """Activate Phase B governance."""
+        if self._state and self._praxis_dir:
+            self._state["phase"] = "B"
+            self._praxis_mode_on = True
+            save_state(self._praxis_dir, self._state)
+
+    # ------------------------------------------------------------------
+    # Sprint 2: Metrics helpers for Review/Edit view
+    # ------------------------------------------------------------------
+
+    def get_recent_sessions(self, limit: int = 50) -> List[Dict[str, Any]]:
+        """Get recent sprint entries, newest first."""
+        if not self._praxis_dir:
+            return []
+        entries = load_all_metrics(self._praxis_dir)
+        sprints = [e for e in entries if e.get("type") == "sprint"]
+        sprints.reverse()  # newest first
+        return sprints[:limit]
+
+    def update_session_entry(self, entry_id: str, updates: Dict[str, Any]) -> bool:
+        """Update a specific session entry in metrics.jsonl by id.
+        Returns True if found and updated."""
+        if not self._praxis_dir:
+            return False
+        metrics_path = self._praxis_dir / "data" / "metrics.jsonl"
+        if not metrics_path.is_file():
+            return False
+        lines = metrics_path.read_text(encoding="utf-8").splitlines()
+        found = False
+        new_lines = []
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                entry = json.loads(line)
+            except json.JSONDecodeError:
+                new_lines.append(line)
+                continue
+            if entry.get("id") == entry_id:
+                entry.update(updates)
+                entry["reviewed"] = True
+                found = True
+            new_lines.append(json.dumps(entry, ensure_ascii=False))
+        if found:
+            metrics_path.write_text("\n".join(new_lines) + "\n", encoding="utf-8")
+        return found
+
+    def get_unreviewed_count(self) -> int:
+        """Count unreviewed sprint entries."""
+        entries = self.get_recent_sessions(limit=1000)
+        return sum(1 for e in entries if not e.get("reviewed", True))
+
+    # ------------------------------------------------------------------
     # Dashboard data
     # ------------------------------------------------------------------
 
@@ -207,6 +412,15 @@ class PraxisViewModel:
             if p not in platforms:
                 platforms.append(p)
 
+        # Unreviewed count
+        unreviewed_count = 0
+        if self._praxis_dir:
+            all_entries = load_all_metrics(self._praxis_dir)
+            unreviewed_count = sum(
+                1 for e in all_entries
+                if e.get("type") == "sprint" and not e.get("reviewed", True)
+            )
+
         return {
             "initialized": True,
             "participant_id": state.get("participant_id", "N/A"),
@@ -224,6 +438,10 @@ class PraxisViewModel:
             "first_entry": first_ts,
             "last_entry": last_ts,
             "platforms": platforms,
+            "unreviewed_count": unreviewed_count,
+            "session_active": self._session_active,
+            "session_elapsed_min": self.get_session_elapsed_minutes(),
+            "praxis_mode_on": self._praxis_mode_on,
         }
 
     # ------------------------------------------------------------------
