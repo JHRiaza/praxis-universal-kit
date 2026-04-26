@@ -14,7 +14,9 @@ import json
 import os
 import platform
 import re
+import shutil
 import subprocess
+import sys
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -943,7 +945,6 @@ def detect_platforms(project_dir: Optional[Path] = None) -> List[str]:
 def _which(name: str) -> Optional[str]:
     """Cross-platform which/where — stdlib only.
     On macOS, .app bundles get a minimal PATH, so we expand it."""
-    import shutil
     result = shutil.which(name)
     if result:
         return result
