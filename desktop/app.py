@@ -55,7 +55,7 @@ MIN_SIZE = (600, 480)
 
 
 class SettingsDialog(ctk.CTkToplevel):
-    """Settings popup — PRAXIS mode toggle, threshold, project info."""
+    """Settings popup — threshold, project info."""
 
     def __init__(self, master: Any, vm: PraxisViewModel, app: Any) -> None:
         super().__init__(master)
@@ -63,7 +63,7 @@ class SettingsDialog(ctk.CTkToplevel):
         self._app = app
 
         self.title("⚙️ Settings")
-        self.geometry("400x420")
+        self.geometry("400x300")
         self.resizable(False, False)
         self.transient(master)
         self.grab_set()
@@ -79,27 +79,6 @@ class SettingsDialog(ctk.CTkToplevel):
         ).grid(row=row, column=0, padx=20, pady=(20, 15), sticky="w")
         row += 1
 
-        # PRAXIS Mode toggle
-        mode_frame = ctk.CTkFrame(self, fg_color="transparent")
-        mode_frame.grid(row=row, column=0, padx=20, pady=(0, 10), sticky="ew")
-        mode_frame.grid_columnconfigure(1, weight=1)
-
-        ctk.CTkLabel(mode_frame, text="PRAXIS Mode:", font=ctk.CTkFont(size=13, weight="bold")).pack(side="left")
-
-        self._mode_var = ctk.StringVar(value="ON" if vm.is_praxis_mode_on() else "OFF")
-        self._mode_switch = ctk.CTkSwitch(
-            mode_frame,
-            text="",
-            variable=self._mode_var,
-            onvalue="ON",
-            offvalue="OFF",
-            command=self._on_mode_toggle,
-        )
-        self._mode_switch.pack(side="right")
-        if vm.is_praxis_mode_on():
-            self._mode_switch.select()
-        row += 1
-
         # Phase display (read-only)
         phase = vm.get_phase()
         phase_frame = ctk.CTkFrame(self, fg_color="transparent")
@@ -111,12 +90,11 @@ class SettingsDialog(ctk.CTkToplevel):
             phase_frame, text="Current Phase:",
             font=ctk.CTkFont(size=13, weight="bold"),
         ).pack(side="left")
-        self._phase_label = ctk.CTkLabel(
+        ctk.CTkLabel(
             phase_frame, text=phase_label_text,
             font=ctk.CTkFont(size=13, weight="bold"),
             text_color=phase_color,
-        )
-        self._phase_label.pack(side="right")
+        ).pack(side="right")
         row += 1
 
         # Threshold setting
@@ -167,22 +145,6 @@ class SettingsDialog(ctk.CTkToplevel):
             command=self._save_and_close,
         ).grid(row=row, column=0, padx=20, pady=(10, 20), sticky="ew")
 
-        # Warning label
-        self._warn_label = ctk.CTkLabel(
-            self, text="", font=ctk.CTkFont(size=12),
-            text_color="#f39c12",
-        )
-        self._warn_label.grid(row=row + 1, column=0, padx=20, pady=(0, 10), sticky="w")
-
-    def _on_mode_toggle(self) -> None:
-        if self._mode_var.get() == "OFF" and self._vm.get_phase() == "B":
-            # Can't go back to A
-            self._mode_var.set("ON")
-            self._mode_switch.select()
-            self._warn_label.configure(
-                text="⚠️ Cannot deactivate PRAXIS once Phase B is active."
-            )
-
     def _save_and_close(self) -> None:
         # Save threshold
         try:
@@ -190,9 +152,7 @@ class SettingsDialog(ctk.CTkToplevel):
             self._vm.set_auto_transition_threshold(thresh)
         except ValueError:
             pass
-
-        # Save mode
-        self._vm.set_praxis_mode(self._mode_var.get() == "ON")
+        self.destroy()
 
         # Save config
         self._app._save_app_config()

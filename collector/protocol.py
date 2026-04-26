@@ -150,6 +150,7 @@ class PlatformAdapter:
     name: str = "unknown"
     filename: str = ""
     description: str = ""
+    needs_per_project: bool = False  # True if user must inject per-project
     
     def __init__(self, project_dir: Path):
         self.project_dir = project_dir
@@ -208,25 +209,21 @@ class PlatformAdapter:
             "path": str(self.get_path()),
             "injected": self.is_injected(),
             "file_exists": self.get_path().is_file(),
+            "needs_per_project": self.needs_per_project,
         }
 
 
 class ClaudeAdapter(PlatformAdapter):
     """Claude Cowork / Claude Code adapter.
     
-    Writes to ~/.claude/CLAUDE.md (global instructions) so governance
-    applies to EVERY Cowork session regardless of project directory.
+    Claude Code/Cowork reads CLAUDE.md from the project root it's launched in.
+    This is PER-PROJECT — user must inject into each project folder separately.
+    First-time activation shows a warning about this.
     """
     name = "Claude Cowork"
     filename = "CLAUDE.md"
-    description = "Claude Cowork / Claude Code global instructions (~/.claude/)"
-    
-    def __init__(self, project_dir: Path):
-        super().__init__(project_dir)
-        self._claude_dir = Path.home() / ".claude"
-    
-    def get_path(self) -> Path:
-        return self._claude_dir / self.filename
+    description = "Claude Cowork — per-project (inject into each project root)"
+    needs_per_project = True
     
     def build_content(self, phase: str) -> str:
         return _build_claude_md(phase)
@@ -262,7 +259,8 @@ class WindsurfAdapter(PlatformAdapter):
 class CodexAdapter(PlatformAdapter):
     name = "OpenAI Codex"
     filename = "AGENTS.md"
-    description = "Codex project instructions"
+    description = "OpenAI Codex — per-project (inject into each project root)"
+    needs_per_project = True
     
     def build_content(self, phase: str) -> str:
         return _build_manifest_text(phase)

@@ -4,6 +4,7 @@ Shows which AI platforms are detected, injection status, and toggle controls.
 """
 
 import customtkinter as ctk
+from pathlib import Path
 from typing import Any, Callable, Optional
 
 
@@ -185,6 +186,11 @@ class ProtocolView(ctk.CTkScrollableFrame):
             info_frame, text=f"{status['filename']} — {tooltip}",
             font=ctk.CTkFont(size=10), text_color="gray",
         ).pack(anchor="w")
+        if status.get("needs_per_project"):
+            ctk.CTkLabel(
+                info_frame, text="⚠ Per-project: inject into each project folder",
+                font=ctk.CTkFont(size=9), text_color="#f39c12",
+            ).pack(anchor="w")
 
         # Toggle per platform
         toggle = ctk.CTkSwitch(
@@ -209,6 +215,16 @@ class ProtocolView(ctk.CTkScrollableFrame):
 
     def _activate_all(self) -> None:
         """Inject PRAXIS into all detected platforms."""
+        # Check if any per-project platforms exist and show warning
+        try:
+            status_list = self._vm.get_protocol_status()
+            per_project = [s for s in status_list if s.get("needs_per_project")]
+            if per_project and not self._check_acknowledged():
+                self._show_per_project_warning(per_project)
+                return
+        except Exception:
+            pass
+        
         try:
             results = self._vm.inject_protocol_all()
             ok = sum(1 for v in results.values() if v)
@@ -224,6 +240,80 @@ class ProtocolView(ctk.CTkScrollableFrame):
         self.refresh()
         if self._on_change:
             self._on_change()
+
+    def _check_acknowledged(self) -> bool:
+        """Check if user has acknowledged the per-project warning."""
+        config_path = Path.home() / ".praxis_per_project_ack"
+        return config_path.exists()
+
+    def _acknowledge(self) -> None:
+        """Mark per-project warning as acknowledged."""
+        config_path = Path.home() / ".praxis_per_project_ack"
+        config_path.write_text("acknowledged", encoding="utf-8")
+
+    def _show_per_project_warning(self, platforms: list) -> None:
+        """Show warning about per-project platforms."""
+        dialog = ctk.CTkToplevel(self)
+        dialog.title("⚠️ Per-Project Injection Required")
+        dialog.geometry("480x320")
+        dialog.resizable(False, False)
+        dialog.transient(self.winfo_toplevel())
+        dialog.grab_set()
+
+        ctk.CTkLabel(
+            dialog,
+            text="⚠️ Per-Project Platforms Detected",
+            font=ctk.CTkFont(size=16, weight="bold"),
+        ).pack(padx=20, pady=(20, 10))
+
+        names = "\n".join(f"  • {p['platform']} ({p['filename']})" for p in platforms)
+        ctk.CTkLabel(
+            dialog,
+            text=(
+                f"The following platforms read config from EACH project folder:\n{names}\n\n"
+                "This means you must inject PRAXIS into every project folder\n"
+                "where you use these tools. One injection per project.\n\n"
+                "PRAXIS Kit injects into the current project directory.\n"
+                "For other projects, open them in PRAXIS Kit and activate again."
+            ),
+            font=ctk.CTkFont(size=12),
+            justify="left",
+            wraplength=440,
+        ).pack(padx=20, pady=(0, 15))
+
+        def _proceed():
+            self._acknowledge()
+            dialog.destroy()
+            # Now actually activate
+            try:
+                results = self._vm.inject_protocol_all()
+                ok = sum(1 for v in results.values() if v)
+                total = len(results)
+                self._status_label.configure(
+                    text=f"🟢 PRAXIS ON — injected in {ok}/{total} platforms",
+                    text_color="#2ecc71",
+                )
+            except Exception as e:
+                self._status_label.configure(
+                    text=f"⚠️ Error: {e}", text_color="#e74c3c",
+                )
+            self.refresh()
+            if self._on_change:
+                self._on_change()
+
+        btn_frame = ctk.CTkFrame(dialog, fg_color="transparent")
+        btn_frame.pack(pady=(0, 20))
+        ctk.CTkButton(
+            btn_frame, text="I Understand — Activate", width=180, height=36,
+            font=ctk.CTkFont(size=13, weight="bold"),
+            command=_proceed,
+        ).pack(side="left", padx=8)
+        ctk.CTkButton(
+            btn_frame, text="Cancel", width=100, height=36,
+            font=ctk.CTkFont(size=13),
+            fg_color="gray", hover_color="darkgray",
+            command=dialog.destroy,
+        ).pack(side="left", padx=8)
 
     def _deactivate_all(self) -> None:
         """Remove PRAXIS from all platforms."""
