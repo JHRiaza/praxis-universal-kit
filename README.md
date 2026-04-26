@@ -35,7 +35,7 @@ bash install.sh
 .\install.ps1
 ```
 
-**Manual (any platform with Python 3.8+):**
+**Manual (any platform with Python 3.10+):**
 ```bash
 python collector/praxis_cli.py init
 ```
@@ -88,7 +88,7 @@ Generates an anonymized ZIP file for research analysis.
 
 ---
 
-## What's new in v0.2
+## What's new in v0.3
 
 | Feature | Description |
 |---------|-------------|
@@ -159,7 +159,7 @@ praxis incident "Tutorial wording obscured the core loop" --category DES
 
 ## Research Context
 
-This kit is part of a doctoral thesis that documents governance phenomena in AI-assisted production systems during the 2025-2027 period. The research questions:
+This kit is part of a doctoral thesis that documents governance phenomena in AI-assisted production systems. The research questions:
 
 1. What governance phenomena emerge when AI systems operate under structured instrumentation?
 2. How does AI personality (tone, confidence, warmth) affect user trust and behavior?
@@ -180,10 +180,10 @@ This kit is part of a doctoral thesis that documents governance phenomena in AI-
 @software{herreros2026praxis,
   author = {Herreros Riaza, Javier},
   title = {PRAXIS Universal Kit},
-  version = {0.3.1},
+  version = {0.3.2},
   year = {2026},
   publisher = {Universidad Complutense de Madrid},
-  url = {https://github.com/jhriaza/praxis-universal-kit}
+  url = {https://github.com/JHRiaza/praxis-universal-kit}
 }
 ```
 
@@ -237,6 +237,9 @@ python desktop/app.py
 - **Dashboard** — Live status view with phase, metrics summary, days active
 - **Log Sprint** — Visual form with dropdowns, sliders, and number inputs
 - **Export** — One-click anonymized ZIP generation
+- **PRAXIS-Q Survey** — 5-dimension quality rubric (Phase B)
+- **Session Controls** — Start/Stop/Initialize buttons with status indicator
+- **Platform Detection** — Auto-detects installed AI tools from system
 - **Creative mode** — Automatically detects creative projects (Godot, game design) and shows extra design quality sub-metrics
 
 ### Build standalone .exe
@@ -283,5 +286,5 @@ By using PRAXIS Universal Kit, you acknowledge that the authors and Universidad 
 
 ---
 
-*PRAXIS Universal Kit v0.3.1 — 2026-04-24*
+*PRAXIS Universal Kit v0.3.2 — 2026-04-25*
 *Doctoral research — Universidad Complutense de Madrid*

@@ -1,7 +1,7 @@
-# PRAXIS Universal Kit — Windows Installer (PowerShell 5.1+)
+﻿# PRAXIS Universal Kit â€” Windows Installer (PowerShell 5.1+)
 # ===========================================================
 # Usage: .\install.ps1 [-Lang es] [-Dir C:\path\to\project]
-# Requirements: Python 3.8+, PowerShell 5.1+
+# Requirements: Python 3.10+, PowerShell 5.1+
 # No admin required.
 
 [CmdletBinding()]
@@ -15,7 +15,7 @@ $ErrorActionPreference = "Stop"
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
-$PraxisVersion = "0.1"
+$PraxisVersion = "0.3.2"
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
 $ProjectDir = $Dir
 
@@ -26,7 +26,7 @@ function Write-Ok   { param([string]$Msg) Write-Host "  [OK] $Msg" -ForegroundCo
 function Write-Warn { param([string]$Msg) Write-Host "  [!]  $Msg" -ForegroundColor Yellow }
 function Write-Err  { param([string]$Msg) Write-Host "  [X]  $Msg" -ForegroundColor Red }
 function Write-Info { param([string]$Msg) Write-Host "  .    $Msg" -ForegroundColor DarkGray }
-function Write-Sep  { Write-Host ("─" * 60) -ForegroundColor DarkGray }
+function Write-Sep  { Write-Host ("â”€" * 60) -ForegroundColor DarkGray }
 function Write-Header {
     param([string]$Title)
     Write-Host ""
@@ -68,14 +68,14 @@ function Find-Python {
 # Main
 # ---------------------------------------------------------------------------
 function Main {
-    Write-Header "Universal Kit v$PraxisVersion — Windows Installer"
+    Write-Header "Universal Kit v$PraxisVersion â€” Windows Installer"
     Write-Host ""
 
     # Check Python
     Write-Info "Checking Python version..."
     $PythonCmd = Find-Python
     if (-not $PythonCmd) {
-        Write-Err "Python 3.8+ is required but not found."
+        Write-Err "Python 3.10+ is required but not found."
         Write-Info "Install Python from: https://python.org/downloads"
         Write-Info "Make sure to check 'Add Python to PATH' during installation."
         exit 1
@@ -174,7 +174,7 @@ else:
     Write-Host ""
 
     if ($Lang -eq "es") {
-        Write-Info "Próximos pasos:"
+        Write-Info "PrÃ³ximos pasos:"
         Write-Info "  1. Completa la encuesta inicial:  praxis survey pre"
         Write-Info "  2. Registra tus tareas de IA:     praxis log 'lo que hiciste' -d <min> -m <modelo>"
         Write-Info "  3. Activa PRAXIS tras 7 dias:     praxis activate"
@@ -223,3 +223,4 @@ function Setup-PraxisCommand {
 
 # Run
 Main
+

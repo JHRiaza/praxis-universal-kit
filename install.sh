@@ -1,8 +1,8 @@
-#!/usr/bin/env bash
-# PRAXIS Universal Kit — Unix Installer (macOS / Linux)
+﻿#!/usr/bin/env bash
+# PRAXIS Universal Kit â€” Unix Installer (macOS / Linux)
 # =====================================================
 # Usage: bash install.sh [--lang es] [--dir /path/to/project]
-# Requirements: Python 3.8+, bash 3+
+# Requirements: Python 3.10+, bash 3+
 # No root/sudo required. No pip install.
 
 set -euo pipefail
@@ -10,7 +10,7 @@ set -euo pipefail
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
-PRAXIS_VERSION="0.1"
+PRAXIS_VERSION="0.3.2"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DEFAULT_PROJECT_DIR="$(pwd)"
 LANG="en"
@@ -43,11 +43,11 @@ done
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-ok()   { echo -e "  ${GREEN}✓${RESET} $1"; }
+ok()   { echo -e "  ${GREEN}âœ“${RESET} $1"; }
 warn() { echo -e "  ${YELLOW}!${RESET} $1"; }
-err()  { echo -e "  ${RED}✗${RESET} $1" >&2; }
-info() { echo -e "  ${DIM}·${RESET} $1"; }
-sep()  { echo -e "${DIM}────────────────────────────────────────────────────────${RESET}"; }
+err()  { echo -e "  ${RED}âœ—${RESET} $1" >&2; }
+info() { echo -e "  ${DIM}Â·${RESET} $1"; }
+sep()  { echo -e "${DIM}â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€${RESET}"; }
 header() {
     echo
     sep
@@ -74,7 +74,7 @@ check_python() {
     done
 
     if [[ -z "$python_cmd" ]]; then
-        err "Python 3.8+ is required but not found."
+        err "Python 3.10+ is required but not found."
         info "Install Python: https://python.org/downloads"
         exit 1
     fi
@@ -86,7 +86,7 @@ check_python() {
 # Main installation
 # ---------------------------------------------------------------------------
 main() {
-    header "Universal Kit v${PRAXIS_VERSION} — Installer"
+    header "Universal Kit v${PRAXIS_VERSION} â€” Installer"
     echo
 
     # Check Python
@@ -147,7 +147,7 @@ platforms = detect_platforms()
 if platforms:
     print('  Detected: ' + ', '.join(platforms))
 else:
-    print('  No specific platforms detected — will use generic adapter')
+    print('  No specific platforms detected â€” will use generic adapter')
 " 2>/dev/null || info "Platform detection skipped."
 
     # Initialize PRAXIS
@@ -175,10 +175,10 @@ else:
     sep
     echo
     if [[ "$LANG" == "es" ]]; then
-        info "Próximos pasos:"
+        info "PrÃ³ximos pasos:"
         info "  1. Completa la encuesta inicial:  praxis survey pre"
         info "  2. Registra tus tareas de IA:     praxis log 'lo que hiciste' -d <min> -m <modelo>"
-        info "  3. Activa PRAXIS tras 7 días:     praxis activate"
+        info "  3. Activa PRAXIS tras 7 dÃ­as:     praxis activate"
         info "  4. Verifica tu progreso:          praxis status"
     else
         info "Next steps:"
@@ -217,3 +217,4 @@ WRAPPER
 }
 
 main "$@"
+

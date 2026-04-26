@@ -1,5 +1,31 @@
 # PRAXIS Universal Kit — Changelog
 
+## v0.3.2 (2026-04-25)
+
+### Fixed
+- **macOS platform detection** — expanded PATH search for .app bundles (Homebrew, npm, local bins)
+- **macOS Gatekeeper** — ad-hoc codesign in CI to prevent "corrupted" warning
+
+## v0.3.1 (2026-04-24)
+
+### Added
+- **Desktop app (GUI)** — CustomTkinter + PyInstaller, Windows .exe + macOS .dmg
+- **Init wizard** — consent + participant ID generation + project directory selection
+- **Dashboard** — phase, days active, metrics, platform detection
+- **Log Sprint** — visual form with model dropdown, quality slider, creative mode detection
+- **Export** — one-click anonymized ZIP with redact option
+- **PRAXIS-Q tab** — 5-dimension survey (Completeness, Quality, Coherence, Efficiency, Traceability)
+- **Session controls** — Start/Stop/Initialize with status indicator
+- **CI/CD** — GitHub Actions for Windows + macOS builds, auto-release on tag
+- **Disclaimer** — liability limitation, unsigned binary warnings, participant autonomy
+
+## v0.3.0 (2026-04-24)
+
+### Changed
+- **Version bumped** from 0.2 to 0.3 (desktop app release)
+- **Platform detection** — now scans system-wide (PATH + home dirs), not just project dir
+- **README** — install instructions for Windows/macOS, desktop app section, disclaimer
+
 ## v0.2.1 (2026-04-24)
 
 ### Added
