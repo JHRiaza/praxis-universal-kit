@@ -176,6 +176,17 @@ class InitWizardView(ctk.CTkFrame):
             self.after(800, self._on_complete)
 
         except Exception as exc:
+            err_msg = str(exc)
+            if "already initialized" in err_msg:
+                # Folder already has .praxis — load existing state instead
+                self._vm.set_project_dir(project_dir)
+                if self._vm.is_initialized():
+                    self._status_label.configure(
+                        text="✅ Found existing PRAXIS data — loading dashboard.",
+                        text_color="#2ecc71",
+                    )
+                    self.after(800, self._on_complete)
+                    return
             self._status_label.configure(
                 text=f"⚠ Error: {exc}",
                 text_color="#e74c3c",

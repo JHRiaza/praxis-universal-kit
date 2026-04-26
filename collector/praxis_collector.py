@@ -918,7 +918,7 @@ def detect_platforms(project_dir: Optional[Path] = None) -> List[str]:
 
     checks = [
         ("openclaw", [home / ".openclaw"], ["openclaw"]),
-        ("claude_cowork", [root / "CLAUDE.md", home / ".claude", home / ".claude.json", home / ".config" / "claude"], ["claude"]),
+        ("claude_cowork", [root / "CLAUDE.md", home / ".claude", home / ".claude.json", home / ".config" / "claude"], ["claude"], [home / "Applications" / "Claude.app", Path("/Applications/Claude.app")]),
         ("codex", [root / "AGENTS.md", root / ".codex", home / ".codex"], ["codex"]),
         ("cursor", [root / ".cursorrules", root / ".cursor", home / ".cursor"], ["cursor"]),
         ("windsurf", [root / ".windsurfrules", root / ".windsurf", home / ".windsurf"], ["windsurf"]),
@@ -929,13 +929,20 @@ def detect_platforms(project_dir: Optional[Path] = None) -> List[str]:
         ("roo_code", [root / ".roorules", root / ".roo", home / ".roo"], []),
     ]
 
-    for platform_id, paths, executables in checks:
+    for entry in checks:
+        platform_id = entry[0]
+        paths = entry[1]
+        executables = entry[2]
+        app_paths = entry[3] if len(entry) > 3 else []
         found = any(p.exists() for p in paths)
         if not found and executables:
             for exe in executables:
                 found = _which(exe) is not None
                 if found:
                     break
+        if not found and app_paths:
+            # Check for app bundles (macOS .app, etc.)
+            found = any(p.exists() for p in app_paths)
         if found:
             detected.append(platform_id)
 

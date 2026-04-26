@@ -27,6 +27,8 @@ else:
     if _desktop_dir not in sys.path:
         sys.path.insert(0, _desktop_dir)
 
+import json
+
 from viewmodel import PraxisViewModel  # noqa: E402
 from views.init_wizard import InitWizardView  # noqa: E402
 from views.dashboard import DashboardView  # noqa: E402
@@ -194,19 +196,60 @@ class PraxisApp(ctk.CTk):
         self._try_autoload()
 
     def _try_autoload(self) -> None:
-        """Try to find and load an existing PRAXIS state from cwd."""
+        """Try to find and load an existing PRAXIS state.
+        Checks: 1) saved last-used path, 2) cwd walk-up, 3) home dir."""
         from viewmodel import find_praxis_dir
+
+        # 1. Check saved last-used path
+        config_path = self._get_config_path()
+        if config_path.is_file():
+            try:
+                cfg = json.loads(config_path.read_text(encoding="utf-8"))
+                saved_dir = cfg.get("last_project_dir")
+                if saved_dir:
+                    praxis_dir = Path(saved_dir) / ".praxis"
+                    if praxis_dir.is_dir() and (praxis_dir / "state.json").is_file():
+                        project_dir = Path(saved_dir)
+                        self._vm.set_project_dir(project_dir)
+                        if self._vm.is_initialized():
+                            self._show_main_tabs()
+                            self._show_dashboard()
+                            return
+            except Exception:
+                pass  # Ignore corrupt config, fall through
+
+        # 2. Check cwd walk-up
         praxis_dir = find_praxis_dir()
         if praxis_dir is not None:
             project_dir = praxis_dir.parent
             self._vm.set_project_dir(project_dir)
             if self._vm.is_initialized():
+                self._save_last_project(project_dir)
                 self._show_main_tabs()
                 self._show_dashboard()
                 return
 
-        # No existing state — show init wizard
+        # 3. No existing state — show init wizard
         self._show_init_wizard()
+
+    def _get_config_path(self) -> Path:
+        """Return path to the app config file (persists across sessions)."""
+        if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+            base = Path.home()
+        else:
+            base = Path.home()
+        return base / ".praxis_desktop_config.json"
+
+    def _save_last_project(self, project_dir: Path) -> None:
+        """Save the last-used project directory for auto-load on next launch."""
+        config_path = self._get_config_path()
+        try:
+            config_path.write_text(
+                json.dumps({"last_project_dir": str(project_dir)}),
+                encoding="utf-8",
+            )
+        except Exception:
+            pass
 
     # ------------------------------------------------------------------
     # Navigation helpers
@@ -237,6 +280,9 @@ class PraxisApp(ctk.CTk):
 
     def _on_init_complete(self) -> None:
         """Called when the init wizard finishes."""
+        # Save project dir for auto-load on next launch
+        if self._vm._project_dir:
+            self._save_last_project(self._vm._project_dir)
         self._show_main_tabs()
         self._show_dashboard()
 
