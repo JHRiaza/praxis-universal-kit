@@ -212,9 +212,21 @@ class PlatformAdapter:
 
 
 class ClaudeAdapter(PlatformAdapter):
+    """Claude Cowork / Claude Code adapter.
+    
+    Writes to ~/.claude/CLAUDE.md (global instructions) so governance
+    applies to EVERY Cowork session regardless of project directory.
+    """
     name = "Claude Cowork"
     filename = "CLAUDE.md"
-    description = "Claude Cowork / Claude Code project instructions"
+    description = "Claude Cowork / Claude Code global instructions (~/.claude/)"
+    
+    def __init__(self, project_dir: Path):
+        super().__init__(project_dir)
+        self._claude_dir = Path.home() / ".claude"
+    
+    def get_path(self) -> Path:
+        return self._claude_dir / self.filename
     
     def build_content(self, phase: str) -> str:
         return _build_claude_md(phase)
