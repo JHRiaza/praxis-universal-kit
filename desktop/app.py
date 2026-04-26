@@ -357,21 +357,27 @@ class PraxisApp(ctk.CTk):
     def _on_close(self) -> None:
         """Handle window close: auto-save session, cancel timers."""
         # Cancel timers
-        if self._checkpoint_job:
-            self.after_cancel(self._checkpoint_job)
-            self._checkpoint_job = None
-        if self._ui_timer_job:
-            self.after_cancel(self._ui_timer_job)
-            self._ui_timer_job = None
+        try:
+            if self._checkpoint_job:
+                self.after_cancel(self._checkpoint_job)
+                self._checkpoint_job = None
+            if self._ui_timer_job:
+                self.after_cancel(self._ui_timer_job)
+                self._ui_timer_job = None
+        except Exception:
+            pass
 
         # Auto-save session
-        if self._vm.is_session_active():
-            entry = self._vm.auto_save_session()
-            if entry:
-                # Save session state to config for possible recovery
-                self._save_app_config()
-        else:
+        try:
+            if self._vm.is_session_active():
+                self._vm.auto_save_session()
+        except Exception:
+            pass  # Don't prevent closing if save fails
+
+        try:
             self._save_app_config()
+        except Exception:
+            pass
 
         self.destroy()
 
