@@ -38,6 +38,7 @@ from views.init_wizard import InitWizardView  # noqa: E402
 from views.dashboard import DashboardView  # noqa: E402
 from views.praxis_q import PraxisQView  # noqa: E402
 from views.log_sprint import LogSprintView  # noqa: E402
+from views.protocol import ProtocolView  # noqa: E402
 from views.export import ExportView  # noqa: E402
 
 
@@ -232,7 +233,7 @@ class PraxisApp(ctk.CTk):
 
         version_label = ctk.CTkLabel(
             self._sidebar,
-            text="v0.4.2 Desktop",
+            text="v0.5.0 Desktop",
             font=ctk.CTkFont(size=11),
             text_color="gray",
         )
@@ -242,18 +243,21 @@ class PraxisApp(ctk.CTk):
         # 1. 📊 Dashboard
         # 2. 📝 PRAXIS-Q
         # 3. 📋 Sessions
-        # 4. 📦 Export
+        # 4. 🛡️ Protocol
+        # 5. 📦 Export
         self._nav_buttons: list[ctk.CTkButton] = []
         self._nav_labels = [
             "📊 Dashboard",
             "📝 PRAXIS-Q",
             "📋 Sessions",
+            "🛡️ Protocol",
             "📦 Export",
         ]
         self._nav_callbacks = [
             self._show_dashboard,
             self._show_praxis_q,
             self._show_log_sprint,
+            self._show_protocol,
             self._show_export,
         ]
 
@@ -616,6 +620,20 @@ class PraxisApp(ctk.CTk):
         self._clear_content()
         self._current_view = ExportView(self._content, vm=self._vm)
         self._current_view.grid(row=0, column=0, sticky="nsew")
+
+    def _show_protocol(self) -> None:
+        self._clear_content()
+        self._current_view = ProtocolView(
+            self._content, vm=self._vm, on_change=self._on_protocol_change
+        )
+        self._current_view.grid(row=0, column=0, sticky="nsew")
+
+    def _on_protocol_change(self) -> None:
+        """Called when protocol injection state changes."""
+        # Refresh dashboard if visible
+        if isinstance(self._current_view, DashboardView):
+            if hasattr(self._current_view, 'refresh_protocol_status'):
+                self._current_view.refresh_protocol_status()
 
     def _show_settings(self) -> None:
         SettingsDialog(self, vm=self._vm, app=self)

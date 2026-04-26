@@ -86,6 +86,9 @@ if _export_dir not in sys.path:
 
 from anonymize import export_participant_zip  # noqa: E402
 
+# Protocol module
+from collector.protocol import ProtocolManager  # noqa: E402
+
 
 class PraxisViewModel:
     """Controller layer — all UI↔data logic lives here."""
@@ -573,3 +576,57 @@ class PraxisViewModel:
             "first_entry": first_ts,
             "last_entry": last_ts,
         }
+
+    # ------------------------------------------------------------------
+    # Protocol Management
+    # ------------------------------------------------------------------
+
+    def get_protocol_manager(self) -> Optional[ProtocolManager]:
+        """Get the protocol manager for the current project."""
+        if not self._praxis_dir:
+            return None
+        return ProtocolManager(self._praxis_dir)
+
+    def get_protocol_status(self) -> List[Dict[str, Any]]:
+        """Get injection status for all platforms."""
+        pm = self.get_protocol_manager()
+        if pm is None:
+            return []
+        return pm.get_all_status()
+
+    def inject_protocol_all(self) -> Dict[str, bool]:
+        """Inject PRAXIS protocol into all platforms."""
+        pm = self.get_protocol_manager()
+        if pm is None:
+            return {}
+        phase = self._state.get("phase", "B") if self._state else "B"
+        return pm.inject_all(phase)
+
+    def remove_protocol_all(self) -> Dict[str, bool]:
+        """Remove PRAXIS protocol from all platforms."""
+        pm = self.get_protocol_manager()
+        if pm is None:
+            return {}
+        return pm.remove_all()
+
+    def inject_protocol_platform(self, name: str) -> bool:
+        """Inject PRAXIS protocol into a specific platform."""
+        pm = self.get_protocol_manager()
+        if pm is None:
+            return False
+        phase = self._state.get("phase", "B") if self._state else "B"
+        return pm.inject_platform(name, phase)
+
+    def remove_protocol_platform(self, name: str) -> bool:
+        """Remove PRAXIS protocol from a specific platform."""
+        pm = self.get_protocol_manager()
+        if pm is None:
+            return False
+        return pm.remove_platform(name)
+
+    def get_protocol_summary(self) -> str:
+        """Get human-readable protocol status summary."""
+        pm = self.get_protocol_manager()
+        if pm is None:
+            return "PRAXIS: OFF | No project"
+        return pm.get_status_summary()
