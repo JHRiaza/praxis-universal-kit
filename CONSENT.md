@@ -5,7 +5,7 @@
 **Title:** Methodological Architecture for Autonomous AI-Assisted Systems: A Quasi-Experimental Study of PRAXIS Governance Framework Adoption
 
 **Principal Researcher:** Javier Herreros Riaza
-**Institution:** Universidad Complutense de Madrid — Doctoral Program in Audiovisual Communication and Advertising (CAVP)
+**Institution:** Doctoral Program in Audiovisual Communication and Advertising (CAVP)
 **Framework:** PRAXIS v1.1
 
 ---
@@ -120,7 +120,7 @@ By participating, you:
 For questions about this research:
 
 **Researcher:** Javier Herreros Riaza
-**Institution:** Universidad Complutense de Madrid
+**Institution:**
 **Program:** Doctorado CAVP
 
 ---
@@ -140,5 +140,5 @@ Your consent is recorded with a timestamp in `.praxis/state.json` on your local 
 ---
 
 *PRAXIS Universal Kit v0.2*
-*Universidad Complutense de Madrid — Doctoral Research*
+*Doctoral Research*
 *Framework: CC BY-SA 4.0*
