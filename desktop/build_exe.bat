@@ -39,14 +39,7 @@ if %ERRORLEVEL% neq 0 (
 
 echo.
 echo [3/3] Building executable...
-pyinstaller --onefile --windowed --name "praxis-desktop" --noconfirm ^
-    --add-data "collector;collector" ^
-    --add-data "adapters;adapters" ^
-    --add-data "config;config" ^
-    --add-data "export;export" ^
-    --add-data "templates;templates" ^
-    --hidden-import customtkinter ^
-    desktop\app.py
+pyinstaller desktop\build.spec --noconfirm --clean
 
 if %ERRORLEVEL% neq 0 (
     echo.

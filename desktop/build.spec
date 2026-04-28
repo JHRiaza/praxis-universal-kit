@@ -12,7 +12,12 @@ block_cipher = None
 
 a = Analysis(
     [str(kit_root / "desktop" / "app.py")],
-    pathex=[str(kit_root)],
+    pathex=[
+        str(kit_root),
+        str(kit_root / "collector"),
+        str(kit_root / "export"),
+        str(kit_root / "adapters"),
+    ],
     binaries=[],
     datas=[
         # Bundle collector, config, export, templates so the app can find them
@@ -71,12 +76,18 @@ a = Analysis(
         "math",
         "csv",
         "dataclasses",
+        "smtplib",
+        "ssl",
+        "email",
+        "email.message",
 
         # --- Kit modules (imported via sys.path at runtime) ---
         "praxis_collector",
         "praxis_cli",
         "submit",
+        "submission",
         "anonymize",
+        "diagnostics",
         "adapters",
         "adapters.base",
         "adapters.openclaw",
