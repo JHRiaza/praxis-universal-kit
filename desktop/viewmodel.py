@@ -59,24 +59,29 @@ from adapters.base import detect_project_type  # noqa: E402
 
 # Re-export for convenience
 from praxis_collector import (  # noqa: E402
-    PraxisCollector,
-    StateNotFoundError,
     PraxisError,
+    StateNotFoundError,
     ValidationError,
-    find_praxis_dir,
-    get_or_create_praxis_dir,
-    load_state,
-    save_state,
-    initialize_state,
-    generate_participant_id,
-    build_metric_entry,
     append_metric_entry,
-    load_all_metrics,
-    load_governance_events,
+    build_auto_session_entry,
+    build_metric_entry,
     compute_summary,
     activate_phase_b,
     detect_platforms,
+    estimate_reliability,
+    find_praxis_dir,
+    finish_passive_session,
+    generate_participant_id,
+    get_or_create_praxis_dir,
+    initialize_state,
+    load_all_metrics,
+    load_governance_events,
+    load_session_records,
+    load_state,
     touch_last_active,
+    save_state,
+    start_passive_session,
+    update_metric_entry,
 )
 
 # Export module
@@ -197,6 +202,11 @@ class PraxisViewModel:
         """Start a new background session timer."""
         self._session_start = datetime.now(timezone.utc)
         self._session_active = True
+        if self._state is not None and self._praxis_dir is not None:
+            try:
+                start_passive_session(self._praxis_dir, self._state, self._project_dir)
+            except PraxisError:
+                pass
 
     def end_session(self) -> Optional[Dict[str, Any]]:
         """End the current session and return the auto-saved entry, or None."""
@@ -233,33 +243,22 @@ class PraxisViewModel:
         self._session_active = True
 
     def _build_auto_session_entry(self) -> Optional[Dict[str, Any]]:
-        """Build an auto-logged session entry with null fields."""
-        if self._session_start is None:
+        """Build a passive-capture-backed auto session entry."""
+        if self._session_start is None or self._praxis_dir is None or self._state is None:
             return None
-        now = datetime.now(timezone.utc)
-        duration = max(1, round((now - self._session_start).total_seconds() / 60.0))
-        phase = self._state.get("phase", "A") if self._state else "A"
-        participant_id = self._state.get("participant_id") if self._state else None
-        entry = {
-            "id": praxis_collector._generate_entry_id("sprint"),
-            "type": "sprint",
-            "timestamp": self._session_start.isoformat().replace("+00:00", "Z"),
-            "duration_minutes": duration,
-            "duration_min": duration,
-            "condition": "A1" if phase == "A" else "B1",
-            "model": "unknown",
-            "quality": 3,
-            "quality_self": 3,
-            "task": "(auto-logged)",
-            "iterations": 1,
-            "interventions": 0,
-            "platforms": [],
-            "phase": phase,
-            "participant_id": participant_id,
-            "reviewed": False,
-            "notes": None,
-        }
-        return entry
+        session = finish_passive_session(self._praxis_dir, self._state, self._project_dir)
+        if session is None:
+            duration = max(1, round((datetime.now(timezone.utc) - self._session_start).total_seconds() / 60.0))
+            session = {
+                "id": praxis_collector._generate_entry_id("capture"),
+                "started_at": self._session_start.isoformat().replace("+00:00", "Z"),
+                "ended_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+                "duration_minutes": duration,
+                "platform_ids": detect_platforms(self._project_dir if self._project_dir else None),
+                "condition": "A1" if self._state.get("phase", "A") == "A" else "B1",
+                "phase": self._state.get("phase", "A"),
+            }
+        return build_auto_session_entry(self._state, session, self._project_dir)
 
     def auto_save_session(self) -> Optional[Dict[str, Any]]:
         """Auto-save current session on close. Returns the entry or None."""
@@ -354,29 +353,14 @@ class PraxisViewModel:
         Returns True if found and updated."""
         if not self._praxis_dir:
             return False
-        metrics_path = self._praxis_dir / "metrics.jsonl"
-        if not metrics_path.is_file():
-            return False
-        lines = metrics_path.read_text(encoding="utf-8").splitlines()
-        found = False
-        new_lines = []
-        for line in lines:
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                entry = json.loads(line)
-            except json.JSONDecodeError:
-                new_lines.append(line)
-                continue
-            if entry.get("id") == entry_id:
-                entry.update(updates)
-                entry["reviewed"] = True
-                found = True
-            new_lines.append(json.dumps(entry, ensure_ascii=False))
-        if found:
-            metrics_path.write_text("\n".join(new_lines) + "\n", encoding="utf-8")
-        return found
+        updates = dict(updates)
+        updates["reviewed"] = True
+        if "reliability_score" not in updates:
+            probe = dict(updates)
+            probe["capture_mode"] = updates.get("capture_mode", "micro_checkout")
+            probe["field_provenance"] = updates.get("field_provenance", {})
+            updates["reliability_score"] = estimate_reliability(probe)
+        return update_metric_entry(self._praxis_dir, entry_id, updates) is not None
 
     def get_unreviewed_count(self) -> int:
         """Count unreviewed sprint entries."""
@@ -434,6 +418,7 @@ class PraxisViewModel:
             load_governance_events(self._praxis_dir) if self._praxis_dir else [],
             state,
         )
+        sessions = load_session_records(self._praxis_dir) if self._praxis_dir else []
 
         return {
             "initialized": True,
@@ -453,6 +438,7 @@ class PraxisViewModel:
             "last_entry": last_ts,
             "platforms": platforms,
             "unreviewed_count": unreviewed_count,
+            "passive_capture_count": len(sessions),
             "session_active": self._session_active,
             "session_elapsed_min": self.get_session_elapsed_minutes(),
             "praxis_mode_on": self._praxis_mode_on,
@@ -492,6 +478,16 @@ class PraxisViewModel:
             notes=notes,
             project_dir=self._project_dir,
         )
+        entry["capture_mode"] = "manual"
+        entry["reviewed"] = True
+        entry["field_provenance"] = {
+            "task": "manual",
+            "duration": "manual",
+            "model": "manual",
+            "quality": "manual",
+            "interventions": "manual",
+        }
+        entry["reliability_score"] = estimate_reliability(entry)
         append_metric_entry(self._praxis_dir, entry)
         self.touch_active()
         return entry
@@ -598,11 +594,13 @@ class PraxisViewModel:
         last_ts = entries[-1].get("timestamp", "") if entries else ""
         diagnosis = build_user_diagnosis(entries, gov_events, self._state or {})
         submission = get_submission_status(self._praxis_dir)
+        sessions = load_session_records(self._praxis_dir) if self._praxis_dir else []
 
         return {
             "initialized": True,
             "metrics_count": len(entries),
             "governance_count": len(gov_events),
+            "session_capture_count": len(sessions),
             "first_entry": first_ts,
             "last_entry": last_ts,
             "diagnosis": diagnosis,

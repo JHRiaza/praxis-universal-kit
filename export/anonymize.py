@@ -6,6 +6,7 @@ for submission to the researcher.
 
 What is included in the export:
   - metrics.jsonl (task metrics, optionally with descriptions redacted)
+  - sessions.jsonl (passive capture timeline)
   - governance.jsonl (governance events)
   - survey_*.json (survey responses, participant ID only — no name)
   - state.json (phase info, no personal identifiers)
@@ -43,7 +44,7 @@ from diagnostics import build_user_diagnosis
 # Constants
 # ---------------------------------------------------------------------------
 
-EXPORT_VERSION = "0.6.0"
+EXPORT_VERSION = "0.7.0"
 PII_FIELDS_TO_REDACT = ["name", "email", "phone", "ip_address", "machine_name"]
 FILES_TO_INCLUDE = [
     "metrics.jsonl",
@@ -94,6 +95,7 @@ def export_participant_zip(
     with zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_DEFLATED) as zf:
         # Add core metric files
         _add_metrics(zf, praxis_dir, participant_id, redact_tasks)
+        _add_sessions(zf, praxis_dir, participant_id)
         _add_governance(zf, praxis_dir, participant_id)
         _add_state(zf, praxis_dir, participant_id)
         _add_surveys(zf, praxis_dir, participant_id)
@@ -158,6 +160,34 @@ def _add_governance(
                 continue
 
     zf.writestr("governance.jsonl", "\n".join(cleaned_lines) + "\n" if cleaned_lines else "")
+
+
+def _add_sessions(
+    zf: zipfile.ZipFile,
+    praxis_dir: Path,
+    participant_id: str,
+) -> None:
+    """Export passive sessions timeline."""
+    sessions_path = praxis_dir / "sessions.jsonl"
+    if not sessions_path.is_file():
+        return
+
+    cleaned_lines: List[str] = []
+    with sessions_path.open("r", encoding="utf-8") as fh:
+        for line in fh:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                row = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            clean = _strip_pii_from_dict(dict(row))
+            clean["participant_id"] = participant_id
+            clean.pop("project_root", None)
+            cleaned_lines.append(json.dumps(clean, ensure_ascii=False))
+
+    zf.writestr("sessions.jsonl", "\n".join(cleaned_lines) + "\n" if cleaned_lines else "")
 
 
 def _add_state(
@@ -229,7 +259,10 @@ def _add_manifest(
     # Count entries
     metrics_count = _count_jsonl_lines(praxis_dir / "metrics.jsonl")
     gov_count = _count_jsonl_lines(praxis_dir / "governance.jsonl")
+    session_count = _count_jsonl_lines(praxis_dir / "sessions.jsonl")
     survey_count = len(list(praxis_dir.glob("survey_*.json")))
+    metrics = _load_jsonl(praxis_dir / "metrics.jsonl")
+    diagnosis = build_user_diagnosis(metrics, _load_jsonl(praxis_dir / "governance.jsonl"), state)
 
     manifest = {
         "export_version": EXPORT_VERSION,
@@ -238,13 +271,16 @@ def _add_manifest(
         "kit_version": state.get("kit_version", "?"),
         "phase_at_export": state.get("phase", "?"),
         "redact_tasks": redact_tasks,
-        "files_included": ["metrics.jsonl", "governance.jsonl", "state.json"],
+        "files_included": ["metrics.jsonl", "sessions.jsonl", "governance.jsonl", "state.json"],
         "includes_user_diagnosis": True,
         "metrics_entries": metrics_count,
+        "passive_sessions": session_count,
         "governance_events": gov_count,
         "surveys_completed": survey_count,
+        "mean_reliability": diagnosis.get("metrics", {}).get("avg_reliability"),
         "integrity": {
             "metrics_sha256": _sha256_file(praxis_dir / "metrics.jsonl"),
+            "sessions_sha256": _sha256_file(praxis_dir / "sessions.jsonl"),
             "governance_sha256": _sha256_file(praxis_dir / "governance.jsonl"),
         },
         "instructions": (

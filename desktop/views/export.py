@@ -155,7 +155,7 @@ class ExportView(ctk.CTkScrollableFrame):
         diagnosis = info.get("diagnosis", {}) or {}
         submission = info.get("submission", {}) or {}
 
-        text = f"Metrics entries: {metrics}  |  Governance events: {gov}"
+        text = f"Metrics entries: {metrics}  |  Governance events: {gov}  |  Passive captures: {info.get('session_capture_count', 0)}"
         if first and last:
             text += f"\nDate range: {first[:10]} → {last[:10]}"
 

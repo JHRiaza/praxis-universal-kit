@@ -70,6 +70,10 @@ def build_user_diagnosis(
     iterations = [e.get("iterations") for e in work_entries if isinstance(e.get("iterations"), int)]
     autonomy_values = [1 if e.get("autonomous") else 0 for e in work_entries if "autonomous" in e]
     interventions = [e.get("human_interventions", e.get("interventions")) for e in work_entries if isinstance(e.get("human_interventions", e.get("interventions")), int)]
+    reliability_scores = [float(e.get("reliability_score")) for e in work_entries if isinstance(e.get("reliability_score"), (int, float))]
+    passive_only_count = 0
+    reviewed_count = 0
+    manual_count = 0
 
     trust = []
     skepticism = []
@@ -80,6 +84,13 @@ def build_user_diagnosis(
     partial_boundaries = 0
 
     for entry in work_entries:
+        capture_mode = entry.get("capture_mode")
+        if capture_mode == "passive_auto":
+            passive_only_count += 1
+        elif capture_mode in {"manual", "micro_checkout"}:
+            manual_count += 1
+        if entry.get("reviewed"):
+            reviewed_count += 1
         l1r = entry.get("l1r_observations") or {}
         if isinstance(l1r.get("trust_willingness"), int):
             trust.append(l1r["trust_willingness"])
@@ -107,6 +118,7 @@ def build_user_diagnosis(
     avg_skepticism = _mean([float(v) for v in skepticism])
     avg_warmth = _mean([float(v) for v in warmth])
     avg_confidence = _mean([float(v) for v in confidence])
+    avg_reliability = _mean(reliability_scores)
 
     first_ts = _parse_ts(work_entries[0].get("timestamp", ""))
     last_ts = _parse_ts(work_entries[-1].get("timestamp", ""))
@@ -122,6 +134,19 @@ def build_user_diagnosis(
         flags.append("rework_drag")
     elif avg_iterations is not None:
         insights.append(f"Your workflow is relatively compact ({avg_iterations:.1f} iterations per task on average).")
+
+    if passive_only_count > 0:
+        insights.append(
+            f"{passive_only_count} session(s) were captured passively without checkout yet, so PRAXIS has timing evidence but still needs quick human calibration for stronger conclusions."
+        )
+        flags.append("needs_checkout")
+
+    if avg_reliability is not None:
+        if avg_reliability < 0.55:
+            insights.append(f"Current evidence reliability is still light ({round(avg_reliability * 100)}%). Passive capture is working, but more micro-checkouts would make the diagnosis materially stronger.")
+            flags.append("low_reliability")
+        else:
+            insights.append(f"Data reliability is building ({round(avg_reliability * 100)}%), which means the workflow picture is becoming more defensible over time.")
 
     if autonomy_rate is not None and autonomy_rate < 0.5:
         insights.append(f"You are intervening often — autonomy is {_format_percent(autonomy_rate)}, so the AI is still leaning heavily on human correction.")
@@ -191,6 +216,10 @@ def build_user_diagnosis(
             "avg_skepticism": avg_skepticism,
             "avg_warmth": avg_warmth,
             "avg_confidence": avg_confidence,
+            "avg_reliability": avg_reliability,
+            "passive_only_count": passive_only_count,
+            "reviewed_count": reviewed_count,
+            "manual_or_checkout_count": manual_count,
             "governance_events": len(governance_events),
             "degraded_boundaries": degraded_boundaries,
             "personality_mismatch_count": mismatch_count,

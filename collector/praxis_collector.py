@@ -27,13 +27,14 @@ from typing import Any, Dict, List, Optional, Tuple
 # Constants
 # ---------------------------------------------------------------------------
 
-KIT_VERSION = "0.6.0"
+KIT_VERSION = "0.7.0"
 SCHEMA_VERSION = "0.2"
 PRAXIS_DIR = ".praxis"
 STATE_FILE = "state.json"
 METRICS_FILE = "metrics.jsonl"
 GOVERNANCE_FILE = "governance.jsonl"
 SESSIONS_FILE = "sessions.jsonl"
+DEFAULT_AUTO_QUALITY = 3
 
 VALID_CONDITIONS = ("A1", "A2", "B1", "B2")
 VALID_PHASES = ("A", "B")
@@ -181,6 +182,250 @@ def touch_last_active(praxis_dir: Path) -> None:
         save_state(praxis_dir, state)
     except PraxisError:
         pass  # Don't crash on touch failure
+
+
+def append_session_record(praxis_dir: Path, record: Dict[str, Any]) -> None:
+    """Append a passive session capture record to sessions.jsonl."""
+    sessions_path = praxis_dir / SESSIONS_FILE
+    try:
+        with sessions_path.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps(record, ensure_ascii=False) + "\n")
+    except OSError as exc:
+        raise PraxisError(f"Failed to write session capture: {exc}") from exc
+
+
+def load_session_records(praxis_dir: Path) -> List[Dict[str, Any]]:
+    """Load passive session capture records from sessions.jsonl."""
+    sessions_path = praxis_dir / SESSIONS_FILE
+    if not sessions_path.is_file():
+        return []
+    rows: List[Dict[str, Any]] = []
+    with sessions_path.open("r", encoding="utf-8") as fh:
+        for line in fh:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                rows.append(json.loads(line))
+            except json.JSONDecodeError:
+                continue
+    return rows
+
+
+def _write_session_records(praxis_dir: Path, rows: List[Dict[str, Any]]) -> None:
+    sessions_path = praxis_dir / SESSIONS_FILE
+    try:
+        with sessions_path.open("w", encoding="utf-8") as fh:
+            for row in rows:
+                fh.write(json.dumps(row, ensure_ascii=False) + "\n")
+    except OSError as exc:
+        raise PraxisError(f"Failed to update session capture: {exc}") from exc
+
+
+def get_open_session_record(praxis_dir: Path) -> Optional[Dict[str, Any]]:
+    """Return the most recent open passive session, if any."""
+    rows = load_session_records(praxis_dir)
+    for row in reversed(rows):
+        if row.get("status") == "open":
+            return row
+    return None
+
+
+def _git_probe(project_dir: Optional[Path]) -> Dict[str, Any]:
+    """Collect lightweight git context for passive capture."""
+    root = Path(project_dir or Path.cwd())
+    commit = _get_git_commit(root)
+    payload: Dict[str, Any] = {
+        "repo": bool(commit),
+        "commit": commit,
+        "branch": None,
+        "dirty_files": None,
+    }
+    try:
+        branch = subprocess.run(
+            ["git", "branch", "--show-current"],
+            capture_output=True,
+            text=True,
+            cwd=str(root),
+            timeout=5,
+        )
+        if branch.returncode == 0:
+            payload["branch"] = branch.stdout.strip() or None
+    except (OSError, subprocess.TimeoutExpired):
+        pass
+
+    try:
+        dirty = subprocess.run(
+            ["git", "status", "--porcelain"],
+            capture_output=True,
+            text=True,
+            cwd=str(root),
+            timeout=5,
+        )
+        if dirty.returncode == 0:
+            payload["dirty_files"] = len([line for line in dirty.stdout.splitlines() if line.strip()])
+    except (OSError, subprocess.TimeoutExpired):
+        pass
+    return payload
+
+
+def start_passive_session(
+    praxis_dir: Path,
+    state: Dict[str, Any],
+    project_dir: Optional[Path] = None,
+) -> Dict[str, Any]:
+    """Open a passive capture session used as the default logging path."""
+    existing = get_open_session_record(praxis_dir)
+    if existing is not None:
+        return existing
+
+    session_id = f"capture_{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S')}"
+    project_root = Path(project_dir or praxis_dir.parent)
+    record = {
+        "id": session_id,
+        "type": "passive_session",
+        "status": "open",
+        "participant_id": state.get("participant_id"),
+        "phase": state.get("phase", "A"),
+        "condition": state.get("condition") or ("A1" if state.get("phase", "A") == "A" else "B1"),
+        "started_at": _now_iso(),
+        "ended_at": None,
+        "project_root": str(project_root),
+        "platform_ids": detect_platforms(project_root),
+        "git_start": _git_probe(project_root),
+        "capture_mode": "passive_auto",
+    }
+    append_session_record(praxis_dir, record)
+    return record
+
+
+def finish_passive_session(
+    praxis_dir: Path,
+    state: Dict[str, Any],
+    project_dir: Optional[Path] = None,
+) -> Optional[Dict[str, Any]]:
+    """Close the most recent passive session and return the finalized record."""
+    rows = load_session_records(praxis_dir)
+    if not rows:
+        return None
+
+    target_index = None
+    for idx in range(len(rows) - 1, -1, -1):
+        if rows[idx].get("status") == "open":
+            target_index = idx
+            break
+    if target_index is None:
+        return None
+
+    project_root = Path(project_dir or praxis_dir.parent)
+    row = dict(rows[target_index])
+    row["status"] = "closed"
+    row["ended_at"] = _now_iso()
+    row["phase"] = state.get("phase", row.get("phase", "A"))
+    row["condition"] = state.get("condition") or row.get("condition") or ("A1" if state.get("phase", "A") == "A" else "B1")
+    row["platform_ids"] = detect_platforms(project_root)
+    row["git_end"] = _git_probe(project_root)
+
+    start_dt = datetime.fromisoformat(str(row.get("started_at", "")).replace("Z", "+00:00"))
+    end_dt = datetime.fromisoformat(str(row.get("ended_at", "")).replace("Z", "+00:00"))
+    row["duration_minutes"] = max(1, round((end_dt - start_dt).total_seconds() / 60.0))
+    row["passive_signals"] = {
+        "platform_count": len(row.get("platform_ids", [])),
+        "git_repo_detected": bool((row.get("git_end") or {}).get("repo")),
+        "dirty_files_end": (row.get("git_end") or {}).get("dirty_files"),
+    }
+    rows[target_index] = row
+    _write_session_records(praxis_dir, rows)
+    return row
+
+
+def estimate_reliability(entry: Dict[str, Any]) -> float:
+    """Estimate session-level reliability based on provenance richness."""
+    score = 0.25
+    capture_mode = entry.get("capture_mode")
+    if capture_mode == "manual":
+        score += 0.3
+    elif capture_mode == "micro_checkout":
+        score += 0.2
+    elif capture_mode == "passive_auto":
+        score += 0.05
+
+    provenance = entry.get("field_provenance") or {}
+    if provenance.get("duration") == "auto":
+        score += 0.1
+    if provenance.get("platforms") == "auto":
+        score += 0.05
+    if provenance.get("task") == "manual_micro_checkout":
+        score += 0.1
+    if provenance.get("quality") == "manual_micro_checkout":
+        score += 0.1
+    if provenance.get("interventions") == "manual_micro_checkout":
+        score += 0.05
+    if provenance.get("trust") == "manual_micro_checkout":
+        score += 0.05
+    if entry.get("reviewed"):
+        score += 0.05
+    return round(min(1.0, score), 2)
+
+
+def build_auto_session_entry(
+    state: Dict[str, Any],
+    session_record: Dict[str, Any],
+    project_dir: Optional[Path] = None,
+) -> Dict[str, Any]:
+    """Turn a passive session capture into a draft sprint metric entry."""
+    duration = int(session_record.get("duration_minutes") or 1)
+    phase = state.get("phase", session_record.get("phase", "A"))
+    platforms = session_record.get("platform_ids", [])
+    entry: Dict[str, Any] = {
+        "id": _generate_entry_id("passive_session"),
+        "type": "sprint",
+        "timestamp": session_record.get("started_at", _now_iso()),
+        "schema_version": SCHEMA_VERSION,
+        "participant_id": state.get("participant_id"),
+        "condition": session_record.get("condition") or _derive_condition(state, "unknown"),
+        "task": "(auto-captured session — add a short checkout summary)",
+        "duration_minutes": duration,
+        "duration": duration,
+        "model_executor": "unknown",
+        "model": "unknown",
+        "quality_self": DEFAULT_AUTO_QUALITY,
+        "quality": DEFAULT_AUTO_QUALITY,
+        "human_interventions": 0,
+        "interventions": 0,
+        "autonomous": True,
+        "first_attempt": True,
+        "iterations": 1,
+        "session_id": session_record.get("id") or _get_session_id(state),
+        "phase": phase,
+        "platforms": platforms,
+        "reviewed": False,
+        "capture_mode": "passive_auto",
+        "source_session_id": session_record.get("id"),
+        "field_provenance": {
+            "task": "placeholder",
+            "duration": "auto",
+            "model": "unknown",
+            "quality": "default",
+            "interventions": "default",
+            "platforms": "auto",
+            "git": "auto",
+        },
+        "passive_capture": {
+            "started_at": session_record.get("started_at"),
+            "ended_at": session_record.get("ended_at"),
+            "platform_ids": platforms,
+            "git_start": session_record.get("git_start"),
+            "git_end": session_record.get("git_end"),
+            "signals": session_record.get("passive_signals", {}),
+        },
+        "notes": "Passive capture draft. Review with a quick checkout to improve reliability.",
+    }
+    git_commit = _get_git_commit(project_dir)
+    if git_commit:
+        entry["git_commit"] = git_commit
+    entry["reliability_score"] = estimate_reliability(entry)
+    return entry
 
 
 # ---------------------------------------------------------------------------
@@ -748,6 +993,34 @@ def load_governance_events(praxis_dir: Path) -> List[Dict[str, Any]]:
     return events
 
 
+def update_metric_entry(praxis_dir: Path, entry_id: str, updates: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    """Update one metric entry by id and return the updated row."""
+    metrics_path = praxis_dir / METRICS_FILE
+    if not metrics_path.is_file():
+        return None
+    rows: List[str] = []
+    updated_row: Optional[Dict[str, Any]] = None
+    for line in metrics_path.read_text(encoding="utf-8").splitlines():
+        raw = line.strip()
+        if not raw:
+            continue
+        try:
+            row = json.loads(raw)
+        except json.JSONDecodeError:
+            rows.append(raw)
+            continue
+        if row.get("id") == entry_id:
+            row.update(updates)
+            if "reliability_score" not in updates:
+                row["reliability_score"] = estimate_reliability(row)
+            updated_row = row
+        rows.append(json.dumps(row, ensure_ascii=False))
+    if updated_row is None:
+        return None
+    metrics_path.write_text("\n".join(rows) + "\n", encoding="utf-8")
+    return updated_row
+
+
 def compute_summary(entries: List[Dict[str, Any]]) -> Dict[str, Any]:
     """
     Compute aggregate metrics from a list of metric entries.
@@ -766,21 +1039,23 @@ def compute_summary(entries: List[Dict[str, Any]]) -> Dict[str, Any]:
             "praxis_q_mean": None,
         }
 
-    phase_a = [e for e in entries if e.get("phase") == "A"]
-    phase_b = [e for e in entries if e.get("phase") == "B"]
+    sprint_entries = [e for e in entries if e.get("type", "sprint") == "sprint"]
+    phase_a = [e for e in sprint_entries if e.get("phase") == "A"]
+    phase_b = [e for e in sprint_entries if e.get("phase") == "B"]
 
     def safe_mean(values: List[float]) -> Optional[float]:
         if not values:
             return None
         return round(sum(values) / len(values), 2)
 
-    durations = [e["duration"] for e in entries if "duration" in e]
-    qualities = [e["quality"] for e in entries if "quality" in e]
-    iterations_list = [e["iterations"] for e in entries if "iterations" in e]
-    autonomous_flags = [e.get("autonomous", False) for e in entries]
+    durations = [e["duration"] for e in sprint_entries if "duration" in e]
+    qualities = [e["quality"] for e in sprint_entries if "quality" in e]
+    iterations_list = [e["iterations"] for e in sprint_entries if "iterations" in e]
+    autonomous_flags = [e.get("autonomous", False) for e in sprint_entries]
+    reliability_scores = [float(e.get("reliability_score")) for e in sprint_entries if isinstance(e.get("reliability_score"), (int, float))]
     praxis_q_scores = [
         e["praxis_q"]["total"]
-        for e in entries
+        for e in sprint_entries
         if "praxis_q" in e and "total" in e.get("praxis_q", {})
     ]
 
@@ -796,7 +1071,8 @@ def compute_summary(entries: List[Dict[str, Any]]) -> Dict[str, Any]:
             layer_counts[layer] = layer_counts.get(layer, 0) + 1
 
     return {
-        "total_entries": len(entries),
+        "total_entries": len(sprint_entries),
+        "raw_entries": len(entries),
         "phase_a_count": len(phase_a),
         "phase_b_count": len(phase_b),
         "total_duration_minutes": sum(durations),
@@ -805,6 +1081,7 @@ def compute_summary(entries: List[Dict[str, Any]]) -> Dict[str, Any]:
         "autonomy_rate": autonomy_rate,
         "mean_duration": safe_mean(durations),
         "praxis_q_mean": safe_mean(praxis_q_scores),
+        "mean_reliability": safe_mean(reliability_scores),
         "layer_distribution": layer_counts,
     }
 

@@ -66,9 +66,28 @@ python collector/praxis_cli.py init
 praxis survey pre
 ```
 
-### 3. Log your AI tasks
+### 3. Capture work passively by default
 
-After each significant AI-assisted task:
+Start when you begin a real AI-assisted work block:
+```bash
+praxis start
+```
+
+Stop when you finish:
+```bash
+praxis stop
+```
+
+Then do the tiny human calibration step:
+```bash
+praxis checkout
+```
+
+`checkout` is the intended default path for normal users: a short task summary, quality, rework, correction, and trust signal. That is much more realistic than full manual logging.
+
+### 4. Manual log still exists for power users
+
+If you want to log a session fully in one command:
 ```bash
 praxis log "What you accomplished" -d 45 -m claude -q 4 -i 2 -h2 1
 ```
@@ -85,7 +104,7 @@ praxis log "What you accomplished" -d 45 -m claude -q 4 -i 2 -h2 1
 | `--reviewer-feedback` | External review summary | `--reviewer-feedback "Playtesters found pacing flat"` |
 | `--l1r` | Log relational governance observations | `--l1r` (interactive prompts) |
 
-### 4. Log governance events
+### 5. Log governance events
 
 When something breaks and you learn from it:
 ```bash
@@ -93,21 +112,21 @@ praxis incident "AI used outdated library version"
 ```
 This prompts for: what happened, root cause, incident category (`OPS`, `GOV`, `COM`, `PRD`, `RES`, `DES`), and whether a new rule should be created.
 
-### 5. Activate structured observation (when ready)
+### 6. Activate structured observation (when ready)
 ```bash
 praxis activate
 ```
 
 This introduces the structured PRAXIS condition and transitions to Phase B. Injection is an experimental mechanism, not the core value proposition.
 
-### 6. Export your data
+### 7. Export your data
 ```bash
 praxis export
 ```
 
 Generates an anonymized ZIP file for research analysis, including your user-facing workflow diagnosis.
 
-### 7. View your diagnosis
+### 8. View your diagnosis
 ```bash
 praxis diagnose
 ```
@@ -129,13 +148,20 @@ PRAXIS tells you what your workflow is actually doing over time.
 | Productivity rhetoric | Descriptive evidence about real practice |
 | Gives advice | Gives diagnosis |
 
+PRAXIS now separates:
+- **passive capture** for low-burden evidence collection
+- **micro-checkout** for fast human calibration
+- **manual logging** for users who want richer direct annotation
+
 ---
 
-## What's new in v0.6
+## What's new in v0.7
 
 | Feature | Description |
 |---------|-------------|
 | **L1-R: Relational Governance** | Log perceived AI confidence, warmth, trust, and compliance tendency per sprint (`--l1r` flag) |
+| **Passive capture default** | `praxis start` / `praxis stop` capture session timing and environment without full manual logging |
+| **Micro-checkout** | `praxis checkout` turns passive drafts into stronger evidence with a 10-second human calibration |
 | **P9: Architecture Independence** | Works for single-model (Copilot, Aider) and multi-agent (OpenClaw, Cowork) setups |
 | **Self-governance templates** | Protocols for single-model systems without external orchestrator |
 | **Personality calibration** | Built-in mechanism to detect when AI behavior differs from governance config |
@@ -152,6 +178,9 @@ PRAXIS tells you what your workflow is actually doing over time.
 
 ```
 praxis status          Show phase, days active, entry count, averages
+praxis start           Start passive session capture
+praxis stop            Stop passive capture and create a draft entry
+praxis checkout        Fast review of the latest passive draft
 praxis diagnose        Show your workflow diagnosis
 praxis log "task"      Log a task (interactive if no args given)
 praxis incident "desc" Log a governance emergence event
@@ -353,5 +382,5 @@ By using PRAXIS Universal Kit, you acknowledge that the authors shall not be hel
 
 ---
 
-*PRAXIS Universal Kit v0.6.0 — 2026-04-28*
+*PRAXIS Universal Kit v0.7.0 — 2026-04-28*
 *Doctoral research — Javier Herreros Riaza*

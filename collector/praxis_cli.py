@@ -51,20 +51,27 @@ from praxis_collector import (
     append_incident_event,
     append_governance_event,
     append_metric_entry,
+    build_auto_session_entry,
     build_metric_entry,
     compute_summary,
     detect_platforms,
+    estimate_reliability,
     find_praxis_dir,
     generate_participant_id,
+    get_open_session_record,
     get_or_create_praxis_dir,
     initialize_state,
     load_all_metrics,
     load_governance_events,
+    load_session_records,
     load_state,
     load_survey_responses,
     save_state,
     save_survey_response,
+    start_passive_session,
+    finish_passive_session,
     touch_last_active,
+    update_metric_entry,
     withdraw_participant,
 )
 from diagnostics import build_user_diagnosis
@@ -195,6 +202,72 @@ def ask_int(prompt: str, min_val: int, max_val: int, default: Optional[int] = No
         except (EOFError, KeyboardInterrupt):
             print()
             return default if default is not None else min_val
+
+
+def _latest_unreviewed_entry(praxis_dir: Path) -> Optional[Dict[str, Any]]:
+    entries = load_all_metrics(praxis_dir)
+    for entry in reversed(entries):
+        if entry.get("type", "sprint") == "sprint" and not entry.get("reviewed", True):
+            return entry
+    return None
+
+
+def _write_checkout(praxis_dir: Path, entry: Dict[str, Any], args: argparse.Namespace) -> Dict[str, Any]:
+    task = getattr(args, "task", None) or ask("Short task summary", "")
+    if not task:
+        task = "Reviewed auto-captured session"
+    quality = getattr(args, "quality", None)
+    if quality is None:
+        quality = ask_int("Overall usefulness / quality", 1, 5, 3)
+    rework = getattr(args, "rework", None) or ask("Rework level (low/med/high)", "med")
+    rework = str(rework).strip().lower()
+    rework_map = {"low": 1, "med": 2, "medium": 2, "high": 4}
+    iterations = rework_map.get(rework, 2)
+    corrected = getattr(args, "corrected", None)
+    if corrected is None:
+        corrected = ask_yn("Did you have to heavily correct or override the AI?", False)
+    trust = getattr(args, "trust", None)
+    if trust is None:
+        trust = ask_int("How much would you trust this output without verifying?", 1, 7, 4)
+    model = getattr(args, "model", None) or ask("Model/tool if known (optional)", entry.get("model", "unknown"))
+
+    provenance = dict(entry.get("field_provenance") or {})
+    provenance.update({
+        "task": "manual_micro_checkout",
+        "quality": "manual_micro_checkout",
+        "interventions": "manual_micro_checkout",
+        "trust": "manual_micro_checkout",
+    })
+    if model and model != "unknown":
+        provenance["model"] = "manual_micro_checkout"
+
+    l1r = dict(entry.get("l1r_observations") or {})
+    l1r["trust_willingness"] = trust
+    l1r["skepticism_activation"] = max(1, 8 - trust)
+
+    updated = dict(entry)
+    updated.update({
+        "task": task,
+        "quality_self": quality,
+        "quality": quality,
+        "iterations": iterations,
+        "first_attempt": iterations == 1,
+        "human_interventions": 1 if corrected else 0,
+        "interventions": 1 if corrected else 0,
+        "autonomous": not corrected,
+        "model": model or entry.get("model", "unknown"),
+        "model_executor": model or entry.get("model_executor", "unknown"),
+        "reviewed": True,
+        "capture_mode": "micro_checkout",
+        "checkout_rework_level": rework,
+        "l1r_observations": l1r,
+        "field_provenance": provenance,
+    })
+    updated["reliability_score"] = estimate_reliability(updated)
+    saved = update_metric_entry(praxis_dir, str(entry.get("id")), updated)
+    if saved is None:
+        raise PraxisError("Could not update the selected session draft.")
+    return saved
 
 
 # ---------------------------------------------------------------------------
@@ -349,6 +422,8 @@ def cmd_status(args: argparse.Namespace) -> int:
 
     entries = load_all_metrics(praxis_dir)
     gov_events = load_governance_events(praxis_dir)
+    sessions = load_session_records(praxis_dir)
+    open_session = get_open_session_record(praxis_dir)
     summary = compute_summary(entries)
 
     phase = state["phase"]
@@ -368,6 +443,7 @@ def cmd_status(args: argparse.Namespace) -> int:
     print()
     print(f"  {_c('Metrics', C.BOLD)}")
     print_field("Total entries",    str(summary["total_entries"]))
+    print_field("Passive captures", str(len(sessions)))
     print_field("Phase A entries",  str(summary["phase_a_count"]))
     print_field("Phase B entries",  str(summary["phase_b_count"]))
     print_field("Total time logged",f"{summary['total_duration_minutes']} min")
@@ -388,6 +464,8 @@ def cmd_status(args: argparse.Namespace) -> int:
             print_field("Mean duration",  f"{summary['mean_duration']} min")
         if summary["praxis_q_mean"] is not None:
             print_field("Mean PRAXIS-Q",  f"{summary['praxis_q_mean']}/3")
+        if summary.get("mean_reliability") is not None:
+            print_field("Mean reliability", f"{round(float(summary['mean_reliability']) * 100)}%")
 
     if phase == "B" and gov_events:
         print()
@@ -395,6 +473,11 @@ def cmd_status(args: argparse.Namespace) -> int:
 
     print()
     print(f"  {_c('Data location', C.DIM)} {praxis_dir}")
+
+    if open_session is not None:
+        print()
+        print_ok("Passive capture session is currently open.")
+        print_info("Run: praxis stop  → then praxis checkout")
 
     if phase == "A":
         days_data = _days_of_data(entries)
@@ -460,6 +543,88 @@ def cmd_diagnose(args: argparse.Namespace) -> int:
         for item in user_value:
             print(f"  {_c('•', C.B_GREEN)} {item}")
 
+    return 0
+
+
+def cmd_start(args: argparse.Namespace) -> int:
+    praxis_dir = find_praxis_dir()
+    if praxis_dir is None:
+        print_err("PRAXIS not found. Run from your project directory.")
+        return 1
+    try:
+        state = load_state(praxis_dir)
+        record = start_passive_session(praxis_dir, state, praxis_dir.parent)
+    except PraxisError as exc:
+        print_err(str(exc))
+        return 1
+
+    print_header("Passive Capture Started")
+    print_ok("Session capture is running.")
+    print_info(f"Started: {str(record.get('started_at', ''))[:19].replace('T', ' ')} UTC")
+    platforms = record.get("platform_ids", [])
+    if platforms:
+        print_info(f"Detected platforms: {', '.join(platforms)}")
+    print_info("When you finish, run: praxis stop")
+    return 0
+
+
+def cmd_stop(args: argparse.Namespace) -> int:
+    praxis_dir = find_praxis_dir()
+    if praxis_dir is None:
+        print_err("PRAXIS not found. Run from your project directory.")
+        return 1
+    try:
+        state = load_state(praxis_dir)
+        session = finish_passive_session(praxis_dir, state, praxis_dir.parent)
+        if session is None:
+            print_warn("No active passive session found.")
+            return 0
+        entry = build_auto_session_entry(state, session, praxis_dir.parent)
+        append_metric_entry(praxis_dir, entry)
+        touch_last_active(praxis_dir)
+    except (PraxisError, ValidationError) as exc:
+        print_err(str(exc))
+        return 1
+
+    print_header("Passive Capture Stopped")
+    print_ok(f"Draft session captured ({entry.get('duration_minutes')} min).")
+    print_info(f"Reliability: {round(float(entry.get('reliability_score', 0)) * 100)}%")
+    print_info("Next step: run 'praxis checkout' for a 10-second human calibration.")
+    return 0
+
+
+def cmd_checkout(args: argparse.Namespace) -> int:
+    praxis_dir = find_praxis_dir()
+    if praxis_dir is None:
+        print_err("PRAXIS not found. Run from your project directory.")
+        return 1
+
+    entry = None
+    target_id = getattr(args, "id", None)
+    if target_id:
+        for row in load_all_metrics(praxis_dir):
+            if row.get("id") == target_id:
+                entry = row
+                break
+    else:
+        entry = _latest_unreviewed_entry(praxis_dir)
+
+    if entry is None:
+        print_warn("No unreviewed session draft found.")
+        return 0
+
+    print_header("Micro Checkout")
+    print_info("This is the lightweight path: keep passive capture, add just enough human calibration to make the data stronger.")
+    try:
+        saved = _write_checkout(praxis_dir, entry, args)
+        touch_last_active(praxis_dir)
+    except (PraxisError, ValidationError) as exc:
+        print_err(str(exc))
+        return 1
+
+    print_ok("Checkout saved.")
+    print_info(f"Task: {saved.get('task', '')}")
+    print_info(f"Reliability: {round(float(saved.get('reliability_score', 0)) * 100)}%")
     return 0
 
 
@@ -562,6 +727,16 @@ def cmd_log(args: argparse.Namespace) -> int:
             project=getattr(args, "project", None),
             notes=notes,
         )
+        entry["capture_mode"] = "manual"
+        entry["reviewed"] = True
+        entry["field_provenance"] = {
+            "task": "manual",
+            "duration": "manual",
+            "model": "manual",
+            "quality": "manual",
+            "interventions": "manual",
+        }
+        entry["reliability_score"] = estimate_reliability(entry)
         append_metric_entry(praxis_dir, entry)
     except (PraxisError, ValidationError) as exc:
         print_err(str(exc))
@@ -1225,9 +1400,10 @@ def cmd_init(args: argparse.Namespace) -> int:
     print()
     print(f"  {_c('Next steps:', C.BOLD)}")
     print_info("1. Complete the pre-survey:  praxis survey pre")
-    print_info("2. Log your AI tasks daily:  praxis log 'what you did' -d <min> -m <model>")
-    print_info("3. After 7+ days, activate:  praxis activate")
-    print_info("4. Check your progress:      praxis status")
+    print_info("2. Default flow:             praxis start  →  praxis stop  →  praxis checkout")
+    print_info("3. Manual logging optional:  praxis log 'what you did' -d <min> -m <model>")
+    print_info("4. After 7+ days, activate:  praxis activate")
+    print_info("5. Check your progress:      praxis status")
     print()
     print_info(f"Data stored in: {praxis_dir}")
 
@@ -1331,6 +1507,9 @@ def build_parser() -> argparse.ArgumentParser:
         epilog=textwrap.dedent("""\
             Examples:
               praxis status
+              praxis start
+              praxis stop
+              praxis checkout
               praxis diagnose
               praxis log "Built auth module" -d 45 -m claude -q 4 -i 2 -h 1
               praxis activate
@@ -1343,7 +1522,7 @@ def build_parser() -> argparse.ArgumentParser:
               praxis withdraw
         """),
     )
-    parser.add_argument("--version", action="version", version="PRAXIS Kit 0.6.0")
+    parser.add_argument("--version", action="version", version="PRAXIS Kit 0.7.0")
     parser.add_argument("--lang", choices=["en", "es"], default="en",
                         help="Language for interactive prompts (default: en)")
 
@@ -1354,6 +1533,23 @@ def build_parser() -> argparse.ArgumentParser:
 
     # diagnose
     sub.add_parser("diagnose", help="Show your workflow diagnosis")
+
+    # passive capture
+    sub.add_parser("start", help="Start passive session capture")
+    sub.add_parser("stop", help="Stop passive session capture and create a draft entry")
+    p_checkout = sub.add_parser("checkout", help="10-second review for the latest passive draft")
+    p_checkout.add_argument("--id", type=str, help="Specific draft entry id")
+    p_checkout.add_argument("--task", type=str, help="Short task summary")
+    p_checkout.add_argument("--quality", type=int, choices=range(1, 6), metavar="1-5",
+                            help="Usefulness / quality rating")
+    p_checkout.add_argument("--rework", choices=["low", "med", "medium", "high"],
+                            help="How much rework the AI created")
+    p_checkout.add_argument("--corrected", action="store_true",
+                            help="Mark that you had to heavily correct or override the AI")
+    p_checkout.add_argument("--trust", type=int, choices=range(1, 8), metavar="1-7",
+                            help="How much you would trust the output without verifying")
+    p_checkout.add_argument("--model", type=str, metavar="MODEL",
+                            help="Model/tool if known")
 
     # log
     p_log = sub.add_parser("log", help="Log a task/sprint with metrics")
@@ -1448,6 +1644,9 @@ def build_parser() -> argparse.ArgumentParser:
 
 COMMAND_MAP = {
     "status":    cmd_status,
+    "start":     cmd_start,
+    "stop":      cmd_stop,
+    "checkout":  cmd_checkout,
     "log":       cmd_log,
     "diagnose":  cmd_diagnose,
     "activate":  cmd_activate,

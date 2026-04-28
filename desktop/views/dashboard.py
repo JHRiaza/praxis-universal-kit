@@ -100,10 +100,11 @@ class DashboardView(ctk.CTkScrollableFrame):
             ("phase", "Phase", "—"),
             ("days_active", "Days Active", "0"),
             ("total_entries", "Total Entries", "0"),
+            ("passive_capture_count", "Passive Captures", "0"),
             ("avg_quality", "Avg Quality", "—"),
+            ("avg_reliability", "Avg Reliability", "—"),
             ("avg_duration", "Avg Duration (min)", "—"),
             ("autonomy_rate", "Autonomy Rate", "—"),
-            ("total_duration", "Total Duration (min)", "0"),
         ]
 
         cards_start_row = self._next_row()
@@ -232,7 +233,8 @@ class DashboardView(ctk.CTkScrollableFrame):
             self._subtitle.configure(text="PRAXIS not initialized")
             return
 
-        self._subtitle.configure(text="Last updated just now")
+        passive_count = data.get("passive_capture_count", 0)
+        self._subtitle.configure(text=f"Last updated just now · passive captures: {passive_count}")
 
         # Session status (Sprint 2)
         session_active = data.get("session_active", False)
@@ -281,9 +283,14 @@ class DashboardView(ctk.CTkScrollableFrame):
             "phase": f"Phase {phase}",
             "days_active": str(data.get("days_active", 0)),
             "total_entries": str(data.get("total_entries", 0)),
+            "passive_capture_count": str(passive_count),
             "avg_quality": (
                 f"{data['avg_quality']:.1f} / 5"
                 if data.get("avg_quality") is not None else "—"
+            ),
+            "avg_reliability": (
+                f"{data['diagnosis']['metrics']['avg_reliability']:.0%}"
+                if data.get("diagnosis", {}).get("metrics", {}).get("avg_reliability") is not None else "—"
             ),
             "avg_duration": (
                 f"{data['avg_duration']:.1f} min"
@@ -293,7 +300,6 @@ class DashboardView(ctk.CTkScrollableFrame):
                 f"{data['autonomy_rate']:.0%}"
                 if data.get("autonomy_rate") is not None else "—"
             ),
-            "total_duration": f"{data.get('total_duration', 0)} min",
         }
 
         for key, value in mapping.items():
