@@ -4,7 +4,7 @@
 
 PRAXIS instruments real human-AI workflows so you can see patterns that usually stay invisible: rework drag, trust calibration, session-boundary degradation, personality effects, and governance rules that emerge under pressure.
 
-**Part of doctoral research at Universidad Complutense de Madrid.**
+**Part of doctoral research.**
 
 ---
 
@@ -249,7 +249,7 @@ This kit is part of a doctoral thesis that documents governance phenomena in AI-
   title = {PRAXIS Universal Kit},
   version = {0.3.2},
   year = {2026},
-  publisher = {Universidad Complutense de Madrid},
+  publisher = {Javier Herreros Riaza},
   url = {https://github.com/JHRiaza/praxis-universal-kit}
 }
 ```
@@ -340,7 +340,7 @@ desktop/
 
 ## Disclaimer & Limitation of Liability
 
-PRAXIS Universal Kit is a **research instrument** developed as part of doctoral work at Universidad Complutense de Madrid. It is provided **"as is"** without warranty of any kind, express or implied.
+PRAXIS Universal Kit is a **research instrument** developed as part of doctoral work. It is provided **"as is"** without warranty of any kind, express or implied.
 
 - **No guarantee of fitness** for any particular purpose. The kit is designed for academic research and may contain bugs or unexpected behavior.
 - **Data is stored locally** on your machine. The developers are not responsible for any data loss, corruption, or unintended exposure.
@@ -349,9 +349,9 @@ PRAXIS Universal Kit is a **research instrument** developed as part of doctoral 
 - **Research use only.** This tool is not intended for production environments, critical workflows, or commercial deployment.
 - **Participant autonomy.** All data collection requires explicit consent. Participants can withdraw at any time and request deletion of their data.
 
-By using PRAXIS Universal Kit, you acknowledge that the authors and Universidad Complutense de Madrid shall not be held liable for any damages arising from its use.
+By using PRAXIS Universal Kit, you acknowledge that the authors shall not be held liable for any damages arising from its use.
 
 ---
 
 *PRAXIS Universal Kit v0.6.0 — 2026-04-28*
-*Doctoral research — Universidad Complutense de Madrid*
+*Doctoral research — Javier Herreros Riaza*
