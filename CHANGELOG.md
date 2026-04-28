@@ -1,5 +1,18 @@
 # PRAXIS Universal Kit — Changelog
 
+## v0.7.0 (2026-04-28)
+
+### Changed
+- **Default logging model redesigned** — full manual task logging is no longer the intended default path for participants.
+- **Telemetry stance clarified** — PRAXIS now distinguishes passive capture, micro-checkout, manual logging, and reliability/provenance instead of treating all data as equally trustworthy.
+
+### Added
+- **`praxis start` / `praxis stop`** — passive session capture flow for low-friction telemetry.
+- **`praxis checkout`** — 10-second human calibration step to strengthen passive drafts.
+- **`sessions.jsonl`** — passive session timeline export.
+- **Reliability scoring** — session/export-level confidence based on provenance richness.
+- **Provenance-aware diagnosis** — workflow diagnosis now reflects passive-only vs calibrated evidence.
+
 ## v0.6.0 (2026-04-28)
 
 ### Changed
