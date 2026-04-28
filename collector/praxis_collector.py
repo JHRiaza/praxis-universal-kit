@@ -27,7 +27,7 @@ from typing import Any, Dict, List, Optional, Tuple
 # Constants
 # ---------------------------------------------------------------------------
 
-KIT_VERSION = "0.8.0"
+KIT_VERSION = "0.9.0"
 SCHEMA_VERSION = "0.2"
 PRAXIS_DIR = ".praxis"
 STATE_FILE = "state.json"
@@ -323,6 +323,20 @@ def start_passive_session(
         "git_start": _git_probe(project_root),
         "capture_mode": "passive_auto",
     }
+    try:
+        from adapters.openclaw_telemetry import OpenClawAdapter
+        adapter = OpenClawAdapter(praxis_dir.parent)
+        if adapter.detect():
+            record.setdefault("adapter_telemetry_start", {})["openclaw"] = adapter.capture_session_context()
+    except Exception:
+        pass
+    try:
+        from adapters.codex_telemetry import CodexAdapter
+        adapter = CodexAdapter()
+        if adapter.detect():
+            record.setdefault("adapter_telemetry_start", {})["codex"] = adapter.capture_session_context()
+    except Exception:
+        pass
     append_session_record(praxis_dir, record)
     return record
 
@@ -353,6 +367,20 @@ def finish_passive_session(
     row["condition"] = state.get("condition") or row.get("condition") or ("A1" if state.get("phase", "A") == "A" else "B1")
     row["platform_ids"] = detect_platforms(project_root)
     row["git_end"] = _git_probe(project_root)
+    try:
+        from adapters.openclaw_telemetry import OpenClawAdapter
+        adapter = OpenClawAdapter(project_root)
+        if adapter.detect():
+            row.setdefault("adapter_telemetry_end", {})["openclaw"] = adapter.capture_session_context()
+    except Exception:
+        pass
+    try:
+        from adapters.codex_telemetry import CodexAdapter
+        adapter = CodexAdapter()
+        if adapter.detect():
+            row.setdefault("adapter_telemetry_end", {})["codex"] = adapter.capture_session_context()
+    except Exception:
+        pass
 
     start_dt = datetime.fromisoformat(str(row.get("started_at", "")).replace("Z", "+00:00"))
     end_dt = datetime.fromisoformat(str(row.get("ended_at", "")).replace("Z", "+00:00"))
@@ -417,12 +445,20 @@ def get_session_checkout_context(entry: Dict[str, Any]) -> Dict[str, Any]:
     platform_label = ", ".join(_humanize_platform(str(p)) for p in platforms) if platforms else "Unknown"
     signals = dict(passive.get("signals") or {})
     git_label = _build_git_summary(passive, signals)
+    adapter_tel = entry.get("adapter_telemetry_start") or {}
+    adapter_parts = []
+    if adapter_tel.get("openclaw", {}).get("detected"):
+        adapter_parts.append("OpenClaw ✓")
+    if adapter_tel.get("codex", {}).get("detected"):
+        turns = adapter_tel.get("codex", {}).get("latest_session", {}).get("turns", "?")
+        adapter_parts.append(f"Codex ({turns} turns)")
     return {
         "started": started,
         "ended": ended,
         "duration_minutes": duration,
         "platform_label": platform_label,
         "git_label": git_label,
+        "adapter_summary": " | ".join(adapter_parts) if adapter_parts else "",
     }
 
 
