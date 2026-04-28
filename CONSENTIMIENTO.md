@@ -5,7 +5,7 @@
 **Título:** Arquitectura metodológica para sistemas autónomos asistidos por IA: Estudio cuasi-experimental sobre la adopción del framework de gobernanza PRAXIS
 
 **Investigador principal:** Javier Herreros Riaza
-**Institución:** Universidad Complutense de Madrid — Programa de Doctorado en Comunicación Audiovisual y Publicidad (CAVP)
+**Institución:** Programa de Doctorado en Comunicación Audiovisual y Publicidad (CAVP)
 **Framework:** PRAXIS v1.1
 
 ---
@@ -120,7 +120,7 @@ Al participar, usted:
 Para preguntas sobre esta investigación:
 
 **Investigador:** Javier Herreros Riaza
-**Institución:** Universidad Complutense de Madrid
+**Institución:** 
 **Programa:** Doctorado CAVP
 
 ---
@@ -140,5 +140,5 @@ Su consentimiento se registra con una marca de tiempo en `.praxis/state.json` en
 ---
 
 *PRAXIS Universal Kit v0.2*
-*Universidad Complutense de Madrid — Investigación Doctoral*
+*Investigación Doctoral*
 *Framework: CC BY-SA 4.0*
