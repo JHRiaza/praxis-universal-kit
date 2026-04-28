@@ -27,7 +27,7 @@ from typing import Any, Dict, List, Optional, Tuple
 # Constants
 # ---------------------------------------------------------------------------
 
-KIT_VERSION = "0.9.0"
+KIT_VERSION = "0.9.1"
 SCHEMA_VERSION = "0.2"
 PRAXIS_DIR = ".praxis"
 STATE_FILE = "state.json"
@@ -337,6 +337,13 @@ def start_passive_session(
             record.setdefault("adapter_telemetry_start", {})["codex"] = adapter.capture_session_context()
     except Exception:
         pass
+    try:
+        from adapters.cowork_telemetry import CoworkAdapter
+        adapter = CoworkAdapter()
+        if adapter.detect():
+            record.setdefault("adapter_telemetry_start", {})["cowork"] = adapter.capture_session_context()
+    except Exception:
+        pass
     append_session_record(praxis_dir, record)
     return record
 
@@ -379,6 +386,13 @@ def finish_passive_session(
         adapter = CodexAdapter()
         if adapter.detect():
             row.setdefault("adapter_telemetry_end", {})["codex"] = adapter.capture_session_context()
+    except Exception:
+        pass
+    try:
+        from adapters.cowork_telemetry import CoworkAdapter
+        adapter = CoworkAdapter()
+        if adapter.detect():
+            row.setdefault("adapter_telemetry_end", {})["cowork"] = adapter.capture_session_context()
     except Exception:
         pass
 
@@ -452,6 +466,9 @@ def get_session_checkout_context(entry: Dict[str, Any]) -> Dict[str, Any]:
     if adapter_tel.get("codex", {}).get("detected"):
         turns = adapter_tel.get("codex", {}).get("latest_session", {}).get("turns", "?")
         adapter_parts.append(f"Codex ({turns} turns)")
+    if adapter_tel.get("cowork", {}).get("detected"):
+        completed = adapter_tel.get("cowork", {}).get("completed_count", 0)
+        adapter_parts.append(f"Cowork ({completed} responses)")
     return {
         "started": started,
         "ended": ended,

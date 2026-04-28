@@ -96,6 +96,7 @@ a = Analysis(
         "adapters.claude_cowork",
         "adapters.codex",
         "adapters.codex_telemetry",
+        "adapters.cowork_telemetry",
         "adapters.cursor",
         "adapters.windsurf",
         "adapters.copilot",
