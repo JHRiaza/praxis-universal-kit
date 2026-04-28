@@ -17,6 +17,7 @@ a = Analysis(
         str(kit_root / "collector"),
         str(kit_root / "export"),
         str(kit_root / "adapters"),
+        str(kit_root / "desktop"),
     ],
     binaries=[],
     datas=[

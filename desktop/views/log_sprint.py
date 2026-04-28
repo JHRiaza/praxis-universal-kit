@@ -13,6 +13,10 @@ from typing import Any, Optional
 
 import customtkinter as ctk
 
+from collector.praxis_collector import apply_smart_checkout
+
+from .checkout_dialog import CheckoutDialog
+
 
 MODEL_OPTIONS = [
     "claude",
@@ -196,11 +200,33 @@ class LogSprintView(ctk.CTkScrollableFrame):
         """End current session and save it."""
         entry = self._vm.end_session()
         if entry:
-            dur = entry.get("duration_min", 0)
-            self._status_label.configure(
-                text=f"✅ Session saved ({dur} min) — unreviewed",
-                text_color="#2ecc71",
-            )
+            dialog = CheckoutDialog(self.winfo_toplevel(), entry)
+            result = dialog.show()
+            if result and entry.get("id"):
+                try:
+                    updated = apply_smart_checkout(
+                        entry,
+                        outcome=result.get("outcome", "solved"),
+                        governance_tag=result.get("governance_tag", "none"),
+                        task=result.get("task", ""),
+                    )
+                    self._vm.update_session_entry(str(entry.get("id")), updated)
+                    dur = updated.get("duration_minutes") or updated.get("duration") or 0
+                    self._status_label.configure(
+                        text=f"✅ Session saved ({dur} min) — reviewed",
+                        text_color="#2ecc71",
+                    )
+                except Exception as exc:
+                    self._status_label.configure(
+                        text=f"⚠ Checkout save failed: {exc}",
+                        text_color="#e74c3c",
+                    )
+            else:
+                dur = entry.get("duration_minutes") or entry.get("duration") or 0
+                self._status_label.configure(
+                    text=f"✅ Session saved ({dur} min) — unreviewed",
+                    text_color="#2ecc71",
+                )
         # Start a new session immediately
         self._vm.start_session()
         self._refresh_sessions()

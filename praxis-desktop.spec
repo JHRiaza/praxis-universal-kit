@@ -3,7 +3,7 @@
 
 a = Analysis(
     ['desktop\\app.py'],
-    pathex=['.', 'collector', 'export', 'adapters'],
+    pathex=['.', 'collector', 'export', 'adapters', 'desktop'],
     binaries=[],
     datas=[('collector', 'collector'), ('adapters', 'adapters'), ('config', 'config'), ('export', 'export'), ('templates', 'templates'), ('desktop\\views', 'desktop/views'), ('surveys', 'surveys')],
     hiddenimports=['customtkinter', 'smtplib', 'ssl', 'email', 'email.message', 'submission', 'diagnostics'],

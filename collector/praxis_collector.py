@@ -27,7 +27,7 @@ from typing import Any, Dict, List, Optional, Tuple
 # Constants
 # ---------------------------------------------------------------------------
 
-KIT_VERSION = "0.7.0"
+KIT_VERSION = "0.8.0"
 SCHEMA_VERSION = "0.2"
 PRAXIS_DIR = ".praxis"
 STATE_FILE = "state.json"
@@ -58,6 +58,14 @@ VALID_GOVERNANCE_TYPES = (
     "other",
 )
 VALID_INCIDENT_CATEGORIES = ("OPS", "GOV", "COM", "PRD", "RES", "DES")
+VALID_GOVERNANCE_TAGS = (
+    "context_loss",
+    "override",
+    "ai_off_track",
+    "scope_creep",
+    "model_switch",
+    "none",
+)
 
 
 # ---------------------------------------------------------------------------
@@ -269,6 +277,26 @@ def _git_probe(project_dir: Optional[Path]) -> Dict[str, Any]:
     return payload
 
 
+def _git_commit_delta(project_dir: Optional[Path], start_commit: Optional[str], end_commit: Optional[str]) -> int:
+    """Return number of commits between start and end when available."""
+    if not start_commit or not end_commit or start_commit == end_commit:
+        return 0
+    root = Path(project_dir or Path.cwd())
+    try:
+        result = subprocess.run(
+            ["git", "rev-list", "--count", f"{start_commit}..{end_commit}"],
+            capture_output=True,
+            text=True,
+            cwd=str(root),
+            timeout=5,
+        )
+        if result.returncode == 0:
+            return max(0, int((result.stdout or "0").strip() or "0"))
+    except (OSError, ValueError, subprocess.TimeoutExpired):
+        pass
+    return 0
+
+
 def start_passive_session(
     praxis_dir: Path,
     state: Dict[str, Any],
@@ -333,6 +361,11 @@ def finish_passive_session(
         "platform_count": len(row.get("platform_ids", [])),
         "git_repo_detected": bool((row.get("git_end") or {}).get("repo")),
         "dirty_files_end": (row.get("git_end") or {}).get("dirty_files"),
+        "git_commit_delta": _git_commit_delta(
+            project_root,
+            (row.get("git_start") or {}).get("commit"),
+            (row.get("git_end") or {}).get("commit"),
+        ),
     }
     rows[target_index] = row
     _write_session_records(praxis_dir, rows)
@@ -345,6 +378,8 @@ def estimate_reliability(entry: Dict[str, Any]) -> float:
     capture_mode = entry.get("capture_mode")
     if capture_mode == "manual":
         score += 0.3
+    elif capture_mode == "smart_checkout":
+        score += 0.25
     elif capture_mode == "micro_checkout":
         score += 0.2
     elif capture_mode == "passive_auto":
@@ -355,17 +390,147 @@ def estimate_reliability(entry: Dict[str, Any]) -> float:
         score += 0.1
     if provenance.get("platforms") == "auto":
         score += 0.05
-    if provenance.get("task") == "manual_micro_checkout":
+    if provenance.get("task") in ("manual_micro_checkout", "smart_checkout"):
         score += 0.1
-    if provenance.get("quality") == "manual_micro_checkout":
+    if provenance.get("quality") in ("manual_micro_checkout", "smart_checkout"):
         score += 0.1
-    if provenance.get("interventions") == "manual_micro_checkout":
+    if provenance.get("interventions") in ("manual_micro_checkout", "smart_checkout"):
         score += 0.05
-    if provenance.get("trust") == "manual_micro_checkout":
+    if provenance.get("trust") in ("manual_micro_checkout", "smart_checkout"):
+        score += 0.05
+    if provenance.get("governance_tag") == "smart_checkout":
         score += 0.05
     if entry.get("reviewed"):
         score += 0.05
     return round(min(1.0, score), 2)
+
+
+def get_session_checkout_context(entry: Dict[str, Any]) -> Dict[str, Any]:
+    """Return display-ready passive session metadata for contextual checkout."""
+    passive = dict(entry.get("passive_capture") or {})
+    started_raw = passive.get("started_at")
+    ended_raw = passive.get("ended_at")
+    started = _format_clock(started_raw)
+    ended = _format_clock(ended_raw)
+    duration = int(entry.get("duration_minutes") or entry.get("duration") or 0)
+    platforms = passive.get("platform_ids") or entry.get("platforms") or []
+    platform_label = ", ".join(_humanize_platform(str(p)) for p in platforms) if platforms else "Unknown"
+    signals = dict(passive.get("signals") or {})
+    git_label = _build_git_summary(passive, signals)
+    return {
+        "started": started,
+        "ended": ended,
+        "duration_minutes": duration,
+        "platform_label": platform_label,
+        "git_label": git_label,
+    }
+
+
+def apply_smart_checkout(
+    entry: Dict[str, Any],
+    outcome: str,
+    governance_tag: Optional[str] = None,
+    task: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Apply the smart contextual checkout mapping to a passive session draft."""
+    outcome_key = str(outcome or "").strip().lower()
+    outcome_map = {
+        "solved": {"quality": 5, "iterations": entry.get("iterations") or 1, "trust_clean": 6, "trust_tagged": 4},
+        "partial": {"quality": 3, "iterations": entry.get("iterations") or 2, "trust_clean": 4, "trust_tagged": 3},
+        "abandoned": {"quality": 1, "iterations": entry.get("iterations") or 3, "trust_clean": 2, "trust_tagged": 1},
+    }
+    if outcome_key not in outcome_map:
+        raise ValidationError("Outcome must be one of: solved, partial, abandoned")
+
+    tag = str(governance_tag or "none").strip().lower().replace("-", "_")
+    if not tag:
+        tag = "none"
+    if tag not in VALID_GOVERNANCE_TAGS:
+        raise ValidationError(f"Invalid governance tag: {tag}")
+
+    mapping = outcome_map[outcome_key]
+    has_governance = tag != "none"
+    trust = mapping["trust_tagged"] if has_governance else mapping["trust_clean"]
+
+    provenance = dict(entry.get("field_provenance") or {})
+    provenance.update({
+        "task": "smart_checkout",
+        "quality": "smart_checkout",
+        "interventions": "smart_checkout",
+        "trust": "smart_checkout",
+        "governance_tag": "smart_checkout",
+    })
+
+    l1r = dict(entry.get("l1r_observations") or {})
+    l1r["trust_willingness"] = trust
+    l1r["skepticism_activation"] = max(1, 8 - trust)
+
+    summary = (task or "").strip() or "Reviewed auto-captured session"
+    interventions = int(entry.get("interventions") or entry.get("human_interventions") or 0)
+    if tag == "override":
+        interventions = max(1, interventions)
+
+    updated = dict(entry)
+    updated.update({
+        "task": summary,
+        "quality_self": mapping["quality"],
+        "quality": mapping["quality"],
+        "iterations": int(mapping["iterations"]),
+        "first_attempt": int(mapping["iterations"]) <= 1,
+        "human_interventions": interventions,
+        "interventions": interventions,
+        "autonomous": interventions == 0,
+        "reviewed": True,
+        "capture_mode": "smart_checkout",
+        "governance_tag": tag,
+        "checkout_outcome": outcome_key,
+        "l1r_observations": l1r,
+        "field_provenance": provenance,
+    })
+    updated["reliability_score"] = estimate_reliability(updated)
+    return updated
+
+
+def _format_clock(raw_value: Optional[str]) -> str:
+    if not raw_value:
+        return "?"
+    try:
+        dt = datetime.fromisoformat(str(raw_value).replace("Z", "+00:00"))
+        return dt.strftime("%H:%M")
+    except Exception:
+        return str(raw_value)[11:16] if len(str(raw_value)) >= 16 else str(raw_value)
+
+
+def _humanize_platform(platform_id: str) -> str:
+    label = platform_id.replace("_", " ").replace("-", " ").strip()
+    mapping = {
+        "claude": "Claude",
+        "claude code": "Claude Code",
+        "codex": "Codex",
+        "openclaw": "OpenClaw",
+        "cursor": "Cursor",
+        "copilot": "Copilot",
+        "windsurf": "Windsurf",
+        "aider": "Aider",
+    }
+    return mapping.get(label.lower(), label.title() or platform_id)
+
+
+def _build_git_summary(passive_capture: Dict[str, Any], signals: Dict[str, Any]) -> str:
+    git_end = dict(passive_capture.get("git_end") or {})
+    repo_detected = bool(git_end.get("repo") or signals.get("git_repo_detected"))
+    if not repo_detected:
+        return "No repo detected"
+    commit_delta = int(signals.get("git_commit_delta") or 0)
+    dirty_files = git_end.get("dirty_files")
+    parts = [f"+{commit_delta} commits"]
+    if dirty_files is not None:
+        noun = "file" if int(dirty_files) == 1 else "files"
+        parts.append(f"{int(dirty_files)} {noun} changed")
+    branch = git_end.get("branch")
+    if branch:
+        parts.append(str(branch))
+    return ", ".join(parts)
 
 
 def build_auto_session_entry(

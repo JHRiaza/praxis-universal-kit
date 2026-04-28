@@ -39,6 +39,7 @@ sys.path.insert(0, str(_HERE))
 from praxis_collector import (
     GOVERNANCE_FILE,
     METRICS_FILE,
+    VALID_GOVERNANCE_TAGS,
     VALID_GOVERNANCE_TYPES,
     VALID_INCIDENT_CATEGORIES,
     VALID_ITERATION_TYPES,
@@ -51,6 +52,7 @@ from praxis_collector import (
     append_incident_event,
     append_governance_event,
     append_metric_entry,
+    apply_smart_checkout,
     build_auto_session_entry,
     build_metric_entry,
     compute_summary,
@@ -66,6 +68,7 @@ from praxis_collector import (
     load_session_records,
     load_state,
     load_survey_responses,
+    get_session_checkout_context,
     save_state,
     save_survey_response,
     start_passive_session,
@@ -204,6 +207,27 @@ def ask_int(prompt: str, min_val: int, max_val: int, default: Optional[int] = No
             return default if default is not None else min_val
 
 
+def ask_choice(prompt: str, options: List[Tuple[str, str]], default: Optional[str] = None) -> str:
+    """Prompt for a single choice from a list of (key, label)."""
+    option_map = {str(key).strip().lower(): label for key, label in options}
+    while True:
+        print()
+        print(f"  {_c(prompt, C.BOLD)}")
+        for key, label in options:
+            marker = " (default)" if default and key == default else ""
+            print(f"    {_c(str(key), C.B_CYAN)} {label}{marker}")
+        try:
+            raw = input(f"\n  {_c('?', C.B_CYAN)} Choose: ").strip().lower()
+        except (EOFError, KeyboardInterrupt):
+            print()
+            return default or options[0][0]
+        if not raw and default is not None:
+            return default
+        if raw in option_map:
+            return raw
+        print_warn("Please choose one of the listed options.")
+
+
 def _latest_unreviewed_entry(praxis_dir: Path) -> Optional[Dict[str, Any]]:
     entries = load_all_metrics(praxis_dir)
     for entry in reversed(entries):
@@ -213,6 +237,65 @@ def _latest_unreviewed_entry(praxis_dir: Path) -> Optional[Dict[str, Any]]:
 
 
 def _write_checkout(praxis_dir: Path, entry: Dict[str, Any], args: argparse.Namespace) -> Dict[str, Any]:
+    if any(getattr(args, name, None) is not None for name in ("quality", "rework", "trust", "model")) or getattr(args, "corrected", False):
+        return _write_checkout_legacy(praxis_dir, entry, args)
+
+    context = get_session_checkout_context(entry)
+    print()
+    print(f"  {_c('═══ Micro Checkout ═══', C.BOLD)}")
+    print()
+    print_info(
+        f"Session: {context.get('started', '?')} → {context.get('ended', '?')} "
+        f"({context.get('duration_minutes', 0)} min)"
+    )
+    print_info(f"Platform: {context.get('platform_label', 'Unknown')}")
+    print_info(f"Git: {context.get('git_label', 'No repo detected')}")
+
+    outcome = ask_choice(
+        "What happened?",
+        [
+            ("1", "✅ Solved — moved on"),
+            ("2", "⚠️ Partially — accepted a compromise"),
+            ("3", "❌ Abandoned — gave up or switched approach"),
+        ],
+        default="1",
+    )
+    outcome_map = {"1": "solved", "2": "partial", "3": "abandoned"}
+
+    governance = ask_choice(
+        "Governance moment? (optional)",
+        [
+            ("1", "🔄 Context loss — had to repeat/re-explain"),
+            ("2", "👤 Overrode the AI"),
+            ("3", "🤔 AI went off track"),
+            ("4", "📏 Scope creep — task expanded"),
+            ("5", "🔀 Model switch — changed tool mid-session"),
+            ("0", "🚫 None"),
+        ],
+        default="0",
+    )
+    governance_map = {
+        "1": "context_loss",
+        "2": "override",
+        "3": "ai_off_track",
+        "4": "scope_creep",
+        "5": "model_switch",
+        "0": "none",
+    }
+    task = getattr(args, "task", None) or ask("1-line task summary (optional)", "")
+    updated = apply_smart_checkout(
+        entry,
+        outcome=outcome_map.get(outcome, "solved"),
+        governance_tag=governance_map.get(governance, "none"),
+        task=task,
+    )
+    saved = update_metric_entry(praxis_dir, str(entry.get("id")), updated)
+    if saved is None:
+        raise PraxisError("Could not update the selected session draft.")
+    return saved
+
+
+def _write_checkout_legacy(praxis_dir: Path, entry: Dict[str, Any], args: argparse.Namespace) -> Dict[str, Any]:
     task = getattr(args, "task", None) or ask("Short task summary", "")
     if not task:
         task = "Reviewed auto-captured session"
