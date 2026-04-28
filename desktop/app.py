@@ -36,7 +36,7 @@ import json
 from viewmodel import PraxisViewModel  # noqa: E402
 from views.init_wizard import InitWizardView  # noqa: E402
 from views.dashboard import DashboardView  # noqa: E402
-from views.praxis_q import PraxisQView  # noqa: E402
+# PRAXIS-Q removed — redundant with micro-checkout
 from views.log_sprint import LogSprintView  # noqa: E402
 # Protocol tab removed — prescriptive injection is a post-thesis product
 from views.export import ExportView  # noqa: E402
@@ -177,13 +177,11 @@ class PraxisApp(ctk.CTk):
         self._nav_buttons: list[ctk.CTkButton] = []
         self._nav_labels = [
             "📊 Dashboard",
-            "📝 PRAXIS-Q",
             "📋 Sessions",
             "📦 Export",
         ]
         self._nav_callbacks = [
             self._show_dashboard,
-            self._show_praxis_q,
             self._show_log_sprint,
             self._show_export,
         ]
@@ -530,11 +528,6 @@ class PraxisApp(ctk.CTk):
         self._current_view.grid(row=0, column=0, sticky="nsew")
         if hasattr(self._current_view, "refresh"):
             self._current_view.refresh()
-
-    def _show_praxis_q(self) -> None:
-        self._clear_content()
-        self._current_view = PraxisQView(self._content, vm=self._vm)
-        self._current_view.grid(row=0, column=0, sticky="nsew")
 
     def _show_log_sprint(self) -> None:
         self._clear_content()

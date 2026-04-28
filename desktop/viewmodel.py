@@ -81,6 +81,7 @@ from praxis_collector import (  # noqa: E402
     save_state,
     start_passive_session,
     update_metric_entry,
+    delete_metric_entry,
 )
 
 # Export module

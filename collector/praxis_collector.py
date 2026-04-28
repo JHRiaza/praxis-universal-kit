@@ -1021,6 +1021,32 @@ def update_metric_entry(praxis_dir: Path, entry_id: str, updates: Dict[str, Any]
     return updated_row
 
 
+def delete_metric_entry(praxis_dir: Path, entry_id: str) -> bool:
+    """Delete one metric entry by id. Returns True if found and removed."""
+    metrics_path = praxis_dir / METRICS_FILE
+    if not metrics_path.is_file():
+        return False
+    rows: List[str] = []
+    found = False
+    for line in metrics_path.read_text(encoding="utf-8").splitlines():
+        raw = line.strip()
+        if not raw:
+            continue
+        try:
+            row = json.loads(raw)
+        except json.JSONDecodeError:
+            rows.append(raw)
+            continue
+        if row.get("id") == entry_id:
+            found = True
+            continue  # skip this row = delete it
+        rows.append(json.dumps(row, ensure_ascii=False))
+    if not found:
+        return False
+    metrics_path.write_text("\n".join(rows) + "\n", encoding="utf-8")
+    return True
+
+
 def compute_summary(entries: List[Dict[str, Any]]) -> Dict[str, Any]:
     """
     Compute aggregate metrics from a list of metric entries.

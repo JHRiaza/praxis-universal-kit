@@ -271,7 +271,6 @@ class LogSprintView(ctk.CTkScrollableFrame):
         """Create a single session row in the list."""
         entry_id = session.get("id", "")
         reviewed = session.get("reviewed", True)
-        phase = session.get("phase", "A")
         duration = session.get("duration_min", 0)
         model = session.get("model")
         timestamp = session.get("timestamp", "")
@@ -307,10 +306,11 @@ class LogSprintView(ctk.CTkScrollableFrame):
         icon_label.grid(row=0, column=0, padx=(8, 4), pady=8)
 
         # Info
-        phase_badge = f"[{phase}]" if phase else ""
-        model_text = model if model else "Unreviewed ⚠️" if not reviewed else "N/A"
+        # Use detected platforms if available
+        platforms = session.get("platform_ids", [])
+        platform_str = ", ".join(platforms) if platforms else ""
+        model_text = model if model else platform_str if platform_str else ("Unreviewed" if not reviewed else "N/A")
         task_text = task if task else "—"
-        info_text = f"{date_str}  •  {duration} min  •  {model_text}  {phase_badge}"
 
         info_label = ctk.CTkLabel(
             row_frame, text=info_text, font=ctk.CTkFont(size=12),
@@ -338,7 +338,20 @@ class LogSprintView(ctk.CTkScrollableFrame):
             border_color="gray50",
             command=lambda eid=entry_id: self._toggle_edit(eid),
         )
-        edit_btn.grid(row=0, column=2, padx=(4, 8), pady=8)
+        edit_btn.grid(row=0, column=2, padx=(4, 4), pady=8)
+
+        # Discard button
+        discard_btn = ctk.CTkButton(
+            row_frame, text="✕ Discard", width=60, height=28,
+            font=ctk.CTkFont(size=11),
+            fg_color="transparent",
+            hover_color=("gray70", "gray30"),
+            text_color=("gray10", "gray90"),
+            border_width=1,
+            border_color="gray50",
+            command=lambda eid=entry_id: self._discard_entry(eid),
+        )
+        discard_btn.grid(row=0, column=3, padx=(0, 8), pady=8)
 
         # Edit form (hidden by default)
         if self._expanded_entry_id == entry_id:
@@ -374,7 +387,13 @@ class LogSprintView(ctk.CTkScrollableFrame):
         ctk.CTkLabel(frame, text="Model:", font=ctk.CTkFont(size=12, weight="bold")).grid(
             row=len(fields), column=0, padx=(12, 8), pady=4, sticky="w",
         )
-        model_var = ctk.StringVar(value=session.get("model") or "claude")
+        # Auto-fill model from detected platforms if not set
+        detected_model = session.get("model") or ""
+        if not detected_model:
+            detected_platforms = session.get("platform_ids", [])
+            if detected_platforms:
+                detected_model = detected_platforms[0]
+        model_var = ctk.StringVar(value=detected_model or "claude")
         ctk.CTkOptionMenu(
             frame, values=MODEL_OPTIONS, variable=model_var, height=30,
         ).grid(row=len(fields), column=1, padx=(0, 12), pady=4, sticky="ew")
@@ -464,7 +483,6 @@ class LogSprintView(ctk.CTkScrollableFrame):
                 self._expanded_entry_id = None
                 self._refresh_sessions()
                 # Check auto-transition
-                self._check_auto_transition()
             else:
                 self._status_label.configure(
                     text="⚠️ Session not found.", text_color="#e74c3c"
@@ -658,7 +676,6 @@ class LogSprintView(ctk.CTkScrollableFrame):
             )
             self._clear_quick_log()
             self._refresh_sessions()
-            self._check_auto_transition()
         except Exception as exc:
             self._status_label.configure(
                 text=f"⚠ Error: {exc}", text_color="#e74c3c",
@@ -680,39 +697,21 @@ class LogSprintView(ctk.CTkScrollableFrame):
     # Auto-transition check
     # ------------------------------------------------------------------
 
-    def _check_auto_transition(self) -> None:
-        """Check if Phase A sessions meet threshold for auto-transition."""
-        count = self._vm.check_auto_transition()
-        if count is not None and self._app:
-            # Show dialog via after to avoid blocking
-            self.after(100, lambda: self._show_transition_dialog(count))
 
-    def _show_transition_dialog(self, count: int) -> None:
-        """Show Phase B transition dialog."""
-        dialog = ctk.CTkToplevel(self)
-        dialog.title("PRAXIS Phase Transition")
-        dialog.geometry("420x220")
-        dialog.transient(self.winfo_toplevel())
-        dialog.grab_set()
-
-        ctk.CTkLabel(
-            dialog,
-            text=f"🎉 You've completed {count} baseline sessions!",
-            font=ctk.CTkFont(size=16, weight="bold"),
-        ).pack(padx=20, pady=(20, 10))
-
-        ctk.CTkLabel(
-            dialog,
-            text="Ready to activate PRAXIS governance (Phase B)?\n\n"
-            "Phase B enables PRAXIS-Q surveys and full governance tracking.",
-            font=ctk.CTkFont(size=13),
-            wraplength=380,
-        ).pack(padx=20, pady=(0, 16))
-
-        btn_frame = ctk.CTkFrame(dialog, fg_color="transparent")
-        btn_frame.pack(padx=20, pady=(0, 20), fill="x")
-        btn_frame.grid_columnconfigure(0, weight=1)
-        btn_frame.grid_columnconfigure(1, weight=1)
+    def _discard_entry(self, entry_id: str) -> None:
+        """Discard/delete a specific session entry."""
+        if self._vm._praxis_dir:
+            from praxis_collector import delete_metric_entry
+            ok = delete_metric_entry(self._vm._praxis_dir, entry_id)
+            if ok:
+                self._status_label.configure(
+                    text="✅ Session discarded.", text_color="#2ecc71"
+                )
+                self._refresh_sessions()
+            else:
+                self._status_label.configure(
+                    text="⚠️ Session not found.", text_color="#e74c3c"
+                )
 
         def _activate():
             self._vm.activate_phase_b()
