@@ -1,7 +1,7 @@
 """PRAXIS Desktop — Dashboard View (status overview)
 
-Shows phase, participant ID, days active, metrics summary, session status.
-Sprint 2: session timer indicator, phase badge, unreviewed count.
+Shows participant ID, days active, metrics summary, session status.
+Sprint 2: session timer indicator, unreviewed count.
 """
 
 from __future__ import annotations
@@ -69,7 +69,7 @@ class DashboardView(ctk.CTkScrollableFrame):
         )
         self._session_msg.pack(side="right", padx=(0, 16), pady=10)
 
-        # --- Phase indicator bar (Sprint 2) ---
+        # --- Recording status bar ---
         self._phase_bar = ctk.CTkFrame(self, height=40)
         self._phase_bar.grid(
             row=self._next_row(), column=0, columnspan=3,
@@ -79,9 +79,9 @@ class DashboardView(ctk.CTkScrollableFrame):
 
         self._phase_label = ctk.CTkLabel(
             self._phase_bar,
-            text="🟠 Phase A — baseline observation",
+            text="🔬 Passive capture active",
             font=ctk.CTkFont(size=13, weight="bold"),
-            text_color="#e74c3c",
+            text_color="#2ecc71",
         )
         self._phase_label.pack(side="left", padx=(16, 0), pady=8)
 
@@ -97,7 +97,6 @@ class DashboardView(ctk.CTkScrollableFrame):
         self._cards: dict[str, ctk.CTkLabel] = {}
         card_data = [
             ("participant_id", "Participant ID", "—"),
-            ("phase", "Phase", "—"),
             ("days_active", "Days Active", "0"),
             ("total_entries", "Total Entries", "0"),
             ("passive_capture_count", "Passive Captures", "0"),
@@ -251,24 +250,11 @@ class DashboardView(ctk.CTkScrollableFrame):
             self._session_timer.configure(text="")
             self._session_msg.configure(text="No active session")
 
-        # Phase indicator (Sprint 2)
-        phase = data.get("phase", "A")
-        praxis_on = data.get("praxis_mode_on", False)
-        if phase == "B" and praxis_on:
-            self._phase_label.configure(
-                text="🟢 Phase B — structured observation active",
-                text_color="#2ecc71",
-            )
-        elif phase == "B":
-            self._phase_label.configure(
-                text="🟡 Phase B — structured observation ready",
-                text_color="#f39c12",
-            )
-        else:
-            self._phase_label.configure(
-                text="🟠 Phase A — baseline observation",
-                text_color="#e74c3c",
-            )
+        # Recording indicator
+        self._phase_label.configure(
+            text="🔬 Passive capture active",
+            text_color="#2ecc71",
+        )
 
         # Unreviewed badge (Sprint 2)
         unreviewed = data.get("unreviewed_count", 0)
@@ -280,7 +266,7 @@ class DashboardView(ctk.CTkScrollableFrame):
         # Update cards
         mapping = {
             "participant_id": data.get("participant_id", "—"),
-            "phase": f"Phase {phase}",
+            "session_count": str(data.get("session_count", 0)),
             "days_active": str(data.get("days_active", 0)),
             "total_entries": str(data.get("total_entries", 0)),
             "passive_capture_count": str(passive_count),

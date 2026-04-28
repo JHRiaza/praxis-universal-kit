@@ -4,7 +4,7 @@ Bridges CustomTkinter views to praxis_collector functions.
 No subprocess, no CLI parsing — direct Python imports.
 
 Sprint 2 additions: background session timer, auto-save on close,
-phase management, auto-transition logic, session recovery.
+# Session management, auto-save, recovery.
 """
 
 from __future__ import annotations
@@ -66,7 +66,6 @@ from praxis_collector import (  # noqa: E402
     build_auto_session_entry,
     build_metric_entry,
     compute_summary,
-    activate_phase_b,
     detect_platforms,
     estimate_reliability,
     find_praxis_dir,
@@ -92,8 +91,7 @@ if _export_dir not in sys.path:
 from anonymize import export_participant_zip  # noqa: E402
 from submission import get_submission_status, submit_export, submission_setup_template  # noqa: E402
 
-# Protocol module
-from collector.protocol import ProtocolManager  # noqa: E402
+# Protocol module removed — prescriptive injection is a post-thesis product
 from diagnostics import build_user_diagnosis  # noqa: E402
 
 
@@ -109,10 +107,8 @@ class PraxisViewModel:
         self._session_start: Optional[datetime] = None
         self._session_active: bool = False
 
-        # Sprint 2: PRAXIS phase settings
+        # Recording state
         self._praxis_mode_on: bool = False
-        self._auto_transition_threshold: int = 10
-        self._transition_prompted: bool = False
 
     # ------------------------------------------------------------------
     # Project / state management
@@ -255,8 +251,7 @@ class PraxisViewModel:
                 "ended_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
                 "duration_minutes": duration,
                 "platform_ids": detect_platforms(self._project_dir if self._project_dir else None),
-                "condition": "A1" if self._state.get("phase", "A") == "A" else "B1",
-                "phase": self._state.get("phase", "A"),
+                "condition": "obs",
             }
         return build_auto_session_entry(self._state, session, self._project_dir)
 
@@ -275,65 +270,8 @@ class PraxisViewModel:
         self._session_start = None
         return entry
 
-    # ------------------------------------------------------------------
-    # Sprint 2: Phase Management & Auto-Transition
-    # ------------------------------------------------------------------
-
-    def get_phase(self) -> str:
-        """Get the current phase (A or B)."""
-        if self._state:
-            return self._state.get("phase", "A")
-        return "A"
-
     def is_praxis_mode_on(self) -> bool:
         return self._praxis_mode_on
-
-    def set_praxis_mode(self, on: bool) -> str:
-        """Toggle PRAXIS mode. Returns current phase after toggle.
-        Once Phase B is activated, you can't go back to A."""
-        if on:
-            self._praxis_mode_on = True
-            if self._state and self._state.get("phase") != "B":
-                self._state["phase"] = "B"
-                if self._praxis_dir:
-                    save_state(self._praxis_dir, self._state)
-        else:
-            if self._state and self._state.get("phase") == "B":
-                # Can't go back to A once activated
-                self._praxis_mode_on = True  # keep on
-                return "B"
-            self._praxis_mode_on = False
-        return self.get_phase()
-
-    def get_auto_transition_threshold(self) -> int:
-        return self._auto_transition_threshold
-
-    def set_auto_transition_threshold(self, value: int) -> None:
-        self._auto_transition_threshold = max(1, value)
-
-    def check_auto_transition(self) -> Optional[int]:
-        """Check if Phase A session count meets the threshold.
-        Returns the count if threshold met and not yet prompted, else None."""
-        if not self._state or self._state.get("phase") == "B":
-            return None
-        if self._transition_prompted:
-            return None
-        entries = load_all_metrics(self._praxis_dir) if self._praxis_dir else []
-        phase_a_count = sum(
-            1 for e in entries
-            if e.get("type") == "sprint" and e.get("phase") == "A"
-        )
-        if phase_a_count >= self._auto_transition_threshold:
-            self._transition_prompted = True
-            return phase_a_count
-        return None
-
-    def activate_phase_b(self) -> None:
-        """Activate Phase B governance."""
-        if self._state and self._praxis_dir:
-            self._state["phase"] = "B"
-            self._praxis_mode_on = True
-            save_state(self._praxis_dir, self._state)
 
     # ------------------------------------------------------------------
     # Sprint 2: Metrics helpers for Review/Edit view
@@ -423,13 +361,12 @@ class PraxisViewModel:
         return {
             "initialized": True,
             "participant_id": state.get("participant_id", "N/A"),
-            "phase": state.get("phase", "A"),
+            "phase": state.get("phase", "obs"),
             "condition": state.get("condition", ""),
             "logging_active": state.get("logging_active", True),
             "days_active": days_active,
             "total_entries": summary.get("total_entries", 0),
-            "phase_a_count": summary.get("phase_a_count", 0),
-            "phase_b_count": summary.get("phase_b_count", 0),
+            "session_count": summary.get("total_entries", 0),
             "avg_quality": summary.get("mean_quality"),
             "avg_duration": summary.get("mean_duration"),
             "total_duration": summary.get("total_duration_minutes", 0),
@@ -525,7 +462,7 @@ class PraxisViewModel:
             "timestamp": praxis_collector._now_iso(),
             "type": "praxis_q",
             "participant_id": self._state.get("participant_id"),
-            "phase": self._state.get("phase", "A"),
+            "phase": self._state.get("phase", "obs"),
             "scores": scores,
             "notes": notes or {},
             "average": sum(scores.values()) / len(scores) if scores else 0,
@@ -533,7 +470,7 @@ class PraxisViewModel:
             "task": "PRAXIS-Q survey",
             "duration_minutes": 0,
             "quality_self": 3,
-            "condition": "A1" if self._state.get("phase", "A") == "A" else "B1",
+            "condition": "obs",
             "model": "n/a",
             "iterations": 0,
             "interventions": 0,
@@ -618,52 +555,4 @@ class PraxisViewModel:
     # Protocol Management
     # ------------------------------------------------------------------
 
-    def get_protocol_manager(self) -> Optional[ProtocolManager]:
-        """Get the protocol manager for the current project."""
-        if not self._praxis_dir:
-            return None
-        return ProtocolManager(self._praxis_dir)
-
-    def get_protocol_status(self) -> List[Dict[str, Any]]:
-        """Get injection status for all platforms."""
-        pm = self.get_protocol_manager()
-        if pm is None:
-            return []
-        return pm.get_all_status()
-
-    def inject_protocol_all(self) -> Dict[str, bool]:
-        """Inject PRAXIS protocol into all platforms."""
-        pm = self.get_protocol_manager()
-        if pm is None:
-            return {}
-        phase = self._state.get("phase", "B") if self._state else "B"
-        return pm.inject_all(phase)
-
-    def remove_protocol_all(self) -> Dict[str, bool]:
-        """Remove PRAXIS protocol from all platforms."""
-        pm = self.get_protocol_manager()
-        if pm is None:
-            return {}
-        return pm.remove_all()
-
-    def inject_protocol_platform(self, name: str) -> bool:
-        """Inject PRAXIS protocol into a specific platform."""
-        pm = self.get_protocol_manager()
-        if pm is None:
-            return False
-        phase = self._state.get("phase", "B") if self._state else "B"
-        return pm.inject_platform(name, phase)
-
-    def remove_protocol_platform(self, name: str) -> bool:
-        """Remove PRAXIS protocol from a specific platform."""
-        pm = self.get_protocol_manager()
-        if pm is None:
-            return False
-        return pm.remove_platform(name)
-
-    def get_protocol_summary(self) -> str:
-        """Get human-readable protocol status summary."""
-        pm = self.get_protocol_manager()
-        if pm is None:
-            return "PRAXIS: OFF | No project"
-        return pm.get_status_summary()
+    # Protocol injection methods removed — prescriptive injection is a post-thesis product.

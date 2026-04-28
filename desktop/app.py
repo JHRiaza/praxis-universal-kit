@@ -38,7 +38,7 @@ from views.init_wizard import InitWizardView  # noqa: E402
 from views.dashboard import DashboardView  # noqa: E402
 from views.praxis_q import PraxisQView  # noqa: E402
 from views.log_sprint import LogSprintView  # noqa: E402
-from views.protocol import ProtocolView  # noqa: E402
+# Protocol tab removed — prescriptive injection is a post-thesis product
 from views.export import ExportView  # noqa: E402
 
 
@@ -79,35 +79,18 @@ class SettingsDialog(ctk.CTkToplevel):
         ).grid(row=row, column=0, padx=20, pady=(20, 15), sticky="w")
         row += 1
 
-        # Phase display (read-only)
-        phase = vm.get_phase()
-        phase_frame = ctk.CTkFrame(self, fg_color="transparent")
-        phase_frame.grid(row=row, column=0, padx=20, pady=(0, 10), sticky="ew")
+        # Recording mode indicator
+        mode_frame = ctk.CTkFrame(self, fg_color="transparent")
+        mode_frame.grid(row=row, column=0, padx=20, pady=(0, 10), sticky="ew")
 
-        phase_color = "#2ecc71" if phase == "B" else "#f39c12"
-        phase_label_text = "Phase B (structured observation)" if phase == "B" else "Phase A (baseline observation)"
         ctk.CTkLabel(
-            phase_frame, text="Current Phase:",
+            mode_frame, text="Recording Mode:",
             font=ctk.CTkFont(size=13, weight="bold"),
         ).pack(side="left")
         ctk.CTkLabel(
-            phase_frame, text=phase_label_text,
-            font=ctk.CTkFont(size=13, weight="bold"),
-            text_color=phase_color,
-        ).pack(side="right")
-        row += 1
-
-        # Threshold setting
-        thresh_frame = ctk.CTkFrame(self, fg_color="transparent")
-        thresh_frame.grid(row=row, column=0, padx=20, pady=(0, 10), sticky="ew")
-
-        ctk.CTkLabel(
-            thresh_frame, text="Auto-transition after X sessions:",
+            mode_frame, text="Passive capture + micro-checkout",
             font=ctk.CTkFont(size=13),
-        ).pack(side="left")
-        self._thresh_var = ctk.StringVar(value=str(vm.get_auto_transition_threshold()))
-        ctk.CTkEntry(
-            thresh_frame, textvariable=self._thresh_var, width=60, height=30,
+            text_color="#2ecc71",
         ).pack(side="right")
         row += 1
 
@@ -146,15 +129,6 @@ class SettingsDialog(ctk.CTkToplevel):
         ).grid(row=row, column=0, padx=20, pady=(10, 20), sticky="ew")
 
     def _save_and_close(self) -> None:
-        # Save threshold
-        try:
-            thresh = int(self._thresh_var.get())
-            self._vm.set_auto_transition_threshold(thresh)
-        except ValueError:
-            pass
-        self.destroy()
-
-        # Save config
         self._app._save_app_config()
         self.destroy()
 
@@ -199,25 +173,18 @@ class PraxisApp(ctk.CTk):
         )
         version_label.grid(row=1, column=0, padx=16, pady=(0, 20))
 
-        # Sidebar buttons — new order:
-        # 1. 📊 Dashboard
-        # 2. 📝 PRAXIS-Q
-        # 3. 📋 Sessions
-        # 4. 🛡️ Protocol
-        # 5. 📦 Export
+        # Sidebar buttons
         self._nav_buttons: list[ctk.CTkButton] = []
         self._nav_labels = [
             "📊 Dashboard",
             "📝 PRAXIS-Q",
             "📋 Sessions",
-            "🛡️ Protocol",
             "📦 Export",
         ]
         self._nav_callbacks = [
             self._show_dashboard,
             self._show_praxis_q,
             self._show_log_sprint,
-            self._show_protocol,
             self._show_export,
         ]
 
@@ -363,7 +330,6 @@ class PraxisApp(ctk.CTk):
         config = {
             "last_project_dir": str(self._vm._project_dir) if self._vm._project_dir else None,
             "praxis_mode_on": self._vm.is_praxis_mode_on(),
-            "auto_transition_threshold": self._vm.get_auto_transition_threshold(),
         }
         # Save active session state for recovery
         if self._vm.is_session_active() and self._vm.get_session_start():
@@ -432,7 +398,6 @@ class PraxisApp(ctk.CTk):
 
         # Restore PRAXIS mode settings
         self._vm._praxis_mode_on = cfg.get("praxis_mode_on", False)
-        self._vm.set_auto_transition_threshold(cfg.get("auto_transition_threshold", 10))
 
         loaded = False
 
@@ -580,20 +545,6 @@ class PraxisApp(ctk.CTk):
         self._clear_content()
         self._current_view = ExportView(self._content, vm=self._vm)
         self._current_view.grid(row=0, column=0, sticky="nsew")
-
-    def _show_protocol(self) -> None:
-        self._clear_content()
-        self._current_view = ProtocolView(
-            self._content, vm=self._vm, on_change=self._on_protocol_change
-        )
-        self._current_view.grid(row=0, column=0, sticky="nsew")
-
-    def _on_protocol_change(self) -> None:
-        """Called when protocol injection state changes."""
-        # Refresh dashboard if visible
-        if isinstance(self._current_view, DashboardView):
-            if hasattr(self._current_view, 'refresh_protocol_status'):
-                self._current_view.refresh_protocol_status()
 
     def _show_settings(self) -> None:
         SettingsDialog(self, vm=self._vm, app=self)
