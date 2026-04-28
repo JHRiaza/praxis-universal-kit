@@ -27,7 +27,7 @@ from typing import Any, Dict, List, Optional, Tuple
 # Constants
 # ---------------------------------------------------------------------------
 
-KIT_VERSION = "0.9.1"
+KIT_VERSION = "0.9.2"
 SCHEMA_VERSION = "0.2"
 PRAXIS_DIR = ".praxis"
 STATE_FILE = "state.json"
@@ -324,24 +324,8 @@ def start_passive_session(
         "capture_mode": "passive_auto",
     }
     try:
-        from adapters.openclaw_telemetry import OpenClawAdapter
-        adapter = OpenClawAdapter(praxis_dir.parent)
-        if adapter.detect():
-            record.setdefault("adapter_telemetry_start", {})["openclaw"] = adapter.capture_session_context()
-    except Exception:
-        pass
-    try:
-        from adapters.codex_telemetry import CodexAdapter
-        adapter = CodexAdapter()
-        if adapter.detect():
-            record.setdefault("adapter_telemetry_start", {})["codex"] = adapter.capture_session_context()
-    except Exception:
-        pass
-    try:
-        from adapters.cowork_telemetry import CoworkAdapter
-        adapter = CoworkAdapter()
-        if adapter.detect():
-            record.setdefault("adapter_telemetry_start", {})["cowork"] = adapter.capture_session_context()
+        from adapters.plugin_loader import probe_all_adapters
+        record["adapter_telemetry_start"] = probe_all_adapters(praxis_dir.parent)
     except Exception:
         pass
     append_session_record(praxis_dir, record)
@@ -375,24 +359,8 @@ def finish_passive_session(
     row["platform_ids"] = detect_platforms(project_root)
     row["git_end"] = _git_probe(project_root)
     try:
-        from adapters.openclaw_telemetry import OpenClawAdapter
-        adapter = OpenClawAdapter(project_root)
-        if adapter.detect():
-            row.setdefault("adapter_telemetry_end", {})["openclaw"] = adapter.capture_session_context()
-    except Exception:
-        pass
-    try:
-        from adapters.codex_telemetry import CodexAdapter
-        adapter = CodexAdapter()
-        if adapter.detect():
-            row.setdefault("adapter_telemetry_end", {})["codex"] = adapter.capture_session_context()
-    except Exception:
-        pass
-    try:
-        from adapters.cowork_telemetry import CoworkAdapter
-        adapter = CoworkAdapter()
-        if adapter.detect():
-            row.setdefault("adapter_telemetry_end", {})["cowork"] = adapter.capture_session_context()
+        from adapters.plugin_loader import probe_all_adapters
+        row["adapter_telemetry_end"] = probe_all_adapters(project_root)
     except Exception:
         pass
 
@@ -461,14 +429,9 @@ def get_session_checkout_context(entry: Dict[str, Any]) -> Dict[str, Any]:
     git_label = _build_git_summary(passive, signals)
     adapter_tel = entry.get("adapter_telemetry_start") or {}
     adapter_parts = []
-    if adapter_tel.get("openclaw", {}).get("detected"):
-        adapter_parts.append("OpenClaw ✓")
-    if adapter_tel.get("codex", {}).get("detected"):
-        turns = adapter_tel.get("codex", {}).get("latest_session", {}).get("turns", "?")
-        adapter_parts.append(f"Codex ({turns} turns)")
-    if adapter_tel.get("cowork", {}).get("detected"):
-        completed = adapter_tel.get("cowork", {}).get("completed_count", 0)
-        adapter_parts.append(f"Cowork ({completed} responses)")
+    for adapter_name, adapter_data in adapter_tel.items():
+        if adapter_data.get("detected"):
+            adapter_parts.append(f"{adapter_name} ✓")
     return {
         "started": started,
         "ended": ended,
