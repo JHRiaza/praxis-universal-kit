@@ -52,8 +52,8 @@ jobs:
             <key>CFBundleName</key><string>PRAXIS Kit</string>
             <key>CFBundleDisplayName</key><string>PRAXIS Kit</string>
             <key>CFBundleIdentifier</key><string>com.praxis-kit.desktop</string>
-            <key>CFBundleVersion</key><string>0.3.0</string>
-            <key>CFBundleShortVersionString</key><string>0.3.0</string>
+            <key>CFBundleVersion</key><string>0.6.0</string>
+            <key>CFBundleShortVersionString</key><string>0.6.0</string>
             <key>CFBundleExecutable</key><string>PRAXIS Kit</string>
             <key>CFBundlePackageType</key><string>APPL</string>
             <key>LSMinimumSystemVersion</key><string>11.0</string>
@@ -86,21 +86,20 @@ jobs:
       - uses: softprops/action-gh-release@v2
         with:
           body: |
-            ## PRAXIS Kit Desktop v0.3
+            ## PRAXIS Kit Desktop v0.6
 
-            Cross-platform research tool for observing governance phenomena in AI-assisted workflows.
+            Workflow observability kit for understanding what AI is actually doing to work, trust, and decisions.
 
             ### Downloads
             - **Windows**: `praxis-desktop.exe` — download and run, no install needed
             - **macOS (Apple Silicon)**: `PRAXIS-Kit-macOS-arm64.dmg` — open, drag to Applications
 
-            ### What's new in v0.3
-            - Desktop GUI (CustomTkinter) as alternative to CLI
-            - Init wizard, dashboard, sprint logging, PRAXIS-Q survey, export
+            ### What's new in v0.6
+            - User-facing workflow diagnosis in the dashboard and exports
+            - Workflow observability framing across CLI, desktop, and docs
+            - Optional throttled research inbox submission flow
             - Platform detection (OpenClaw, Claude Cowork, Codex, Cursor, etc.)
-            - Session controls (Start/Stop/Initialize)
             - Creative project support (game design, writing)
-            - CLI still available for advanced users
 
             ### Requirements
             - No Python installation needed — binaries are self-contained

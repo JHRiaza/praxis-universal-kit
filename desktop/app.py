@@ -49,7 +49,7 @@ from views.export import ExportView  # noqa: E402
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
 
-WINDOW_TITLE = "PRAXIS Kit"
+WINDOW_TITLE = "PRAXIS Workflow Observatory"
 WINDOW_SIZE = (780, 620)
 MIN_SIZE = (600, 480)
 
@@ -85,7 +85,7 @@ class SettingsDialog(ctk.CTkToplevel):
         phase_frame.grid(row=row, column=0, padx=20, pady=(0, 10), sticky="ew")
 
         phase_color = "#2ecc71" if phase == "B" else "#f39c12"
-        phase_label_text = "Phase B (governance active)" if phase == "B" else "Phase A (baseline)"
+        phase_label_text = "Phase B (structured observation)" if phase == "B" else "Phase A (baseline observation)"
         ctk.CTkLabel(
             phase_frame, text="Current Phase:",
             font=ctk.CTkFont(size=13, weight="bold"),
@@ -193,7 +193,7 @@ class PraxisApp(ctk.CTk):
 
         version_label = ctk.CTkLabel(
             self._sidebar,
-            text="v0.5.0 Desktop",
+            text="v0.6.0 Desktop · observability build",
             font=ctk.CTkFont(size=11),
             text_color="gray",
         )

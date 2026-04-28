@@ -147,7 +147,7 @@ class ProtocolView(ctk.CTkScrollableFrame):
         else:
             self._master_toggle.deselect()
             self._status_label.configure(
-                text=f"🔴 PRAXIS OFF — Phase A (baseline)",
+                text=f"🟠 Phase A — baseline observation",
                 text_color="#e74c3c",
             )
 
@@ -320,7 +320,7 @@ class ProtocolView(ctk.CTkScrollableFrame):
         try:
             self._vm.remove_protocol_all()
             self._status_label.configure(
-                text="🔴 PRAXIS OFF — Phase A (baseline)",
+                text="🟠 Phase A — baseline observation",
                 text_color="#e74c3c",
             )
         except Exception as e:

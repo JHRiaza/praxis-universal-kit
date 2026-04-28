@@ -1,10 +1,23 @@
 # PRAXIS Universal Kit
 
-**Herramienta de investigación multiplataforma para observar fenómenos de gobernanza en flujos de trabajo asistidos por IA**
+**Kit de observabilidad para entender qué le está haciendo la IA a tu trabajo, tu confianza y tus decisiones**
 
-PRAXIS Kit instrumenta tu flujo de trabajo con IA para capturar lo que realmente ocurre: emergencia de gobernanza, efectos de personalidad, límites de sesión, patrones de calidad, antes y después de introducir gobernanza estructurada.
+PRAXIS instrumenta flujos reales de trabajo humano-IA para hacer visibles patrones que normalmente permanecen ocultos: rework, calibración de confianza, degradación entre sesiones, efectos de personalidad y reglas que emergen bajo presión.
 
 **Parte de una investigación doctoral en la Universidad Complutense de Madrid.**
+
+---
+
+## ¿Qué me aporta como usuario?
+
+PRAXIS no es solo un logger de investigación. Devuelve un **diagnóstico de tu flujo de trabajo**.
+
+Te ayuda a ver:
+- dónde la IA ahorra tiempo y dónde crea retrabajo
+- cuándo estás confiando demasiado en una salida persuasiva
+- si los resets de sesión están dañando calidad o continuidad
+- cuánta corrección humana sigue necesitando tu workflow
+- qué reglas emergen de fallos reales en vez de teoría
 
 ---
 
@@ -74,18 +87,23 @@ Esto pregunta: qué pasó, causa raíz, y si debe crearse una nueva regla.
 praxis activate
 ```
 
-Esto inyecta archivos de gobernanza en tus herramientas de IA y transiciona a la Fase B.
+Esto introduce la condición estructurada de PRAXIS y transiciona a la Fase B. La inyección es un mecanismo experimental, no la propuesta de valor principal.
 
 ### 6. Exportar tus datos
 ```bash
 praxis export
 ```
 
-Genera un archivo ZIP anonimizado para el análisis de investigación.
+Genera un archivo ZIP anonimizado para el análisis de investigación, incluyendo tu diagnóstico de workflow.
+
+### 7. Ver tu diagnóstico
+```bash
+praxis diagnose
+```
 
 ---
 
-## Novedades en v0.2
+## Novedades en v0.6
 
 | Característica | Descripción |
 |---------------|-------------|
@@ -96,6 +114,8 @@ Genera un archivo ZIP anonimizado para el análisis de investigación.
 | **Registro de incidentes** | Captura estructurada de eventos de emergencia de gobernanza (`praxis incident`) |
 | **Observaciones de límite de sesión** | Seguimiento de recuperación de memoria y degradación de calibración entre sesiones |
 | **Diseño factorial 2x2** | Condiciones experimentales: Modelo (Sonnet/Opus) x Estructura (estructurado/no estructurado) |
+| **Diagnóstico para el participante** | Convierte los logs en un espejo útil del propio workflow |
+| **Envío con throttling** | El envío opcional puede limitarse por participante para no saturar el inbox |
 | **Enfoque descriptivo** | El kit documenta fenómenos en lugar de evaluar si la gobernanza "mejora" las cosas |
 
 ---
@@ -104,6 +124,7 @@ Genera un archivo ZIP anonimizado para el análisis de investigación.
 
 ```
 praxis status          Muestra fase, días activos, conteo de entradas, promedios
+praxis diagnose        Muestra tu diagnóstico de workflow
 praxis log "tarea"     Registra una tarea (interactivo sin argumentos)
 praxis incident "desc" Registra un evento de emergencia de gobernanza
 praxis activate        Transición Fase A → Fase B (gobernanza activa)
@@ -111,6 +132,7 @@ praxis govern "regla"  Registra un evento de gobernanza (Fase B)
 praxis survey pre      Encuesta previa al estudio
 praxis survey post     Encuesta posterior al estudio
 praxis export          Genera ZIP de datos anonimizados para investigación
+praxis submit          Exporta y envía datos cuando esté habilitado
 praxis platforms       Muestra las plataformas de IA detectadas
 ```
 

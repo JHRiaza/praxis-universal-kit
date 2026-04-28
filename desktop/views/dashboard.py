@@ -31,7 +31,7 @@ class DashboardView(ctk.CTkScrollableFrame):
 
         self._subtitle = ctk.CTkLabel(
             self,
-            text="PRAXIS status overview",
+            text="Workflow observability overview",
             font=ctk.CTkFont(size=13),
             text_color="gray",
         )
@@ -79,7 +79,7 @@ class DashboardView(ctk.CTkScrollableFrame):
 
         self._phase_label = ctk.CTkLabel(
             self._phase_bar,
-            text="🔴 PRAXIS OFF — Phase A (baseline)",
+            text="🟠 Phase A — baseline observation",
             font=ctk.CTkFont(size=13, weight="bold"),
             text_color="#e74c3c",
         )
@@ -160,6 +160,53 @@ class DashboardView(ctk.CTkScrollableFrame):
             padx=20, pady=(0, 20), sticky="w",
         )
 
+        diag_title = ctk.CTkLabel(
+            self,
+            text="🪞 What PRAXIS is showing you",
+            font=ctk.CTkFont(size=16, weight="bold"),
+        )
+        diag_title.grid(
+            row=self._next_row(), column=0, columnspan=3,
+            padx=20, pady=(0, 5), sticky="w",
+        )
+
+        self._diag_headline = ctk.CTkLabel(
+            self,
+            text="Log work to unlock your diagnosis.",
+            font=ctk.CTkFont(size=14, weight="bold"),
+            wraplength=680,
+            justify="left",
+        )
+        self._diag_headline.grid(
+            row=self._next_row(), column=0, columnspan=3,
+            padx=20, pady=(0, 6), sticky="w",
+        )
+
+        self._diag_summary = ctk.CTkLabel(
+            self,
+            text="",
+            font=ctk.CTkFont(size=13),
+            text_color="gray",
+            wraplength=680,
+            justify="left",
+        )
+        self._diag_summary.grid(
+            row=self._next_row(), column=0, columnspan=3,
+            padx=20, pady=(0, 6), sticky="w",
+        )
+
+        self._diag_insights = ctk.CTkLabel(
+            self,
+            text="",
+            font=ctk.CTkFont(size=13),
+            wraplength=680,
+            justify="left",
+        )
+        self._diag_insights.grid(
+            row=self._next_row(), column=0, columnspan=3,
+            padx=20, pady=(0, 20), sticky="w",
+        )
+
         # Refresh button
         refresh_btn = ctk.CTkButton(
             self,
@@ -207,17 +254,17 @@ class DashboardView(ctk.CTkScrollableFrame):
         praxis_on = data.get("praxis_mode_on", False)
         if phase == "B" and praxis_on:
             self._phase_label.configure(
-                text="🟢 PRAXIS ON — Phase B (governance active)",
+                text="🟢 Phase B — structured observation active",
                 text_color="#2ecc71",
             )
         elif phase == "B":
             self._phase_label.configure(
-                text="🟡 Phase B — Governance ready (toggle PRAXIS ON in Settings)",
+                text="🟡 Phase B — structured observation ready",
                 text_color="#f39c12",
             )
         else:
             self._phase_label.configure(
-                text="🔴 PRAXIS OFF — Phase A (baseline)",
+                text="🟠 Phase A — baseline observation",
                 text_color="#e74c3c",
             )
 
@@ -265,6 +312,15 @@ class DashboardView(ctk.CTkScrollableFrame):
                 text="No platforms detected.",
                 text_color="gray",
             )
+
+        diagnosis = data.get("diagnosis", {}) or {}
+        self._diag_headline.configure(text=diagnosis.get("headline", "Log work to unlock your diagnosis."))
+        self._diag_summary.configure(text=diagnosis.get("summary", ""))
+        insights = diagnosis.get("insights", [])[:3]
+        if insights:
+            self._diag_insights.configure(text="\n".join(f"• {item}" for item in insights), text_color="white")
+        else:
+            self._diag_insights.configure(text="", text_color="gray")
 
     def timer_refresh(self) -> None:
         """Called by the app's UI timer to refresh session indicator."""

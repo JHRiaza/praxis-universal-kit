@@ -1,5 +1,18 @@
 # PRAXIS Universal Kit — Changelog
 
+## v0.6.0 (2026-04-28)
+
+### Changed
+- **Positioning pivot** — PRAXIS is now framed clearly as a workflow observability kit and field instrument, not a governance solution.
+- **README / README_ES rewritten** — the participant value proposition now leads with diagnosis, workflow mirror, and descriptive evidence.
+- **Desktop copy updated** — dashboard and export screens now reflect baseline/structured observation language instead of governance-first language.
+
+### Added
+- **`praxis diagnose`** — CLI workflow diagnosis command.
+- **User-facing diagnosis layer** — dashboard, export, and ZIP exports now include personal workflow insights.
+- **Optional throttled submission flow** — SMTP-based delivery can be enabled with participant-level cooldowns and monthly caps.
+- **`submission.json` template** — per-project submission config scaffold for research inbox delivery.
+
 ## v0.3.2 (2026-04-25)
 
 ### Fixed

@@ -15,7 +15,7 @@ $ErrorActionPreference = "Stop"
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
-$PraxisVersion = "0.3.2"
+$PraxisVersion = "0.6.0"
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
 $ProjectDir = $Dir
 

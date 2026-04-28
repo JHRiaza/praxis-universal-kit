@@ -25,14 +25,14 @@ class ExportView(ctk.CTkScrollableFrame):
         # Title
         title = ctk.CTkLabel(
             self,
-            text="📦 Export Data",
+            text="📦 Export & Submission",
             font=ctk.CTkFont(size=22, weight="bold"),
         )
         title.grid(row=0, column=0, padx=20, pady=(20, 5), sticky="w")
 
         subtitle = ctk.CTkLabel(
             self,
-            text="Generate an anonymized ZIP for researcher submission.",
+            text="Generate an anonymized ZIP, review your diagnosis, and optionally submit to the research inbox.",
             font=ctk.CTkFont(size=13),
             text_color="gray",
         )
@@ -50,6 +50,25 @@ class ExportView(ctk.CTkScrollableFrame):
         )
         self._summary_label.grid(row=3, column=0, padx=20, pady=(0, 16), sticky="w")
 
+        self._diagnosis_label = ctk.CTkLabel(
+            self,
+            text="",
+            font=ctk.CTkFont(size=13),
+            wraplength=540,
+            justify="left",
+        )
+        self._diagnosis_label.grid(row=4, column=0, padx=20, pady=(0, 16), sticky="w")
+
+        self._submission_label = ctk.CTkLabel(
+            self,
+            text="",
+            font=ctk.CTkFont(size=13),
+            wraplength=540,
+            justify="left",
+            text_color="gray",
+        )
+        self._submission_label.grid(row=5, column=0, padx=20, pady=(0, 16), sticky="w")
+
         # --- Options ---
         self._redact_var = ctk.BooleanVar(value=False)
         redact_cb = ctk.CTkCheckBox(
@@ -58,7 +77,7 @@ class ExportView(ctk.CTkScrollableFrame):
             variable=self._redact_var,
             font=ctk.CTkFont(size=13),
         )
-        redact_cb.grid(row=4, column=0, padx=20, pady=(0, 16), sticky="w")
+        redact_cb.grid(row=6, column=0, padx=20, pady=(0, 16), sticky="w")
 
         # --- Export button ---
         self._export_btn = ctk.CTkButton(
@@ -68,7 +87,25 @@ class ExportView(ctk.CTkScrollableFrame):
             font=ctk.CTkFont(size=14, weight="bold"),
             command=self._do_export,
         )
-        self._export_btn.grid(row=5, column=0, padx=20, pady=(0, 8), sticky="ew")
+        self._export_btn.grid(row=7, column=0, padx=20, pady=(0, 8), sticky="ew")
+
+        self._submit_btn = ctk.CTkButton(
+            self,
+            text="📬 Generate ZIP + Submit",
+            height=42,
+            font=ctk.CTkFont(size=14, weight="bold"),
+            command=self._do_submit,
+        )
+        self._submit_btn.grid(row=8, column=0, padx=20, pady=(0, 8), sticky="ew")
+
+        self._setup_btn = ctk.CTkButton(
+            self,
+            text="🛠 Create submission config template",
+            height=34,
+            font=ctk.CTkFont(size=13),
+            command=self._write_submission_template,
+        )
+        self._setup_btn.grid(row=9, column=0, padx=20, pady=(0, 8), sticky="ew")
 
         # --- Open folder button ---
         self._open_btn = ctk.CTkButton(
@@ -79,13 +116,13 @@ class ExportView(ctk.CTkScrollableFrame):
             command=self._open_location,
             state="disabled",
         )
-        self._open_btn.grid(row=6, column=0, padx=20, pady=(0, 8), sticky="ew")
+        self._open_btn.grid(row=10, column=0, padx=20, pady=(0, 8), sticky="ew")
 
         # Status
         self._status_label = ctk.CTkLabel(
             self, text="", font=ctk.CTkFont(size=13), text_color="gray",
         )
-        self._status_label.grid(row=7, column=0, padx=20, pady=(0, 20), sticky="w")
+        self._status_label.grid(row=11, column=0, padx=20, pady=(0, 20), sticky="w")
 
         self._last_zip_path: Path | None = None
 
@@ -115,12 +152,27 @@ class ExportView(ctk.CTkScrollableFrame):
         gov = info.get("governance_count", 0)
         first = info.get("first_entry", "")
         last = info.get("last_entry", "")
+        diagnosis = info.get("diagnosis", {}) or {}
+        submission = info.get("submission", {}) or {}
 
         text = f"Metrics entries: {metrics}  |  Governance events: {gov}"
         if first and last:
             text += f"\nDate range: {first[:10]} → {last[:10]}"
 
         self._summary_label.configure(text=text, text_color="white")
+        diag_text = diagnosis.get("headline", "")
+        insights = diagnosis.get("insights", [])[:2]
+        if insights:
+            diag_text += "\n" + "\n".join(f"• {item}" for item in insights)
+        self._diagnosis_label.configure(text=diag_text or "Diagnosis will appear after you log work.")
+
+        submission_text = submission.get("reason", "Submission is unavailable.")
+        last_submitted = submission.get("last_submitted_at")
+        if last_submitted:
+            submission_text += f"\nLast submitted: {last_submitted[:19].replace('T', ' ')} UTC"
+        submission_text += f"\n30-day submissions: {submission.get('sent_last_30d', 0)}"
+        self._submission_label.configure(text=submission_text)
+        self._submit_btn.configure(state="normal" if submission.get("allowed") else "disabled")
 
     def _do_export(self) -> None:
         try:
@@ -131,6 +183,36 @@ class ExportView(ctk.CTkScrollableFrame):
                 text_color="#2ecc71",
             )
             self._open_btn.configure(state="normal")
+        except Exception as exc:
+            self._status_label.configure(
+                text=f"⚠ Error: {exc}",
+                text_color="#e74c3c",
+            )
+
+    def _do_submit(self) -> None:
+        try:
+            result = self._vm.submit_latest_export(redact_tasks=self._redact_var.get())
+            self._last_zip_path = result.get("zip_path")
+            self._status_label.configure(
+                text=f"✅ Submitted to {result['email_to']}: {result['zip_name']}",
+                text_color="#2ecc71",
+            )
+            self._open_btn.configure(state="normal")
+            self.refresh()
+        except Exception as exc:
+            self._status_label.configure(
+                text=f"⚠ Submission blocked: {exc}",
+                text_color="#e74c3c",
+            )
+
+    def _write_submission_template(self) -> None:
+        try:
+            path = self._vm.write_submission_template()
+            self._status_label.configure(
+                text=f"✅ Template created: {path.name}",
+                text_color="#2ecc71",
+            )
+            self.refresh()
         except Exception as exc:
             self._status_label.configure(
                 text=f"⚠ Error: {exc}",

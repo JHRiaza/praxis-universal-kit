@@ -2,7 +2,7 @@
 """
 PRAXIS Universal Kit — CLI Entry Point
 =======================================
-Commands: status, log, activate, govern, survey, export, platforms, withdraw
+Commands: status, log, diagnose, activate, govern, survey, export, submit, platforms, withdraw
 
 Usage:
     python praxis_cli.py <command> [options]
@@ -67,6 +67,12 @@ from praxis_collector import (
     touch_last_active,
     withdraw_participant,
 )
+from diagnostics import build_user_diagnosis
+
+_EXPORT_DIR = _HERE.parent / "export"
+sys.path.insert(0, str(_EXPORT_DIR))
+from anonymize import export_participant_zip
+from submission import get_submission_status, submit_export, submission_setup_template
 
 
 # ---------------------------------------------------------------------------
@@ -348,7 +354,7 @@ def cmd_status(args: argparse.Namespace) -> int:
     phase = state["phase"]
     phase_color = C.B_GREEN if phase == "B" else C.B_YELLOW
     phase_label = (
-        f"B (PRAXIS ACTIVE)" if phase == "B" else "A (Baseline)"
+        f"B (Structured observation)" if phase == "B" else "A (Baseline observation)"
     )
 
     print_header("Status")
@@ -400,6 +406,59 @@ def cmd_status(args: argparse.Namespace) -> int:
             remaining = 7 - days_data
             print_warn(f"{days_data}/7 days of baseline data collected.")
             print_info(f"Keep logging for ~{remaining} more day(s), then run: praxis activate")
+
+    return 0
+
+
+def cmd_diagnose(args: argparse.Namespace) -> int:
+    praxis_dir = find_praxis_dir()
+    if praxis_dir is None:
+        print_err("PRAXIS not found. Run from your project directory.")
+        return 1
+
+    try:
+        state = load_state(praxis_dir)
+    except PraxisError as exc:
+        print_err(str(exc))
+        return 1
+
+    entries = load_all_metrics(praxis_dir)
+    governance = load_governance_events(praxis_dir)
+    diagnosis = build_user_diagnosis(entries, governance, state)
+
+    print_header("Workflow Diagnosis")
+    print_info(diagnosis.get("headline", ""))
+    print()
+    print_field("Summary", diagnosis.get("summary", ""))
+
+    metrics = diagnosis.get("metrics", {})
+    if metrics:
+        print()
+        print(f"  {_c('Signals', C.BOLD)}")
+        if metrics.get("avg_quality") is not None:
+            print_field("Avg quality", f"{metrics['avg_quality']}/5")
+        if metrics.get("avg_iterations") is not None:
+            print_field("Avg iterations", str(metrics["avg_iterations"]))
+        if metrics.get("autonomy_rate") is not None:
+            print_field("Autonomy rate", f"{round(metrics['autonomy_rate'] * 100)}%")
+        if metrics.get("governance_events") is not None:
+            print_field("Governance events", str(metrics["governance_events"]))
+        if metrics.get("degraded_boundaries") is not None:
+            print_field("Degraded boundaries", str(metrics["degraded_boundaries"]))
+
+    insights = diagnosis.get("insights", [])
+    if insights:
+        print()
+        print(f"  {_c('What PRAXIS is showing you', C.BOLD)}")
+        for item in insights:
+            print(f"  {_c('•', C.B_CYAN)} {item}")
+
+    user_value = diagnosis.get("user_value", [])
+    if user_value:
+        print()
+        print(f"  {_c('What you get back as a participant', C.BOLD)}")
+        for item in user_value:
+            print(f"  {_c('•', C.B_GREEN)} {item}")
 
     return 0
 
@@ -612,9 +671,9 @@ def cmd_activate(args: argparse.Namespace) -> int:
         print_warn("PRAXIS is already activated (Phase B).")
         return 0
 
-    print_header("Activate PRAXIS Governance")
+    print_header("Activate Structured Observation")
     print()
-    print_info("This will transition you from Phase A (baseline) to Phase B (PRAXIS governance).")
+    print_info("This will transition you from Phase A (baseline observation) to Phase B (structured observation).")
     print_info("This action cannot be undone.")
     print()
 
@@ -651,7 +710,7 @@ def cmd_activate(args: argparse.Namespace) -> int:
     _inject_governance(praxis_dir, updated_state)
 
     print()
-    print_ok("Your AI systems now have governance structure.")
+    print_ok("Your AI systems now have the structured PRAXIS condition.")
     print_info("New commands available:")
     print_info("  praxis govern 'Added rule: ...'  — log a governance event")
     print_info("  praxis log                       — PRAXIS-Q will be prompted automatically")
@@ -950,39 +1009,66 @@ def cmd_export(args: argparse.Namespace) -> int:
         print_err("PRAXIS not found. Run from your project directory.")
         return 1
 
-    # Delegate to export/anonymize.py
-    anonymize_path = _HERE.parent / "export" / "anonymize.py"
-    if not anonymize_path.is_file():
-        print_err("Export module not found. Ensure the kit is fully installed.")
-        return 1
-
-    import importlib.util
-    spec = importlib.util.spec_from_file_location("anonymize", anonymize_path)
-    if spec is None or spec.loader is None:
-        print_err("Could not load export module.")
-        return 1
-
     try:
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)  # type: ignore
-        output_path = module.export_participant_zip(
+        output_path = export_participant_zip(
             praxis_dir=praxis_dir,
             redact_tasks=getattr(args, "redact_tasks", False),
             output_dir=Path(getattr(args, "output", None) or Path.cwd()),
         )
+        diagnosis = build_user_diagnosis(
+            load_all_metrics(praxis_dir),
+            load_governance_events(praxis_dir),
+            load_state(praxis_dir),
+        )
         print()
         print_ok(f"Export complete: {_c(str(output_path), C.B_CYAN)}")
         print_info("This ZIP contains only anonymous metrics — no personal data.")
-        print_info("Send it to the researcher:")
-        print_info("  1. Email: hello@javierherreros.xyz (subject: PRAXIS data [your participant ID]")
-        print_info("  2. Or upload to: https://drive.google.com/drive/folders/PRAXIS_UPLOAD (TBD)")
-        print_info("  3. Or bring to your next session in person.")
-        print_info("Thank you for participating in this research!")
+        print_info(f"Diagnosis: {diagnosis.get('headline', '')}")
+        print_info("Run 'praxis submit' to send it automatically when submission is enabled.")
     except Exception as exc:
         print_err(f"Export failed: {exc}")
         return 1
 
     return 0
+
+
+def cmd_submit(args: argparse.Namespace) -> int:
+    praxis_dir = find_praxis_dir()
+    if praxis_dir is None:
+        print_err("PRAXIS not found. Run from your project directory.")
+        return 1
+
+    try:
+        state = load_state(praxis_dir)
+        zip_path = export_participant_zip(
+            praxis_dir=praxis_dir,
+            redact_tasks=getattr(args, "redact_tasks", False),
+            output_dir=Path(getattr(args, "output", None) or Path.cwd()),
+        )
+        diagnosis = build_user_diagnosis(
+            load_all_metrics(praxis_dir),
+            load_governance_events(praxis_dir),
+            state,
+        )
+        result = submit_export(
+            praxis_dir,
+            zip_path,
+            state.get("participant_id", "PRAXIS-UNKNOWN"),
+            diagnosis,
+        )
+        print()
+        print_ok(f"Submission sent: {_c(result['zip_name'], C.B_CYAN)}")
+        print_info(f"Destination: {result['email_to']}")
+        return 0
+    except Exception as exc:
+        print_err(f"Submission failed: {exc}")
+        status = get_submission_status(praxis_dir)
+        print_info(status.get("reason", ""))
+        if not (praxis_dir / "submission.json").is_file():
+            template_path = praxis_dir / "submission.json"
+            template_path.write_text(submission_setup_template(), encoding="utf-8")
+            print_info(f"Created setup template: {template_path}")
+        return 1
 
 
 # ---------------------------------------------------------------------------
@@ -1238,24 +1324,26 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="praxis",
         description=textwrap.dedent("""\
-            PRAXIS Universal Kit — AI workflow research tool.
-            Collects metrics for before/after PRAXIS governance comparison.
+            PRAXIS — workflow observability kit for human-AI production.
+            Captures time, quality, rework, trust, and continuity patterns.
         """),
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=textwrap.dedent("""\
             Examples:
               praxis status
+              praxis diagnose
               praxis log "Built auth module" -d 45 -m claude -q 4 -i 2 -h 1
               praxis activate
               praxis govern "Added rule: always test after deploy"
               praxis survey pre
               praxis survey post --lang es
               praxis export
+              praxis submit
               praxis platforms
               praxis withdraw
         """),
     )
-    parser.add_argument("--version", action="version", version="PRAXIS Kit 0.2")
+    parser.add_argument("--version", action="version", version="PRAXIS Kit 0.6.0")
     parser.add_argument("--lang", choices=["en", "es"], default="en",
                         help="Language for interactive prompts (default: en)")
 
@@ -1263,6 +1351,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     # status
     p_status = sub.add_parser("status", help="Show current phase, days active, metrics count")
+
+    # diagnose
+    sub.add_parser("diagnose", help="Show your workflow diagnosis")
 
     # log
     p_log = sub.add_parser("log", help="Log a task/sprint with metrics")
@@ -1330,6 +1421,13 @@ def build_parser() -> argparse.ArgumentParser:
     p_exp.add_argument("-o", "--output", type=str, metavar="DIR",
                        help="Output directory (default: current directory)")
 
+    # submit
+    p_submit = sub.add_parser("submit", help="Export and submit data to the research inbox")
+    p_submit.add_argument("--redact-tasks", action="store_true",
+                          help="Replace task descriptions with [REDACTED]")
+    p_submit.add_argument("-o", "--output", type=str, metavar="DIR",
+                          help="Output directory for generated ZIP (default: current directory)")
+
     # platforms
     p_plat = sub.add_parser("platforms", help="Show detected AI platforms")
 
@@ -1351,11 +1449,13 @@ def build_parser() -> argparse.ArgumentParser:
 COMMAND_MAP = {
     "status":    cmd_status,
     "log":       cmd_log,
+    "diagnose":  cmd_diagnose,
     "activate":  cmd_activate,
     "govern":    cmd_govern,
     "incident":  cmd_incident,
     "survey":    cmd_survey,
     "export":    cmd_export,
+    "submit":    cmd_submit,
     "platforms": cmd_platforms,
     "withdraw":  cmd_withdraw,
     "init":      cmd_init,

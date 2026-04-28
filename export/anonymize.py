@@ -24,17 +24,26 @@ from __future__ import annotations
 
 import hashlib
 import json
+import sys
 import zipfile
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 
+_KIT_ROOT = Path(__file__).resolve().parent.parent
+_COLLECTOR_DIR = str(_KIT_ROOT / "collector")
+if _COLLECTOR_DIR not in sys.path:
+    sys.path.insert(0, _COLLECTOR_DIR)
+
+from diagnostics import build_user_diagnosis
+
+
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
 
-EXPORT_VERSION = "0.2"
+EXPORT_VERSION = "0.6.0"
 PII_FIELDS_TO_REDACT = ["name", "email", "phone", "ip_address", "machine_name"]
 FILES_TO_INCLUDE = [
     "metrics.jsonl",
@@ -88,6 +97,7 @@ def export_participant_zip(
         _add_governance(zf, praxis_dir, participant_id)
         _add_state(zf, praxis_dir, participant_id)
         _add_surveys(zf, praxis_dir, participant_id)
+        _add_diagnosis(zf, praxis_dir, state)
         _add_manifest(zf, praxis_dir, participant_id, state, redact_tasks, timestamp)
 
     return zip_path
@@ -229,6 +239,7 @@ def _add_manifest(
         "phase_at_export": state.get("phase", "?"),
         "redact_tasks": redact_tasks,
         "files_included": ["metrics.jsonl", "governance.jsonl", "state.json"],
+        "includes_user_diagnosis": True,
         "metrics_entries": metrics_count,
         "governance_events": gov_count,
         "surveys_completed": survey_count,
@@ -239,11 +250,23 @@ def _add_manifest(
         "instructions": (
             "Send this ZIP to the PRAXIS researcher. "
             "It contains only anonymous research metrics — no project files, "
-            "no conversation content, no personal identifiers beyond your participant ID."
+            "no conversation content, no personal identifiers beyond your participant ID. "
+            "It also includes a user-facing diagnosis so participants get value back from contributing."
         ),
     }
 
     zf.writestr("export_manifest.json", json.dumps(manifest, indent=2, ensure_ascii=False))
+
+
+def _add_diagnosis(
+    zf: zipfile.ZipFile,
+    praxis_dir: Path,
+    state: Dict[str, Any],
+) -> None:
+    metrics = _load_jsonl(praxis_dir / "metrics.jsonl")
+    governance = _load_jsonl(praxis_dir / "governance.jsonl")
+    diagnosis = build_user_diagnosis(metrics, governance, state)
+    zf.writestr("diagnosis.json", json.dumps(diagnosis, indent=2, ensure_ascii=False))
 
 
 # ---------------------------------------------------------------------------
@@ -346,6 +369,22 @@ def _count_jsonl_lines(path: Path) -> int:
             if line.strip():
                 count += 1
     return count
+
+
+def _load_jsonl(path: Path) -> List[Dict[str, Any]]:
+    if not path.is_file():
+        return []
+    rows: List[Dict[str, Any]] = []
+    with path.open("r", encoding="utf-8") as fh:
+        for line in fh:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                rows.append(json.loads(line))
+            except json.JSONDecodeError:
+                continue
+    return rows
 
 
 def _sha256_file(path: Path) -> Optional[str]:

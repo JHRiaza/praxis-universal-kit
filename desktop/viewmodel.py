@@ -85,9 +85,11 @@ if _export_dir not in sys.path:
     sys.path.insert(0, _export_dir)
 
 from anonymize import export_participant_zip  # noqa: E402
+from submission import get_submission_status, submit_export, submission_setup_template  # noqa: E402
 
 # Protocol module
 from collector.protocol import ProtocolManager  # noqa: E402
+from diagnostics import build_user_diagnosis  # noqa: E402
 
 
 class PraxisViewModel:
@@ -427,6 +429,12 @@ class PraxisViewModel:
                 if e.get("type") == "sprint" and not e.get("reviewed", True)
             )
 
+        diagnosis = build_user_diagnosis(
+            entries,
+            load_governance_events(self._praxis_dir) if self._praxis_dir else [],
+            state,
+        )
+
         return {
             "initialized": True,
             "participant_id": state.get("participant_id", "N/A"),
@@ -448,6 +456,7 @@ class PraxisViewModel:
             "session_active": self._session_active,
             "session_elapsed_min": self.get_session_elapsed_minutes(),
             "praxis_mode_on": self._praxis_mode_on,
+            "diagnosis": diagnosis,
         }
 
     # ------------------------------------------------------------------
@@ -558,6 +567,25 @@ class PraxisViewModel:
             output_dir=output_dir,
         )
 
+    def submit_latest_export(self, redact_tasks: bool = False) -> Dict[str, Any]:
+        if self._praxis_dir is None:
+            raise StateNotFoundError("PRAXIS not initialized")
+        zip_path = self.export_zip(redact_tasks=redact_tasks)
+        state = self._state or load_state(self._praxis_dir)
+        diagnosis = build_user_diagnosis(
+            load_all_metrics(self._praxis_dir),
+            load_governance_events(self._praxis_dir),
+            state,
+        )
+        result = submit_export(
+            self._praxis_dir,
+            zip_path,
+            state.get("participant_id", "PRAXIS-UNKNOWN"),
+            diagnosis,
+        )
+        result["zip_path"] = zip_path
+        return result
+
     def get_export_info(self) -> Dict[str, Any]:
         """Get info about current data for export tab."""
         if not self.is_initialized():
@@ -568,6 +596,8 @@ class PraxisViewModel:
 
         first_ts = entries[0].get("timestamp", "") if entries else ""
         last_ts = entries[-1].get("timestamp", "") if entries else ""
+        diagnosis = build_user_diagnosis(entries, gov_events, self._state or {})
+        submission = get_submission_status(self._praxis_dir)
 
         return {
             "initialized": True,
@@ -575,7 +605,16 @@ class PraxisViewModel:
             "governance_count": len(gov_events),
             "first_entry": first_ts,
             "last_entry": last_ts,
+            "diagnosis": diagnosis,
+            "submission": submission,
         }
+
+    def write_submission_template(self) -> Path:
+        if self._praxis_dir is None:
+            raise StateNotFoundError("PRAXIS not initialized")
+        path = self._praxis_dir / "submission.json"
+        path.write_text(submission_setup_template(), encoding="utf-8")
+        return path
 
     # ------------------------------------------------------------------
     # Protocol Management

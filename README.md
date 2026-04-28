@@ -1,23 +1,44 @@
 # PRAXIS Universal Kit
 
-**Cross-platform research tool for observing governance phenomena in AI-assisted workflows**
+**Workflow observability kit for understanding what AI is actually doing to your work, trust, and decisions**
 
-PRAXIS Kit instruments your AI workflow to capture what actually happens — governance emergence, personality effects, session boundaries, quality patterns — before and after introducing structured governance.
+PRAXIS instruments real human-AI workflows so you can see patterns that usually stay invisible: rework drag, trust calibration, session-boundary degradation, personality effects, and governance rules that emerge under pressure.
 
 **Part of doctoral research at Universidad Complutense de Madrid.**
 
 ---
 
+## What do I get as a user?
+
+PRAXIS is not just a research logger. It gives you a **workflow diagnosis**.
+
+After you log real work, PRAXIS can show you:
+- where AI is saving time versus creating rework
+- when you are over-trusting persuasive outputs
+- whether session resets are damaging quality or continuity
+- how much human correction your workflow still requires
+- which governance rules are emerging from real failures instead of theory
+
+If you install PRAXIS, you get a **mirror for your AI workflow** — and the study gets comparable longitudinal evidence.
+
+---
+
 ## What is PRAXIS?
 
-PRAXIS (Protocol for Rule Architecture in eXtended Intelligent Systems) is a research framework that documents what happens when humans and AI systems work together under sustained production conditions.
+PRAXIS (Protocol for Rule Architecture in eXtended Intelligent Systems) is a research framework for studying what happens when humans and AI systems work together under sustained production conditions.
 
-This kit is the **measurement instrument** — it captures data so researchers can study governance phenomena like:
+This repository is the **measurement instrument**. It does not assume governance improves outcomes. It captures what changes — descriptively — when structure, personality, and continuity conditions shift.
+
+Researchers and participants can study phenomena like:
 - Rules that emerge organically from failures (governance emergence)
 - How AI personality affects your trust and behavior (relational governance)
 - What happens when you switch AI models with the same governance config (personality portability)
 - How memory and calibration recover across session boundaries
 - Whether workflow structure shows measurable influence on outcomes
+
+In short:
+
+> **PRAXIS is a cross-platform field instrumentation kit for studying how governance emerges, degrades, and transforms inside real human-AI production workflows.**
 
 ---
 
@@ -72,23 +93,45 @@ praxis incident "AI used outdated library version"
 ```
 This prompts for: what happened, root cause, incident category (`OPS`, `GOV`, `COM`, `PRD`, `RES`, `DES`), and whether a new rule should be created.
 
-### 5. Activate structured governance (when ready)
+### 5. Activate structured observation (when ready)
 ```bash
 praxis activate
 ```
 
-This injects governance files into your AI tools and transitions to Phase B.
+This introduces the structured PRAXIS condition and transitions to Phase B. Injection is an experimental mechanism, not the core value proposition.
 
 ### 6. Export your data
 ```bash
 praxis export
 ```
 
-Generates an anonymized ZIP file for research analysis.
+Generates an anonymized ZIP file for research analysis, including your user-facing workflow diagnosis.
+
+### 7. View your diagnosis
+```bash
+praxis diagnose
+```
+
+Shows what PRAXIS is learning about your own AI workflow.
 
 ---
 
-## What's new in v0.3
+## Why this is different
+
+Most AI tooling tells you how to prompt better.
+PRAXIS tells you what your workflow is actually doing over time.
+
+| Typical AI tool | PRAXIS |
+|---------|---------|
+| Optimizes one interaction | Observes patterns across many sessions |
+| Focuses on output only | Tracks process, trust, rework, and continuity |
+| Vendor-specific | Cross-platform and architecture-aware |
+| Productivity rhetoric | Descriptive evidence about real practice |
+| Gives advice | Gives diagnosis |
+
+---
+
+## What's new in v0.6
 
 | Feature | Description |
 |---------|-------------|
@@ -99,7 +142,9 @@ Generates an anonymized ZIP file for research analysis.
 | **Incident logging** | Structured capture of governance emergence events (`praxis incident`) |
 | **Session boundary observations** | Track memory recovery and calibration degradation across sessions |
 | **2×2 factorial support** | Experimental conditions: Model (Sonnet/Opus) × Structure (structured/unstructured) |
-| **Descriptive framing** | Kit documents phenomena rather than testing whether governance "improves" things |
+| **User-facing diagnosis** | Turns logs into a personal workflow mirror participants can actually use |
+| **Submission throttling** | Optional submission flow can be rate-limited per participant to protect the research inbox |
+| **Descriptive framing** | Kit documents phenomena rather than assuming governance "improves" things |
 
 ---
 
@@ -107,6 +152,7 @@ Generates an anonymized ZIP file for research analysis.
 
 ```
 praxis status          Show phase, days active, entry count, averages
+praxis diagnose        Show your workflow diagnosis
 praxis log "task"      Log a task (interactive if no args given)
 praxis incident "desc" Log a governance emergence event
 praxis activate        Transition Phase A → Phase B (governance on)
@@ -114,7 +160,28 @@ praxis govern "rule"   Log a governance rule event (Phase B)
 praxis survey pre      Launch pre-survey
 praxis survey post     Launch post-survey
 praxis export          Generate anonymized data ZIP for research
+praxis submit          Export and submit data when enabled
 praxis platforms       Show detected AI platforms
+```
+
+### Optional: enable throttled inbox submission
+
+PRAXIS can keep submission local-only, or it can send participant exports to the research inbox when explicitly enabled.
+
+1. Create `.praxis/submission.json`
+2. Configure your SMTP env vars: `PRAXIS_SMTP_HOST`, `PRAXIS_SMTP_PORT`, `PRAXIS_SMTP_USER`, `PRAXIS_SMTP_PASS`, `PRAXIS_SMTP_FROM`
+3. Set a cooldown and monthly cap so one participant cannot flood the inbox
+
+Example `submission.json`:
+
+```json
+{
+  "enabled": true,
+  "mode": "smtp",
+  "email_to": "hello@javierherreros.xyz",
+  "cooldown_hours": 168,
+  "max_submissions_per_30d": 4
+}
 ```
 
 ---
@@ -234,9 +301,9 @@ python desktop/app.py
 ### Features
 
 - **Init Wizard** — First-run setup: consent + participant ID generation
-- **Dashboard** — Live status view with phase, metrics summary, days active
+- **Dashboard** — Live status view plus a user-facing workflow diagnosis
 - **Log Sprint** — Visual form with dropdowns, sliders, and number inputs
-- **Export** — One-click anonymized ZIP generation
+- **Export & Submit** — ZIP generation, diagnosis review, and optional inbox submission
 - **PRAXIS-Q Survey** — 5-dimension quality rubric (Phase B)
 - **Session Controls** — Start/Stop/Initialize buttons with status indicator
 - **Platform Detection** — Auto-detects installed AI tools from system
@@ -277,7 +344,7 @@ PRAXIS Universal Kit is a **research instrument** developed as part of doctoral 
 
 - **No guarantee of fitness** for any particular purpose. The kit is designed for academic research and may contain bugs or unexpected behavior.
 - **Data is stored locally** on your machine. The developers are not responsible for any data loss, corruption, or unintended exposure.
-- **No automatic data transmission.** The kit does not send any data to external servers. Data export is user-initiated and manually submitted.
+- **No automatic transmission by default.** Data stays local unless the participant explicitly enables submission. Optional SMTP submission can be rate-limited per participant.
 - **Unsigned binaries.** The Windows and macOS desktop apps are not code-signed with developer certificates. Your operating system may display security warnings (see installation instructions above).
 - **Research use only.** This tool is not intended for production environments, critical workflows, or commercial deployment.
 - **Participant autonomy.** All data collection requires explicit consent. Participants can withdraw at any time and request deletion of their data.
@@ -286,5 +353,5 @@ By using PRAXIS Universal Kit, you acknowledge that the authors and Universidad 
 
 ---
 
-*PRAXIS Universal Kit v0.3.2 — 2026-04-25*
+*PRAXIS Universal Kit v0.6.0 — 2026-04-28*
 *Doctoral research — Universidad Complutense de Madrid*
