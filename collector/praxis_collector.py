@@ -647,7 +647,7 @@ def _extract_model_from_telemetry(session_record: Dict[str, Any]) -> tuple:
             if isinstance(model_info, dict):
                 for key in ("model", "default_model"):
                     m = model_info.get(key)
-                    if isinstance(m, str) and m and m != "unknown":
+                    if isinstance(m, str) and m and _is_real_model_name(m):
                         return (m, "openclaw")
 
         # Codex: latest_session.model
@@ -656,7 +656,7 @@ def _extract_model_from_telemetry(session_record: Dict[str, Any]) -> tuple:
             latest = cx.get("latest_session")
             if isinstance(latest, dict):
                 m = latest.get("model")
-                if isinstance(m, str) and m and m != "unknown":
+                if isinstance(m, str) and m and _is_real_model_name(m):
                     return (m, "codex")
 
         # Custom adapters: check for 'model' key at top level
@@ -665,10 +665,34 @@ def _extract_model_from_telemetry(session_record: Dict[str, Any]) -> tuple:
                 continue
             if isinstance(adapter_data, dict) and adapter_data.get("detected"):
                 m = adapter_data.get("model")
-                if isinstance(m, str) and m and m != "unknown":
+                if isinstance(m, str) and m and _is_real_model_name(m):
                     return (m, adapter_name)
 
     return ("unknown", "unknown")
+
+
+# Generic provider names that are NOT real model identifiers
+_PROVIDER_PLACEHOLDERS = frozenset({
+    "openai", "anthropic", "google", "unknown", "azure", "aws", "meta",
+    "mistral", "cohere", "xai", "deepseek", "local", "ollama",
+})
+
+
+def _is_real_model_name(name: str) -> bool:
+    """Check if a model name is a concrete model ID, not a generic provider placeholder.
+
+    Real model names contain specific identifiers like:
+    - gpt-5.4, claude-sonnet-4, gemini-2.5-pro, zai/glm-5.1
+    Generic placeholders like 'openai', 'anthropic' are rejected.
+    """
+    if not name or not name.strip():
+        return False
+    lowered = name.strip().lower()
+    if lowered in _PROVIDER_PLACEHOLDERS:
+        return False
+    # Real model names typically contain /, -, or digits
+    # Provider names are single words with no version info
+    return True
 
 
 # ---------------------------------------------------------------------------

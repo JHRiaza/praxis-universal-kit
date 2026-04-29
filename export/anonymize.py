@@ -58,15 +58,26 @@ FILES_TO_INCLUDE = [
 # ---------------------------------------------------------------------------
 
 def _auto_close_orphan_sessions(praxis_dir: Path) -> int:
-    """Close any open sessions in sessions.jsonl before export.
+    """Close truly orphaned sessions (open > 24h) before export.
+
+    Only closes sessions that have been open for more than 24 hours,
+    which indicates the session was abandoned rather than actively running.
+    Active sessions (< 24h open) are left untouched.
+
+    Uses atomic write (write-to-temp + rename) to avoid races with
+    concurrent session lifecycle writes.
 
     Returns the number of sessions that were auto-closed.
     """
+    import tempfile
+
     sessions_path = praxis_dir / "sessions.jsonl"
     if not sessions_path.is_file():
         return 0
 
-    now_iso = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(timezone.utc)
+    now_iso = now.isoformat()
+    orphan_threshold_hours = 24
     closed_count = 0
     lines: List[str] = []
 
@@ -81,17 +92,53 @@ def _auto_close_orphan_sessions(praxis_dir: Path) -> int:
                 lines.append(raw)
                 continue
             if isinstance(record, dict) and record.get("status") == "open":
-                record["status"] = "closed"
-                record["ended_at"] = now_iso
-                record["auto_closed_on_export"] = True
-                closed_count += 1
+                # Only close if session has been open > 24h (truly orphaned)
+                started = _parse_iso_or_none(record.get("started_at"))
+                if started is not None and (now - started).total_seconds() > orphan_threshold_hours * 3600:
+                    record["status"] = "closed"
+                    record["ended_at"] = now_iso
+                    record["auto_closed_on_export"] = True
+                    record["orphan_reason"] = f"open > {orphan_threshold_hours}h"
+                    closed_count += 1
             lines.append(json.dumps(record, ensure_ascii=False))
 
     if closed_count > 0:
-        with sessions_path.open("w", encoding="utf-8") as fh:
-            fh.write("\n".join(lines) + "\n")
+        # Atomic write: temp file + rename to avoid races
+        tmp_fd, tmp_path = tempfile.mkstemp(
+            dir=str(praxis_dir), suffix=".tmp", prefix=".sessions_"
+        )
+        try:
+            import os
+            with os.fdopen(tmp_fd, "w", encoding="utf-8") as fh:
+                fh.write("\n".join(lines) + "\n")
+            # On Windows, need to remove target first if it exists
+            backup_path = sessions_path.with_suffix(".jsonl.bak")
+            if sessions_path.is_file():
+                sessions_path.replace(backup_path)
+            tmp_rename = Path(tmp_path)
+            tmp_rename.replace(sessions_path)
+            # Clean up backup
+            if backup_path.is_file():
+                backup_path.unlink()
+        except Exception:
+            # If atomic write fails, don't leave corrupted state
+            Path(tmp_path).unlink(missing_ok=True)
+            raise
 
     return closed_count
+
+
+def _parse_iso_or_none(value: Any) -> Optional[datetime]:
+    """Parse an ISO timestamp string, returning None on failure."""
+    if not value or not isinstance(value, str):
+        return None
+    try:
+        dt = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.astimezone(timezone.utc)
+    except (TypeError, ValueError):
+        return None
 
 
 # ---------------------------------------------------------------------------
