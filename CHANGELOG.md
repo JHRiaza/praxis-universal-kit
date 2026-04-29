@@ -1,5 +1,39 @@
 # PRAXIS Universal Kit — Changelog
 
+## v0.9.2 (2026-04-29)
+
+### Added
+- **Plugin adapter system** — drop-in custom adapters via `~/.praxis/adapters/`
+- Adapters auto-discovered at runtime, no code changes needed to support new platforms
+
+## v0.9.1 (2026-04-29)
+
+### Added
+- **Cowork/Claude bridge telemetry adapter** — detects Cowork bridge queue, pending/completed tasks, latest task metadata
+
+## v0.9.0 (2026-04-28)
+
+### Added
+- **Thin platform adapters** — OpenClaw + Codex telemetry adapters with session counting, model detection, workspace metadata
+- Adapter telemetry stored in `sessions.jsonl` alongside passive capture data
+
+## v0.8.0 (2026-04-28)
+
+### Changed
+- **PRAXIS-Q survey removed** — replaced by smart contextual checkout (less friction, more reliable data)
+- **Session discard** — users can discard passive captures that weren't real work sessions
+- **Auto-fill detected data** — checkout pre-populates platforms, duration, and session timing from telemetry
+
+## v0.7.2 (2026-04-28)
+
+### Changed
+- **Protocol tab and A/B phase logic removed** — prescriptive injection is a post-thesis product. Kit now purely observes.
+
+## v0.7.1 (2026-04-28)
+
+### Fixed
+- Desktop build packaging for submission module
+
 ## v0.7.0 (2026-04-28)
 
 ### Changed
