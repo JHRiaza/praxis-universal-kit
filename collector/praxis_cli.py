@@ -1591,8 +1591,6 @@ def build_parser() -> argparse.ArgumentParser:
 
     # activate
     p_act = sub.add_parser("activate", help="Observation mode status")
-    p_act.add_argument("--force", action="store_true",
-                       help="Override minimum data requirements")
 
     # govern
     p_gov = sub.add_parser("govern", help="Log a governance event")
