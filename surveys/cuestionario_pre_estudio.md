@@ -1,7 +1,7 @@
 # Cuestionario Pre-Estudio: Flujo de Trabajo con IA
 
 > Parte del Kit Universal PRAXIS v0.2
-> Se completa ANTES de comenzar la Fase A. ~10 minutos.
+> Se completa ANTES de comenzar la observación. ~10 minutos.
 > Todos los datos son anónimos. El participante puede retirarse en cualquier momento.
 
 ---
@@ -89,6 +89,6 @@
 ## Solo para uso del investigador
 
 - Fecha de finalización: __________
-- Fecha inicio Fase A: __________
-- Fecha inicio Fase B: __________
+- Fecha inicio observación: __________
+- Fecha fin observación: __________
 - Notas: __________

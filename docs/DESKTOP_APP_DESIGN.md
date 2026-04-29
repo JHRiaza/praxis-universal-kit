@@ -1,4 +1,4 @@
-# PRAXIS Kit Desktop — Design Document
+# PRAXIS Kit Desktop - Design Document
 
 **Created:** 2026-04-24
 **Status:** Draft
@@ -18,19 +18,19 @@
 | **Tauri + PyInstaller sidecar** | Overkill | Requires Rust toolchain + Node.js + web frontend framework. Tauri sidecar with PyInstaller is viable but documented as finicky (dual-process issues on Windows). Adds 3 tech stacks (Rust, JS/TS, Python) for a 5-20 user tool. |
 | **Electron + Python backend** | Rejected | 80-150MB bundle, 150-300MB RAM idle. Unacceptable for a data collection tool researchers run alongside their IDE. Electron is for commercial-scale apps, not PhD research tools. |
 | **PyQt/PySide6** | Runner-up | More professional UI, but steeper learning curve, heavier dependency. LGPL licensing is fine but the framework feels "heavy" for what's essentially a form-based data logger. |
-| **Python + CustomTkinter + PyInstaller** | **Winner** | Zero external GUI dependencies beyond `customtkinter` (pip install). Modern-looking widgets. PyInstaller produces single-file .exe and .app bundles natively. The collector code has **zero external dependencies** — adding one lightweight GUI library is minimal. |
+| **Python + CustomTkinter + PyInstaller** | **Winner** | Zero external GUI dependencies beyond `customtkinter` (pip install). Modern-looking widgets. PyInstaller produces single-file .exe and .app bundles natively. The collector code has **zero external dependencies** - adding one lightweight GUI library is minimal. |
 
 ### Justification
 
-1. **Reuse, don't rewrite.** The collector (`praxis_collector.py`) has zero deps. The CLI (`praxis_cli.py`) imports it directly. The desktop app will import the same `praxis_collector` module and call the same functions — no subprocess, no sidecar, no IPC.
+1. **Reuse, don't rewrite.** The collector (`praxis_collector.py`) has zero deps. The CLI (`praxis_cli.py`) imports it directly. The desktop app will import the same `praxis_collector` module and call the same functions - no subprocess, no sidecar, no IPC.
 2. **Single language, single build chain.** Python → PyInstaller → .exe/.dmg. No Rust, no Node, no web bundler.
 3. **Tiny dependency footprint.** `customtkinter` is the only new dep. Everything else is stdlib.
 4. **5-20 users.** This doesn't need a commercial-grade framework. It needs to work reliably on researchers' laptops.
-5. **CustomTkinter** provides modern-looking dark-mode widgets out of the box — no "ugly Tkinter" complaints.
+5. **CustomTkinter** provides modern-looking dark-mode widgets out of the box - no "ugly Tkinter" complaints.
 
 ### Alternative path (if CustomTkinter proves insufficient)
 
-If the UI needs become more complex (charts, tables, etc.), migrate to PySide6. The architecture is the same — only the view layer changes. Both wrap the same `praxis_collector` backend.
+If the UI needs become more complex (charts, tables, etc.), migrate to PySide6. The architecture is the same - only the view layer changes. Both wrap the same `praxis_collector` backend.
 
 ---
 
@@ -56,7 +56,7 @@ If the UI needs become more complex (charts, tables, etc.), migrate to PySide6. 
 │  └─────────────────┼──────────────────────────┘  │
 │                    │                             │
 │  ┌─────────────────┴──────────────────────────┐  │
-│  │     Model Layer (REUSED — no changes)      │  │
+│  │     Model Layer (REUSED - no changes)      │  │
 │  │                                            │  │
 │  │  praxis_collector.py                       │  │
 │  │  ├── find_praxis_dir()                     │  │
@@ -100,16 +100,16 @@ No subprocess, no CLI parsing. The GUI calls the same Python functions the CLI c
 | Feature | Priority | Sprint |
 |---------|----------|--------|
 | **Init / Setup wizard** | P0 | 1 |
-| **Dashboard (status view)** — phase, participant ID, metrics summary, days of data | P0 | 1 |
-| **Log Sprint** — form with task, duration, model, quality (slider), iterations, interventions | P0 | 1 |
-| **PRAXIS-Q quick rating** — 5 sliders (1-3) after logging in Phase B | P0 | 2 |
-| **Log Governance Event** — simple form (description + type dropdown) | P0 | 2 |
-| **Log Incident** — description, category, optional root cause / new rule | P1 | 2 |
-| **Export & Submit** — one-click anonymized ZIP + email/HTTP upload | P0 | 2 |
-| **Activate Phase B** — guided activation with consent confirmation | P1 | 3 |
-| **Platform detection display** — show detected AI platforms | P2 | 3 |
-| **Pre/Post Survey** — render survey questions in GUI instead of terminal | P1 | 3 |
-| **Withdraw** — with confirmation dialog | P1 | 3 |
+| **Dashboard (status view)** - phase, participant ID, metrics summary, days of data | P0 | 1 |
+| **Log Sprint** - form with task, duration, model, quality (slider), iterations, interventions | P0 | 1 |
+| **Smart checkout** — quick outcome + quality + governance tag after session | P0 | 2 |
+| **Log Governance Event** - simple form (description + type dropdown) | P0 | 2 |
+| **Log Incident** - description, category, optional root cause / new rule | P1 | 2 |
+| **Export & Submit** - one-click anonymized ZIP + email/HTTP upload | P0 | 2 |
+| **Activate structured observation** — guided activation with consent confirmation | P1 | 3 |
+| **Platform detection display** - show detected AI platforms | P2 | 3 |
+| **Pre/Post Survey** - render survey questions in GUI instead of terminal | P1 | 3 |
+| **Withdraw** - with confirmation dialog | P1 | 3 |
 
 ### Future (Post-MVP)
 
@@ -134,9 +134,9 @@ No subprocess, no CLI parsing. The GUI calls the same Python functions the CLI c
 
 **Deliverables:**
 - App skeleton with CustomTkinter, tab-based navigation
-- **Init wizard** — consent + participant ID generation (calls `initialize_state()`)
-- **Dashboard tab** — reads state + computes summary (calls `load_state()`, `compute_summary()`)
-- **Log Sprint tab** — form with all P0 fields, writes to `.praxis/metrics.jsonl`
+- **Init wizard** - consent + participant ID generation (calls `initialize_state()`)
+- **Dashboard tab** - reads state + computes summary (calls `load_state()`, `compute_summary()`)
+- **Log Sprint tab** - form with all P0 fields, writes to `.praxis/metrics.jsonl`
 - Basic .exe build via PyInstaller
 - Symlink or copy of `praxis_collector.py` accessible to the desktop app
 
@@ -144,29 +144,29 @@ No subprocess, no CLI parsing. The GUI calls the same Python functions the CLI c
 
 ### Sprint 2: Governance + Incidents + Export (5-7 days)
 
-**Goal:** Full Phase B support + data submission.
+**Goal:** Full observation + data submission.
 
 **Deliverables:**
-- **Governance tab** — log governance events (calls `append_governance_event()`)
-- **Incident tab** — structured incident capture with category, root cause, proposed rule
-- **PRAXIS-Q panel** — 5-dimension slider widget, shown after logging in Phase B
-- **Export & Submit tab** — one-click ZIP generation + upload mechanism (see §7)
-- **Activate Phase B** flow — consent dialog + governance injection
+- **Governance tab** - log governance events (calls `append_governance_event()`)
+- **Incident tab** - structured incident capture with category, root cause, proposed rule
+- **Checkout panel** — outcome, quality, governance tag, L1-R observations after session
+- **Export & Submit tab** - one-click ZIP generation + upload mechanism (see §7)
+- **Activate** flow — consent dialog + governance injection
 - macOS .app build tested
 
-**Exit criteria:** Researcher can go through full Phase A → Activate → Phase B → Export cycle entirely in the GUI.
+**Exit criteria:** Researcher can go through full Start → Checkout → Export cycle entirely in the GUI.
 
 ### Sprint 3: Surveys + Polish + Distribution (3-5 days)
 
 **Goal:** Feature-complete MVP with installers.
 
 **Deliverables:**
-- **Survey renderer** — reads `surveys/*.json`, renders questions as GUI widgets
-- **Platforms display** — show detected platforms with tier info
-- **Withdraw flow** — confirmation dialog + data deletion
+- **Survey renderer** - reads `surveys/*.json`, renders questions as GUI widgets
+- **Platforms display** - show detected platforms with tier info
+- **Withdraw flow** - confirmation dialog + data deletion
 - **Windows installer** (.exe with NSIS or Inno Setup)
 - **macOS disk image** (.dmg)
-- **README for desktop app** — installation + usage guide
+- **README for desktop app** - installation + usage guide
 - Basic auto-update check (HTTP HEAD to GitHub Releases, notify if newer version)
 
 **Exit criteria:** Both .exe and .dmg installers produced. A new researcher can install, set up, and use the app without touching the CLI.
@@ -177,12 +177,12 @@ No subprocess, no CLI parsing. The GUI calls the same Python functions the CLI c
 
 ```
 D:\PRAXIS\universal-kit\
-├── collector/                    # EXISTING — unchanged
+├── collector/                    # EXISTING - unchanged
 │   ├── praxis_cli.py             # CLI entry point (unchanged)
 │   ├── praxis_collector.py       # Core data layer (unchanged)
-│   └── requirements.txt          # (empty — zero deps)
+│   └── requirements.txt          # (empty - zero deps)
 │
-├── desktop/                      # NEW — desktop app
+├── desktop/                      # NEW - desktop app
 │   ├── main.py                   # Entry point for desktop app
 │   ├── app.py                    # App class, window setup, tab controller
 │   ├── views/
@@ -193,7 +193,7 @@ D:\PRAXIS\universal-kit\
 │   │   ├── incident.py           # Incident logging form
 │   │   ├── export_submit.py      # Export + upload tab
 │   │   ├── survey.py             # Survey renderer
-│   │   ├── activate.py           # Phase B activation flow
+│   │   ├── activate.py           # Structured observation activation flow
 │   │   ├── platforms.py          # Platform detection display
 │   │   └── withdraw.py           # Withdraw confirmation
 │   ├── widgets/
@@ -206,10 +206,10 @@ D:\PRAXIS\universal-kit\
 │   │   └── app_controller.py     # Business logic, bridges views ↔ collector
 │   └── requirements.txt          # customtkinter + any desktop-only deps
 │
-├── export/                       # EXISTING — unchanged
+├── export/                       # EXISTING - unchanged
 │   └── anonymize.py              # ZIP export logic (called by desktop app)
 │
-├── build/                        # NEW — build scripts
+├── build/                        # NEW - build scripts
 │   ├── build_windows.py          # PyInstaller build script for Windows
 │   ├── build_macos.sh            # PyInstaller build script for macOS
 │   ├── praxis_desktop.spec       # PyInstaller spec file
@@ -217,10 +217,10 @@ D:\PRAXIS\universal-kit\
 │       ├── windows.nsi           # NSIS installer script (or Inno Setup)
 │       └── create_dmg.sh         # DMG creation script for macOS
 │
-├── surveys/                      # EXISTING — unchanged
-├── templates/                    # EXISTING — unchanged
-├── config/                       # EXISTING — unchanged
-├── adapters/                     # EXISTING — unchanged
+├── surveys/                      # EXISTING - unchanged
+├── templates/                    # EXISTING - unchanged
+├── config/                       # EXISTING - unchanged
+├── adapters/                     # EXISTING - unchanged
 └── docs/
     └── DESKTOP_APP_DESIGN.md     # This document
 ```
@@ -280,7 +280,7 @@ from praxis_collector import (
      "PRAXIS-Kit-0.3.dmg" "dist/PRAXIS Kit.app"
 
 3. Code signing: self-signed is fine for 5-20 users.
-   For broader distribution: Apple Developer cert ($99/year) — NOT needed for MVP.
+   For broader distribution: Apple Developer cert ($99/year) - NOT needed for MVP.
 
 4. Distribute via GitHub Releases.
 ```
@@ -425,9 +425,9 @@ Export & Submit tab:
 | Withdraw flow | ~80 | 0.5 day |
 | Platform detection view | ~80 | 0.5 day |
 | Controller layer | ~250 | 1 day |
-| PyInstaller config + testing | — | 1 day |
-| Installers (.exe, .dmg) | — | 1 day |
-| Testing + bug fixes | — | 2 days |
+| PyInstaller config + testing | - | 1 day |
+| Installers (.exe, .dmg) | - | 1 day |
+| Testing + bug fixes | - | 2 days |
 | **Total** | ~2,060 | **14 days** |
 
 ---
@@ -438,7 +438,7 @@ Export & Submit tab:
 
 1. **CustomTkinter can't render the survey JSON dynamically.** The survey system has `single_choice`, `multi_choice`, `likert_5`, `likert_7`, `numeric`, and `open_text` question types. If building a dynamic form renderer in CustomTkinter becomes a nightmare (unlikely but possible), fall back to: (a) rendering surveys in an embedded HTML view, or (b) keeping surveys CLI-only.
 
-2. **PyInstaller bundle exceeds 50MB.** For a data collection tool, this is too heavy. The zero-dep collector should keep this well under 30MB. If customtkinter pulls in something unexpected, switch to vanilla tkinter (built into Python — zero additional size).
+2. **PyInstaller bundle exceeds 50MB.** For a data collection tool, this is too heavy. The zero-dep collector should keep this well under 30MB. If customtkinter pulls in something unexpected, switch to vanilla tkinter (built into Python - zero additional size).
 
 3. **macOS build requires Apple Developer certificate.** If macOS Gatekeeper blocks the app and researchers can't open it without terminal workarounds (`xattr -cr`), and we can't afford the $99/year cert, we may need to: (a) distribute as a Python package (`pip install praxis-desktop`), or (b) tell Mac users to use the CLI.
 
@@ -450,7 +450,7 @@ Export & Submit tab:
 
 ### Pivot options if killed
 
-- **Option A:** Invest in a better TUI instead (Python `textual` — beautiful terminal UIs). Zero packaging issues.
+- **Option A:** Invest in a better TUI instead (Python `textual` - beautiful terminal UIs). Zero packaging issues.
 - **Option B:** Web app (Flask/FastAPI + simple HTML). Researchers open `localhost:8080`. The `submit.py` already does this pattern.
 - **Option C:** VS Code extension. Most researchers use VS Code. An extension panel that calls the collector functions would integrate naturally.
 
@@ -496,16 +496,16 @@ The CLI remains fully functional and supported. The desktop app is an alternativ
 ```
 PRAXIS-Q Quick Rating
 ─────────────────────
-Completeness        [━━━━━●━━━━] 2/3 — Acceptable
-Quality             [━━━━━━━●━━] 3/3 — Excellent
-Coherence           [━━━━━●━━━━] 2/3 — Acceptable
-Efficiency          [━━━━●━━━━━] 1/3 — Needs work
-Traceability        [━━━━━━━●━━] 3/3 — Excellent
+Completeness        [━━━━━●━━━━] 2/3 - Acceptable
+Quality             [━━━━━━━●━━] 3/3 - Excellent
+Coherence           [━━━━━●━━━━] 2/3 - Acceptable
+Efficiency          [━━━━●━━━━━] 1/3 - Needs work
+Traceability        [━━━━━━━●━━] 3/3 - Excellent
 
 Total: 2.2 / 3.0  (⚠ Acceptable zone)
 ```
 
-Each dimension is a horizontal slider (1-3) with a label. The total updates in real-time. Color coding: green ≥ 2.4, yellow ≥ 1.7, red < 1.7 — matching the CLI's zone colors.
+Each dimension is a horizontal slider (1-3) with a label. The total updates in real-time. Color coding: green ≥ 2.4, yellow ≥ 1.7, red < 1.7 - matching the CLI's zone colors.
 
 ---
 

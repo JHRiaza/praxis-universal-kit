@@ -87,7 +87,7 @@ Esto pregunta: qué pasó, causa raíz, y si debe crearse una nueva regla.
 praxis activate
 ```
 
-Esto introduce la condición estructurada de PRAXIS y transiciona a la Fase B. La inyección es un mecanismo experimental, no la propuesta de valor principal.
+Esto activa el modo de observación estructurada.
 
 ### 6. Exportar tus datos
 ```bash
@@ -127,8 +127,8 @@ praxis status          Muestra fase, días activos, conteo de entradas, promedio
 praxis diagnose        Muestra tu diagnóstico de workflow
 praxis log "tarea"     Registra una tarea (interactivo sin argumentos)
 praxis incident "desc" Registra un evento de emergencia de gobernanza
-praxis activate        Transición Fase A → Fase B (gobernanza activa)
-praxis govern "regla"  Registra un evento de gobernanza (Fase B)
+praxis activate        Activa el modo de observación estructurada
+praxis govern "regla"  Registra un evento de gobernanza
 praxis survey pre      Encuesta previa al estudio
 praxis survey post     Encuesta posterior al estudio
 praxis export          Genera ZIP de datos anonimizados para investigación
@@ -166,8 +166,8 @@ Este kit forma parte de una tesis doctoral que documenta fenómenos de gobernanz
 4. ¿Qué aspectos no cubren los marcos de gobernanza de IA actuales (AI Act de la UE, OCDE, NIST)?
 
 **Información importante:**
-- Las evaluaciones de calidad en la Fase A son autoevaluadas por el participante
-- La evaluación externa ciega (PRAXIS-Q) está disponible para los resultados de la Fase B
+- Las evaluaciones de calidad son autoevaluadas por el participante
+- La evaluación externa ciega está disponible para resultados de observación estructurada
 - Todos los datos se anonimizan y almacenan localmente - nada se envía a ningún servidor automáticamente
 - Los participantes pueden retirarse en cualquier momento
 
