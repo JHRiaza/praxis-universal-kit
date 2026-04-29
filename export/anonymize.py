@@ -9,7 +9,7 @@ What is included in the export:
   - sessions.jsonl (passive capture timeline)
   - governance.jsonl (governance events)
   - survey_*.json (survey responses, participant ID only — no name)
-  - state.json (phase info, no personal identifiers)
+  - state.json (observation mode info, no personal identifiers)
   - export_manifest.json (metadata about this export)
 
 What is NEVER included:
@@ -300,7 +300,7 @@ def _add_state(
         "participant_id": participant_id,
         "kit_version": state.get("kit_version"),
         "schema_version": state.get("schema_version"),
-        "phase": state.get("phase"),
+        "phase": state.get("phase", "obs"),
         "installed_at": state.get("installed_at"),
         "activated_at": state.get("activated_at"),
         "consent_given": state.get("consent_given"),
@@ -360,7 +360,7 @@ def _add_manifest(
         "participant_id": participant_id,
         "exported_at": _now_iso(),
         "kit_version": state.get("kit_version", "?"),
-        "phase_at_export": state.get("phase", "?"),
+        "phase_at_export": state.get("phase", "obs"),
         "redact_tasks": redact_tasks,
         "files_included": ["metrics.jsonl", "sessions.jsonl", "governance.jsonl", "state.json"],
         "includes_user_diagnosis": True,

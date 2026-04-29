@@ -25,7 +25,7 @@ _WINDSURF_HEADER = """\
 # PRAXIS Governance Rules for Windsurf
 
 > **PRAXIS Research Study**: This workspace participates in the PRAXIS AI
-> governance study (Phase B). Rules injected via `praxis activate`.
+> governance rules injected via `praxis activate`.
 >
 > Log tasks: `praxis log "desc" -d MIN -m MODEL -q 1-5 -i N -h N`
 

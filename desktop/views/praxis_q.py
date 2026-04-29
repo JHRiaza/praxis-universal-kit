@@ -261,7 +261,7 @@ class PraxisQView(ctk.CTkScrollableFrame):
             )
 
     def _check_phase(self) -> None:
-        """Check if Phase B is active. If Phase A, show message."""
+        """Show PRAXIS-Q form. Available anytime in observational mode."""
         if not self._vm.is_initialized():
             self._form_frame.grid_remove()
             self._subtitle.configure(
@@ -270,22 +270,11 @@ class PraxisQView(ctk.CTkScrollableFrame):
             )
             return
 
-        state = self._vm.state or {}
-        self._phase = state.get("phase", "A")
-
-        if self._phase == "A":
-            # Grayed out - show message
-            self._form_frame.grid_remove()
-            self._subtitle.configure(
-                text="🔒 PRAXIS-Q is available in Phase B. Keep logging sprints to qualify.",
-                text_color="#f39c12",
-            )
-        else:
-            # Phase B - show the form
-            self._subtitle.configure(
-                text="✅ Phase B active — Rate your sprint quality below.",
-                text_color="#2ecc71",
-            )
+        # PRAXIS-Q available anytime (legacy: was Phase B only)
+        self._subtitle.configure(
+            text="✅ Rate your sprint quality below.",
+            text_color="#2ecc71",
+        )
 
     def _submit(self) -> None:
         """Submit the PRAXIS-Q survey."""

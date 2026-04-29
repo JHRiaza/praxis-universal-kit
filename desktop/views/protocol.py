@@ -51,7 +51,7 @@ class ProtocolView(ctk.CTkScrollableFrame):
             text=(
                 "PRAXIS injects governance rules into your AI tools' config files.\n"
                 "When ON, every platform responds to \"PRAXIS?\" with its status.\n"
-                "Phase A = no injection (baseline). Phase B = governance active."
+                "Governance injection: active/inactive. Continuous observational capture."
             ),
             font=ctk.CTkFont(size=11),
             text_color="gray",
@@ -147,7 +147,7 @@ class ProtocolView(ctk.CTkScrollableFrame):
         else:
             self._master_toggle.deselect()
             self._status_label.configure(
-                text=f"🟠 Phase A — baseline observation",
+                text=f"🟠 PRAXIS — Observational capture active",
                 text_color="#e74c3c",
             )
 
@@ -320,7 +320,7 @@ class ProtocolView(ctk.CTkScrollableFrame):
         try:
             self._vm.remove_protocol_all()
             self._status_label.configure(
-                text="🟠 Phase A — baseline observation",
+                text="🟠 PRAXIS — Observational capture active",
                 text_color="#e74c3c",
             )
         except Exception as e:

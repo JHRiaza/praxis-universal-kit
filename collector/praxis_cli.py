@@ -45,10 +45,8 @@ from praxis_collector import (
     VALID_ITERATION_TYPES,
     VALID_LAYERS,
     PraxisError,
-    InvalidPhaseError,
     StateNotFoundError,
     ValidationError,
-    activate_phase_b,
     append_incident_event,
     append_governance_event,
     append_metric_entry,
@@ -509,26 +507,20 @@ def cmd_status(args: argparse.Namespace) -> int:
     open_session = get_open_session_record(praxis_dir)
     summary = compute_summary(entries)
 
-    phase = state["phase"]
-    phase_color = C.B_GREEN if phase == "B" else C.B_YELLOW
-    phase_label = (
-        f"B (Structured observation)" if phase == "B" else "A (Baseline observation)"
-    )
+    phase = state.get("phase", "obs")
+    phase_label = "Observational (continuous capture)"
 
     print_header("Status")
     print_field("Participant ID",   state["participant_id"], C.B_CYAN)
-    print_field("Phase",            _c(phase_label, phase_color))
+    print_field("Mode",            phase_label)
     print_field("Kit version",      state.get("kit_version", "?"))
     print_field("Installed",        _fmt_date(state.get("installed_at", "")))
-    if state.get("activated_at"):
-        print_field("Activated (B)", _fmt_date(state["activated_at"]))
 
     print()
     print(f"  {_c('Metrics', C.BOLD)}")
     print_field("Total entries",    str(summary["total_entries"]))
+    print_field("Total sprints",    str(summary.get("total_sprints", 0)))
     print_field("Passive captures", str(len(sessions)))
-    print_field("Phase A entries",  str(summary["phase_a_count"]))
-    print_field("Phase B entries",  str(summary["phase_b_count"]))
     print_field("Total time logged",f"{summary['total_duration_minutes']} min")
 
     if summary["total_entries"] > 0:
@@ -764,21 +756,20 @@ def cmd_log(args: argparse.Namespace) -> int:
     if interventions is None:
         interventions = ask_int("Human corrections/overrides", 0, 50, 0)
 
-    # Phase B extras
+    # Layer and PRAXIS-Q
     layer = getattr(args, "layer", None)
     praxis_q = None
 
-    if state["phase"] == "B":
-        if not layer:
-            print()
-            print_info("PRAXIS layer (L1=Governance, L1-R=Relational, L2=Orchestration, L3=Execution, L4=Memory, L5=Production)")
-            layer_input = ask("Layer (L1/L1-R/L2-L5, or skip)", "")
-            if layer_input.upper() in VALID_LAYERS:
-                layer = layer_input.upper()
+    if not layer:
+        print()
+        print_info("PRAXIS layer (L1=Governance, L1-R=Relational, L2=Orchestration, L3=Execution, L4=Memory, L5=Production)")
+        layer_input = ask("Layer (L1/L1-R/L2-L5, or skip)", "")
+        if layer_input.upper() in VALID_LAYERS:
+            layer = layer_input.upper()
 
-        # PRAXIS-Q prompt
-        if ask_yn("Rate this task with PRAXIS-Q? (<15 seconds)", True):
-            praxis_q = _collect_praxis_q(lang=getattr(args, "lang", "en"))
+    # PRAXIS-Q prompt
+    if ask_yn("Rate this task with PRAXIS-Q? (<15 seconds)", True):
+        praxis_q = _collect_praxis_q(lang=getattr(args, "lang", "en"))
 
     l1r_observations = None
     if getattr(args, "l1r", False):
@@ -836,15 +827,6 @@ def cmd_log(args: argparse.Namespace) -> int:
         print_info(f"PRAXIS-Q: {_c(str(total), zone_color)}/3.0")
     if l1r_observations:
         print_info("L1-R observations captured")
-
-    # Phase A progress reminder
-    if state["phase"] == "A":
-        all_entries = load_all_metrics(praxis_dir)
-        days = _days_of_data(all_entries)
-        remaining = max(0, 7 - days)
-        if remaining > 0:
-            print()
-            print_info(f"Phase A: {len(all_entries)} entries | {days}/7 days | {remaining} days until activation-ready")
 
     return 0
 
@@ -914,66 +896,13 @@ def _collect_l1r_observations(lang: str = "en") -> Dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 def cmd_activate(args: argparse.Namespace) -> int:
-    praxis_dir = find_praxis_dir()
-    if praxis_dir is None:
-        print_err("PRAXIS not found. Run from your project directory.")
-        return 1
-
-    try:
-        state = load_state(praxis_dir)
-    except PraxisError as exc:
-        print_err(str(exc))
-        return 1
-
-    if state["phase"] == "B":
-        print_warn("PRAXIS is already activated (Phase B).")
-        return 0
-
-    print_header("Activate Structured Observation")
+    """No-op: PRAXIS operates in continuous observational mode."""
+    print_header("Observation Mode")
     print()
-    print_info("This will transition you from Phase A (baseline observation) to Phase B (structured observation).")
-    print_info("This action cannot be undone.")
-    print()
-
-    # Consent reminder
-    print(f"  {_c('Consent reminder:', C.BOLD)}")
-    print_info("By activating, you continue to consent to data collection for")
-    print_info("PhD research at Universidad Complutense de Madrid.")
-    print_info("You can withdraw at any time with: praxis withdraw")
-    print()
-
-    if not ask_yn("Proceed with activation?", True):
-        print_info("Activation cancelled.")
-        return 0
-
-    force = getattr(args, "force", False)
-    try:
-        updated_state, warnings = activate_phase_b(praxis_dir, state, force=force)
-    except (PraxisError, InvalidPhaseError) as exc:
-        print_err(str(exc))
-        return 1
-
-    if warnings:
-        for w in warnings:
-            print_warn(w)
-        if not force:
-            print_info("Run with --force to override minimum data requirements.")
-            return 0
-
-    print()
-    print_ok("PRAXIS activated. Phase B has begun.")
-    print()
-
-    # Inject governance files
-    _inject_governance(praxis_dir, updated_state)
-
-    print()
-    print_ok("Your AI systems now have the structured PRAXIS condition.")
-    print_info("New commands available:")
-    print_info("  praxis govern 'Added rule: ...'  — log a governance event")
-    print_info("  praxis log                       — PRAXIS-Q will be prompted automatically")
-    print_info("  praxis survey post               — post-survey (after Phase B ends)")
-
+    print_info("PRAXIS operates in continuous observational mode. No activation needed.")
+    print_info("Just start working — passive capture runs automatically.")
+    print_info("Use 'praxis checkout' to review and tag your session.")
+    print_info("Use 'praxis govern' to log a governance event at any time.")
     return 0
 
 
@@ -1115,7 +1044,7 @@ def cmd_govern(args: argparse.Namespace) -> int:
 
     try:
         event = append_governance_event(praxis_dir, event_type, description, state)
-    except (PraxisError, InvalidPhaseError, ValidationError) as exc:
+    except (PraxisError, ValidationError) as exc:
         print_err(str(exc))
         return 1
 
@@ -1216,11 +1145,7 @@ def cmd_survey(args: argparse.Namespace) -> int:
                 return 0
     elif survey_type == "post":
         survey_id = "post_survey"
-        if state["phase"] != "B":
-            print_warn("Post-survey is intended for Phase B participants.")
-            print_info("Complete Phase A and activate PRAXIS first, then return.")
-            if not ask_yn("Take post-survey anyway?", False):
-                return 0
+        # Surveys available at any time in observational mode
     else:
         print_err(f"Unknown survey type: '{survey_type}'. Use 'pre' or 'post'.")
         return 1
@@ -1249,7 +1174,7 @@ def cmd_survey(args: argparse.Namespace) -> int:
     print_ok("Survey completed. Thank you!")
     print_info(f"Saved to: {survey_path.name}")
 
-    if survey_type == "pre" and state["phase"] == "A":
+    if survey_type == "pre":
         print()
         print_info("Next step: start using your AI tools naturally and log tasks with:")
         print_info("  praxis log 'What you accomplished' -d <minutes> -m <model> -q <1-5>")
@@ -1521,16 +1446,15 @@ def _quality_bar(quality: float) -> str:
 
 
 def _days_of_data(entries: List[Dict[str, Any]]) -> int:
-    """Calculate unique days with Phase A data."""
+    """Calculate unique days with recorded data."""
     dates = set()
     for e in entries:
-        if e.get("phase") == "A":
-            ts = e.get("timestamp", "")
-            try:
-                dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
-                dates.add(dt.date())
-            except (ValueError, TypeError):
-                pass
+        ts = e.get("timestamp", "")
+        try:
+            dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+            dates.add(dt.date())
+        except (ValueError, TypeError):
+            pass
     return len(dates)
 
 
@@ -1659,19 +1583,19 @@ def build_parser() -> argparse.ArgumentParser:
     p_log.add_argument("--reviewer-source", type=str, metavar="SOURCE",
                        help="Feedback source, e.g. playtest, editor, art director")
     p_log.add_argument("-l", "--layer", choices=list(VALID_LAYERS), metavar="LAYER",
-                       help="PRAXIS layer (Phase B only; includes L1-R)")
+                       help="PRAXIS sprint checkout with L1-R observations")
     p_log.add_argument("--l1r", action="store_true",
                        help="Log L1-R relational governance observations")
     p_log.add_argument("-p", "--project", type=str, help="Project name")
     p_log.add_argument("-n", "--notes", type=str, help="Optional notes")
 
     # activate
-    p_act = sub.add_parser("activate", help="Transition from Phase A to Phase B")
+    p_act = sub.add_parser("activate", help="Observation mode status")
     p_act.add_argument("--force", action="store_true",
                        help="Override minimum data requirements")
 
     # govern
-    p_gov = sub.add_parser("govern", help="Log a governance event (Phase B)")
+    p_gov = sub.add_parser("govern", help="Log a governance event")
     p_gov.add_argument("description", nargs="*",
                        help="Governance event description")
     p_gov.add_argument("-t", "--type",

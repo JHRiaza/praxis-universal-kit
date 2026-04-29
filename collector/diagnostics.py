@@ -223,7 +223,7 @@ def build_user_diagnosis(
             "governance_events": len(governance_events),
             "degraded_boundaries": degraded_boundaries,
             "personality_mismatch_count": mismatch_count,
-            "phase": state.get("phase"),
+            "phase": state.get("phase", "obs"),
             "observation_days": observation_days,
         },
     }

@@ -740,15 +740,15 @@ class LogSprintView(ctk.CTkScrollableFrame):
                 )
 
         def _activate():
-            self._vm.activate_phase_b()
+            # activate removed - observational mode
             dialog.destroy()
             self._status_label.configure(
-                text="✅ Phase B activated!", text_color="#2ecc71"
+                text="✅ Observational mode active", text_color="#2ecc71"
             )
             self._refresh_sessions()
 
         ctk.CTkButton(
-            btn_frame, text="Activate Phase B", height=36,
+            btn_frame, text="Checkout Session", height=36,
             font=ctk.CTkFont(size=13, weight="bold"),
             fg_color="#2ecc71", hover_color="#27ae60",
             command=_activate,

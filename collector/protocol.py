@@ -2,9 +2,9 @@
 PRAXIS Universal Kit — Governance Protocol Layer
 =================================================
 Injects/removes governance methodology into AI platform config files.
-When PRAXIS is ON (Phase B), writes governance rules into CLAUDE.md,
+When PRAXIS governance is active, writes governance rules into CLAUDE.md,
 .cursorrules, .github/copilot-instructions.md, etc.
-When OFF (Phase A), removes them cleanly.
+When deactivated, removes them cleanly.
 
 Every platform can respond to "PRAXIS?" with ON/OFF status.
 """

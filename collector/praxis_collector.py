@@ -36,8 +36,8 @@ GOVERNANCE_FILE = "governance.jsonl"
 SESSIONS_FILE = "sessions.jsonl"
 DEFAULT_AUTO_QUALITY = 3
 
-VALID_CONDITIONS = ("A1", "A2", "B1", "B2")
-VALID_PHASES = ("A", "B")
+VALID_CONDITIONS = ("passive", "checked_out", "governance_tagged", "reviewed")
+VALID_PHASES = ("obs",)  # legacy: ("A", "B")
 VALID_LAYERS = ("L1", "L1-R", "L2", "L3", "L4", "L5")
 VALID_ITERATION_TYPES = (
     "implementation",
@@ -78,10 +78,6 @@ class PraxisError(Exception):
 
 class StateNotFoundError(PraxisError):
     """Raised when .praxis/state.json does not exist."""
-
-
-class InvalidPhaseError(PraxisError):
-    """Raised when an operation is not valid in the current phase."""
 
 
 class ValidationError(PraxisError):
@@ -147,7 +143,11 @@ def load_state(praxis_dir: Path) -> Dict[str, Any]:
         )
     try:
         with state_path.open("r", encoding="utf-8") as fh:
-            return json.load(fh)
+            state = json.load(fh)
+        # Migrate legacy phase values (A/B -> obs)
+        if state.get("phase") in ("A", "B"):
+            state["phase"] = "obs"
+        return state
     except (json.JSONDecodeError, OSError) as exc:
         raise PraxisError(f"Failed to read state file: {exc}") from exc
 
@@ -314,8 +314,8 @@ def start_passive_session(
         "type": "passive_session",
         "status": "open",
         "participant_id": state.get("participant_id"),
-        "phase": state.get("phase", "A"),
-        "condition": state.get("condition") or ("A1" if state.get("phase", "A") == "A" else "B1"),
+        "phase": "obs",
+        "condition": state.get("condition") or "passive",
         "started_at": _now_iso(),
         "ended_at": None,
         "project_root": str(project_root),
@@ -354,8 +354,8 @@ def finish_passive_session(
     row = dict(rows[target_index])
     row["status"] = "closed"
     row["ended_at"] = _now_iso()
-    row["phase"] = state.get("phase", row.get("phase", "A"))
-    row["condition"] = state.get("condition") or row.get("condition") or ("A1" if state.get("phase", "A") == "A" else "B1")
+    row["phase"] = "obs"
+    row["condition"] = state.get("condition") or row.get("condition") or "passive"
     row["platform_ids"] = detect_platforms(project_root)
     row["git_end"] = _git_probe(project_root)
     try:
@@ -569,7 +569,7 @@ def build_auto_session_entry(
 ) -> Dict[str, Any]:
     """Turn a passive session capture into a draft sprint metric entry."""
     duration = int(session_record.get("duration_minutes") or 1)
-    phase = state.get("phase", session_record.get("phase", "A"))
+    phase = session_record.get("phase", "obs")
     platforms = session_record.get("platform_ids", [])
     entry: Dict[str, Any] = {
         "id": _generate_entry_id("passive_session"),
@@ -768,7 +768,7 @@ def _derive_condition(state: Dict[str, Any], model: str) -> str:
     if condition in VALID_CONDITIONS:
         return condition
 
-    structure = "B" if state.get("phase") == "B" else "A"
+    structure = "structured" if entry.get("capture_mode") == "smart_checkout" else "passive"
     model_name = model.lower()
     model_axis = "2" if "opus" in model_name else "1"
     return f"{structure}{model_axis}"
@@ -1030,7 +1030,7 @@ def build_metric_entry(
         "first_attempt": iterations == 1,
         "session_id": _get_session_id(state),
         # Legacy aliases retained for existing analysis/export code.
-        "phase": state["phase"],
+        "phase": "obs",
         "duration": duration,
         "model": model.strip(),
         "quality": quality,
@@ -1105,7 +1105,7 @@ def append_incident_event(
         "timestamp": _now_iso(),
         "event_type": "incident",
         "incident": description.strip(),
-        "phase": state.get("phase", "unknown"),
+        "phase": "obs",
         "rule_integrated": False,
     }
     if category is not None:
@@ -1147,14 +1147,9 @@ def append_governance_event(
     state: Dict[str, Any],
 ) -> Dict[str, Any]:
     """
-    Log a governance event (Phase B only).
+    Log a governance event.
     Returns the event dict.
     """
-    if state["phase"] != "B":
-        raise InvalidPhaseError(
-            "Governance events can only be logged in Phase B. "
-            "Run 'praxis activate' to transition to Phase B."
-        )
     if event_type not in VALID_GOVERNANCE_TYPES:
         raise ValidationError(
             f"Invalid governance event type '{event_type}'. "
@@ -1195,7 +1190,7 @@ def save_survey_response(
     payload = {
         "survey_id": survey_id,
         "participant_id": state["participant_id"],
-        "phase": state["phase"],
+        "phase": "obs",
         "completed_at": _now_iso(),
         "responses": responses,
     }
@@ -1322,8 +1317,7 @@ def compute_summary(entries: List[Dict[str, Any]]) -> Dict[str, Any]:
     if not entries:
         return {
             "total_entries": 0,
-            "phase_a_count": 0,
-            "phase_b_count": 0,
+            "total_sprints": 0,
             "total_duration_minutes": 0,
             "mean_quality": None,
             "mean_iterations": None,
@@ -1333,8 +1327,6 @@ def compute_summary(entries: List[Dict[str, Any]]) -> Dict[str, Any]:
         }
 
     sprint_entries = [e for e in entries if e.get("type", "sprint") == "sprint"]
-    phase_a = [e for e in sprint_entries if e.get("phase") == "A"]
-    phase_b = [e for e in sprint_entries if e.get("phase") == "B"]
 
     def safe_mean(values: List[float]) -> Optional[float]:
         if not values:
@@ -1356,18 +1348,18 @@ def compute_summary(entries: List[Dict[str, Any]]) -> Dict[str, Any]:
     if autonomous_flags:
         autonomy_rate = round(sum(1 for a in autonomous_flags if a) / len(autonomous_flags), 3)
 
-    # Layer distribution (Phase B only)
+    # Layer distribution (structured checkout sessions)
     layer_counts: Dict[str, int] = {}
-    for e in phase_b:
-        layer = e.get("layer")
-        if layer:
-            layer_counts[layer] = layer_counts.get(layer, 0) + 1
+    for e in sprint_entries:
+        if e.get("capture_mode") == "smart_checkout":
+            layer = e.get("layer")
+            if layer:
+                layer_counts[layer] = layer_counts.get(layer, 0) + 1
 
     return {
         "total_entries": len(sprint_entries),
+        "total_sprints": len(sprint_entries),
         "raw_entries": len(entries),
-        "phase_a_count": len(phase_a),
-        "phase_b_count": len(phase_b),
         "total_duration_minutes": sum(durations),
         "mean_quality": safe_mean(qualities),
         "mean_iterations": safe_mean(iterations_list),
@@ -1377,59 +1369,6 @@ def compute_summary(entries: List[Dict[str, Any]]) -> Dict[str, Any]:
         "mean_reliability": safe_mean(reliability_scores),
         "layer_distribution": layer_counts,
     }
-
-
-# ---------------------------------------------------------------------------
-# Phase transition
-# ---------------------------------------------------------------------------
-
-def activate_phase_b(
-    praxis_dir: Path,
-    state: Dict[str, Any],
-    force: bool = False,
-) -> Tuple[Dict[str, Any], List[str]]:
-    """
-    Transition from Phase A to Phase B.
-    Returns (updated_state, warnings).
-    Raises InvalidPhaseError if already in Phase B.
-    """
-    warnings: List[str] = []
-
-    if state["phase"] == "B":
-        raise InvalidPhaseError("Already in Phase B. Cannot activate again.")
-
-    # Check minimum data
-    entries = load_all_metrics(praxis_dir)
-    phase_a_entries = [e for e in entries if e.get("phase") == "A"]
-
-    # Check days of data
-    if phase_a_entries:
-        first_ts = phase_a_entries[0].get("timestamp", "")
-        try:
-            first_dt = datetime.fromisoformat(first_ts.replace("Z", "+00:00"))
-            days_elapsed = (datetime.now(timezone.utc) - first_dt).days
-            if days_elapsed < 7 and not force:
-                warnings.append(
-                    f"Only {days_elapsed} day(s) of Phase A data collected. "
-                    "Recommended minimum is 7 days for valid comparison. "
-                    "Use --force to override."
-                )
-                return state, warnings
-        except (ValueError, TypeError):
-            pass
-
-    if len(phase_a_entries) < 3 and not force:
-        warnings.append(
-            f"Only {len(phase_a_entries)} Phase A entries logged. "
-            "Recommended minimum is 3+ entries before activating. "
-            "Use --force to override."
-        )
-        return state, warnings
-
-    state["phase"] = "B"
-    state["activated_at"] = _now_iso()
-    save_state(praxis_dir, state)
-    return state, warnings
 
 
 # ---------------------------------------------------------------------------
@@ -1624,12 +1563,14 @@ class PraxisCollector:
     def summary(self) -> Dict[str, Any]:
         return compute_summary(self.metrics())
 
-    def activate(self, force: bool = False) -> Tuple[Dict[str, Any], List[str]]:
+    def activate(self, force: bool = False) -> Dict[str, Any]:
+        """No-op: PRAXIS operates in continuous observational mode."""
         pdir = find_praxis_dir(self.project_dir)
         if pdir is None:
             raise StateNotFoundError("PRAXIS not initialized")
         state = load_state(pdir)
-        return activate_phase_b(pdir, state, force=force)
+        state["phase"] = "obs"
+        return state
 
     def detect_platforms(self) -> List[str]:
         return detect_platforms(self.project_dir)
