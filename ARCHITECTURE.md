@@ -14,11 +14,11 @@ The kit instruments workflows to capture what happens — governance emergence, 
 - **Study deployment:** targeted for post-PhD admission (Oct-Nov 2026)
 
 ### Research Design
-- **Type:** Within-subjects quasi-experiment (ABA' possible, AB minimum)
-- **Phase A (Baseline):** 1-2 weeks. Metrics collector active. NO governance injection. User works naturally.
-- **Phase B (Treatment):** 2+ weeks. PRAXIS governance activated via `praxis activate`. Same metrics continue. PRAXIS-Q rubric added per sprint.
-- **Comparison:** Same user, same projects, same tools. Observations on autonomy, iterations, intervention frequency, quality, governance emergence, and relational governance effects.
-- **2×2 Factorial (optional):** Conditions A1, A2, B1, B2. Model (Sonnet/Opus) × Structure (unstructured/PRAXIS-lite). Supported via `condition` field in metrics schema.
+- **Type:** Observational field study — descriptive, not prescriptive
+- **Data collection:** Passive capture + smart checkout + manual logging (three tiers, provenance-tagged)
+- **Reliability scoring:** Each data point tagged with confidence level based on capture method (passive=0.45, checkout=1.0, manual=0.8)
+- **2×2 Factorial (schema-ready):** Conditions A1, A2, B1, B2 in metrics schema for future controlled study design
+- **Observation targets:** Governance emergence, trust calibration, session boundary behavior, rework patterns, model/workflow correlation
 
 ### P9: Architecture Independence
 The kit works for both single-model and multi-agent setups:
@@ -60,14 +60,14 @@ praxis-kit/
 │   ├── post_survey.json          # Post-PRAXIS survey (JSON, 15+10 items)
 │   └── praxis_q.json             # Per-sprint PRAXIS-Q rubric (3-point, <15sec)
 ├── templates/
-│   ├── baseline/                 # Phase A workspace files (minimal, no governance)
+│   ├── baseline/                 # Workspace files (minimal, no governance)
 │   │   ├── METRICS.md            # "Log your tasks here" — lightweight prompt
 │   │   └── .praxis/
-│   │       ├── state.json        # Kit state (phase, install date, participant ID)
+│   │       ├── state.json        # Kit state (session data, participant ID)
 │   │       └── metrics.jsonl     # Collected sprint metrics (JSONL)
 │   ├── creative/                 # Domain-specific creative/design templates
 │   │   └── CLAUDE_DESIGN_TEMPLATE.md  # Creative critique + governance template
-│   └── governance/               # Phase B files (injected on `praxis activate`)
+│   └── governance/               # Governance files (injected on `praxis activate`)
 │       ├── SOUL_TEMPLATE.md      # Governance personality + L1-R parameters
 │       ├── AGENTS_TEMPLATE.md    # Operational procedures + self-governance protocol
 │       ├── SELF_GOVERNANCE_TEMPLATE.md  # Single-model self-governance protocols (v0.2)
@@ -106,20 +106,25 @@ Each adapter checks for platform-specific signals:
 | Roo Code | `.roo/` dir | `.roo/rules.md` | VSCode extension |
 | Generic | Fallback | `PRAXIS_GOVERNANCE.md` | Plain markdown, works anywhere |
 
-### Metrics Collection (Both Phases)
+### Metrics Collection
 
-#### Automatic (passive)
-- Sprint start/end timestamps (from `.praxis/metrics.jsonl`)
-- File change frequency (git diff stats if git repo)
-- Session count per day
+#### Passive capture (automatic)
+- Session start/end timestamps (from `.praxis/sessions.jsonl`)
+- Platform detection (OpenClaw, Codex, Cowork bridge)
+- Adapter telemetry (session counts, model info, workspace metadata)
+- Duration tracking
 
-#### Semi-automatic (user prompted)
-After each significant task, the CLI prompts (or user runs `praxis log`):
-```
-praxis log "Built auth system" --duration 45 --model sonnet --quality 4 --iterations 2 --interventions 1
-```
+#### Smart checkout (user calibrated)
+After passive capture stops, the user runs `praxis checkout`:
+- 1-line task summary
+- Quality self-rating (1-5)
+- Outcome (solved / partially / abandoned)
+- Governance moment (context loss, AI off track, scope creep, etc.)
+- L1-R trust observations
+- Provenance tag: `smart_checkout` with reliability 1.0
 
-Shorthand: `praxis log "task" -d 45 -m sonnet -q 4 -i 2 -h2 1`
+#### Manual logging (power users)
+```praxis log "Built auth system" --duration 45 --model sonnet --quality 4 --iterations 2 --interventions 1```
 
 Fields:
 - task: description (string)
@@ -132,8 +137,8 @@ Fields:
 - iteration_type: software or creative cycle subtype (`implementation`, `design_cycle`, `playtest`, etc.)
 - design_quality: optional clarity/tension/balance/elegance scores for creative work
 - reviewer_feedback: optional external feedback object for playtests, editors, and reviewers
-- layer: PRAXIS layer (L1, L1-R, L2-L5, Phase B only)
-- praxis_q: PRAXIS-Q score (Phase B only, prompted if phase==B)
+- governance_tag: checkout governance moment category
+- checkout_outcome: solved / partially / abandoned
 
 #### L1-R observations (v0.2)
 When using the `--l1r` flag, the CLI prompts for relational governance observations:
@@ -147,8 +152,7 @@ When using the `--l1r` flag, the CLI prompts for relational governance observati
 
 These observations capture the relational governance layer — how the AI's personality affects user trust and behavior.
 
-#### Phase B additions
-- PRAXIS-Q rubric (3-point scale per dimension, <15 seconds)
+#### Governance events
 - Governance events (new rules created, rules modified, incidents)
 - `praxis govern "Added rule: always test after deploy"` — logs governance emergence
 - `praxis incident "description"` — structured incident capture with root cause analysis and categories (`OPS`, `GOV`, `COM`, `PRD`, `RES`, `DES`)
@@ -161,31 +165,33 @@ When a session starts after a break, the schema captures:
 ### CLI Commands
 
 ```bash
-praxis status          # Show current phase, days active, metrics count
+praxis status          # Show session count, days active, averages
+praxis start           # Start passive session capture
+praxis stop            # Stop passive capture, create draft entry
+praxis checkout        # Calibrate latest passive draft (outcome, quality, governance tag)
 praxis log "task"      # Log a sprint/task with metrics
 praxis incident "desc" # Log a governance emergence incident (structured)
-praxis activate        # Transition from Phase A → Phase B
-praxis govern "rule"   # Log a governance event (Phase B)
-praxis survey pre      # Launch pre-survey (Phase A, first run)
-praxis survey post     # Launch post-survey (after Phase B)
+praxis activate        # Activate structured observation mode
+praxis govern "rule"   # Log a governance event
+praxis survey pre      # Launch pre-survey
+praxis survey post     # Launch post-survey
 praxis export          # Generate anonymized data ZIP for research
+praxis diagnose        # Show workflow diagnosis
 praxis platforms       # Show detected AI platforms
 ```
 
-### Phase Transition: `praxis activate`
+### `praxis activate`
 
 When user runs `praxis activate`:
-1. Confirm Phase A has ≥7 days of data (warn if less, allow override)
-2. Present consent reminder
-3. For each detected platform, inject governance files via adapter:
+1. Present consent reminder
+2. For each detected platform, inject governance files via adapter:
    - Detect whether the project is software or creative/design based on workspace files
    - Copy SOUL_TEMPLATE / AGENTS_TEMPLATE or a domain-specific template to the platform's governance location
    - For single-model platforms, also inject SELF_GOVERNANCE_TEMPLATE
    - Prompt user to customize (name, role, principles, L1-R parameters)
-4. Enable PRAXIS-Q prompts after each `praxis log`
-5. Enable governance event logging
-6. Update `.praxis/state.json`: phase="B", activated_at=now
-7. Print "PRAXIS activated. Your AI systems now have governance structure."
+3. Enable governance event logging
+4. Update `.praxis/state.json`
+5. Print "PRAXIS activated."
 
 ### Incident Logging (v0.2)
 
@@ -267,7 +273,7 @@ Surveys rendered in terminal (interactive CLI) or exportable as web form URL.
 | L4 | Memory | Knowledge persistence, episodic/semantic/hardened facts |
 | L5 | Production | Final validation, delivery, quality review |
 
-### Experimental Conditions (2×2 factorial, v0.2)
+### Experimental Conditions (2×2 factorial, schema-ready)
 
 | Condition | Model | Structure | Description |
 |-----------|-------|-----------|-------------|
@@ -276,9 +282,10 @@ Surveys rendered in terminal (interactive CLI) or exportable as web form URL.
 | B1 | Sonnet-class | PRAXIS-lite | Lower-capability model, governance active |
 | B2 | Opus-class | PRAXIS-lite | Higher-capability model, governance active |
 
-This design separates model capability effects from governance structure effects. The `condition` field in metrics_schema.json tracks which condition each sprint belongs to.
+This design separates model capability effects from governance structure effects. The `condition` field in metrics_schema.json tracks which condition each sprint belongs to. Conditions are schema-ready for future controlled study deployment.
 
 ### Framework Version
-- **Kit version:** 0.2.0
+- **Kit version:** 0.9.2
+- **Schema version:** 0.2
 - **PRAXIS framework:** v1.1 (includes L1-R, P9)
 - **License:** CC BY-SA 4.0

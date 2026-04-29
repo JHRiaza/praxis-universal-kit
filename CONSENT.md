@@ -12,35 +12,30 @@
 
 ## Purpose of the Study
 
-This research documents what happens when people adopt a governance framework (PRAXIS) for AI-assisted work. The study uses a within-subjects design: you serve as your own control group, first working without governance (Phase A baseline), then with PRAXIS governance active (Phase B treatment).
-
-The study captures metrics from the same person, same projects, same tools — before and after governance adoption — to observe governance phenomena such as rule emergence, relational governance effects, and personality portability across AI models.
+This research documents what happens when people use a governance framework (PRAXIS) for AI-assisted work. The study observes real workflows passively and through calibrated checkouts to identify governance phenomena such as rule emergence, trust calibration, and session boundary effects.
 
 ---
 
 ## What Participation Involves
 
 ### Duration
-- **Phase A (Baseline):** 1–2 weeks of normal AI-assisted work
-- **Phase B (Treatment):** 2+ weeks with PRAXIS governance active
-- **Total time commitment:** 3–4 weeks minimum
+- **Observation period:** 3–4 weeks minimum of AI-assisted work
 
 ### What you will do
 1. Install the PRAXIS Kit on your computer
 2. Complete a pre-study survey (~10 minutes)
-3. Log your AI-assisted tasks daily using the `praxis log` command
-4. After 7+ days, run `praxis activate` to start Phase B
-5. Continue logging tasks during Phase B (with PRAXIS-Q quality rating)
-6. Log governance events when you create or modify rules
-7. Complete a post-study survey (~12 minutes) after Phase B
-8. Export your anonymized data for the researcher
+3. Use `praxis start` / `praxis stop` to capture your AI-assisted work sessions
+4. After each session, run `praxis checkout` to calibrate the data (task summary, quality, governance observations)
+5. Log governance events when you create or modify rules
+6. Complete a post-study survey (~12 minutes)
+7. Export your anonymized data for the researcher
 
 ### What is collected
 
 **Collected (with your knowledge):**
 - Task metrics: description, duration, quality rating (1-5), AI generation cycles, human corrections
 - AI model/tool names you report
-- PRAXIS-Q quality scores (Phase B)
+- Checkout quality scores and governance observations
 - L1-R observations (optional): your perceptions of AI confidence, warmth, trust, and compliance tendency per task
 - Governance events: rules you create, incidents, modifications
 - Session boundary observations: memory and calibration recovery across sessions
@@ -110,7 +105,7 @@ By participating, you:
 ## Risks
 
 - Time commitment of a few minutes per day to log tasks
-- Minor adjustment period when adopting governance in Phase B
+- Minor adjustment period when adopting governance if activated
 - No known psychological, physical, or financial risks
 
 ---

@@ -49,7 +49,7 @@ PRAXIS organizes memory across 5 levels, from short-term to permanent:
 **What gets recorded:**
 - Task descriptions, durations, quality scores
 - Model used, iteration count, interventions
-- PRAXIS-Q scores (Phase B)
+- Checkout quality scores and governance observations
 - Governance events
 
 **How to use it:**
@@ -130,7 +130,7 @@ Where score is: `high` (directly verified), `medium` (strong secondary source), 
 | After incidents | Update SOUL.md governance rules |
 | Weekly | Review semantic memory for outdated rules |
 | Monthly | Prune episodic logs, extract lessons to semantic |
-| Per phase | `praxis export` before data collection ends |
+| Per observation period | `praxis export` before data collection ends |
 
 ---
 

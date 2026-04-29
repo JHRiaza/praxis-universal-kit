@@ -3,7 +3,7 @@
 A **sprint** is the atomic unit of work in PRAXIS — a single, well-defined task
 executed by an AI agent, validated, and recorded.
 
-This guide shows you how to run PRAXIS sprints in Phase B.
+This guide shows you how to run PRAXIS sprints with structured observation.
 
 ---
 
@@ -72,7 +72,7 @@ Quick quality assessment (PRAXIS-Q — under 15 seconds):
 4. Efficiency: 1/2/3
 5. Traceability: 1/2/3
 
-The CLI prompts this automatically after `praxis log` in Phase B.
+The CLI prompts this automatically after `praxis checkout`.
 
 ### Step 6: ESCALATE (if needed)
 
@@ -173,5 +173,5 @@ Over time, your governance system becomes a record of your accumulated wisdom �
 
 ---
 
-*PRAXIS Universal Kit v0.2 — UCM Doctoral Research*
+*PRAXIS Universal Kit v0.9.2 — UCM Doctoral Research*
 *Framework reference: PRAXIS v1.1 (Herreros Riaza, 2026)*

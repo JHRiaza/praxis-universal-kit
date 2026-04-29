@@ -117,7 +117,7 @@ This prompts for: what happened, root cause, incident category (`OPS`, `GOV`, `C
 praxis activate
 ```
 
-This introduces the structured PRAXIS condition and transitions to Phase B. Injection is an experimental mechanism, not the core value proposition.
+This activates structured observation mode. Injection is an experimental mechanism, not the core value proposition.
 
 ### 7. Export your data
 ```bash
@@ -155,37 +155,40 @@ PRAXIS now separates:
 
 ---
 
-## What's new in v0.7
+## What's new in v0.9.2
 
 | Feature | Description |
 |---------|-------------|
-| **L1-R: Relational Governance** | Log perceived AI confidence, warmth, trust, and compliance tendency per sprint (`--l1r` flag) |
+| Feature | Description |
+|---------|-------------|
+| **Plugin adapter system** | Drop-in custom adapters via `~/.praxis/adapters/` — auto-discovered at runtime |
+| **Platform telemetry** | OpenClaw, Codex, Cowork bridge adapters detect sessions, models, workspace metadata |
 | **Passive capture default** | `praxis start` / `praxis stop` capture session timing and environment without full manual logging |
-| **Micro-checkout** | `praxis checkout` turns passive drafts into stronger evidence with a 10-second human calibration |
-| **P9: Architecture Independence** | Works for single-model (Copilot, Aider) and multi-agent (OpenClaw, Cowork) setups |
-| **Self-governance templates** | Protocols for single-model systems without external orchestrator |
-| **Personality calibration** | Built-in mechanism to detect when AI behavior differs from governance config |
+| **Smart checkout** | `praxis checkout` turns passive drafts into calibrated evidence with outcome, governance tag, trust signals |
+| **Workflow diagnosis** | `praxis diagnose` shows what PRAXIS is learning about your AI workflow patterns |
+| **Reliability scoring** | Provenance-aware confidence scoring — distinguishes calibrated from passive-only data |
+| **L1-R observations** | Log perceived AI confidence, warmth, trust, and compliance tendency per sprint (`--l1r` flag) |
 | **Incident logging** | Structured capture of governance emergence events (`praxis incident`) |
-| **Session boundary observations** | Track memory recovery and calibration degradation across sessions |
-| **2×2 factorial support** | Experimental conditions: Model (Sonnet/Opus) × Structure (structured/unstructured) |
-| **User-facing diagnosis** | Turns logs into a personal workflow mirror participants can actually use |
-| **Submission throttling** | Optional submission flow can be rate-limited per participant to protect the research inbox |
-| **Descriptive framing** | Kit documents phenomena rather than assuming governance "improves" things |
+| **2×2 factorial support** | Experimental conditions in metrics schema for controlled study design |
+| **P9: Architecture Independence** | Works for single-model (Copilot, Aider) and multi-agent (OpenClaw, Cowork) setups |
+| **Creative/design workflows** | Design iteration types, quality sub-metrics, playtest tracking |
+| **Cross-platform desktop app** | Windows (.exe) + macOS (.dmg) — no Python required |
+| **Anonymized export** | One-click ZIP with optional SMTP submission and throttling |
 
 ---
 
 ## Commands
 
 ```
-praxis status          Show phase, days active, entry count, averages
+praxis status          Show session count, days active, averages, detected platforms
 praxis start           Start passive session capture
 praxis stop            Stop passive capture and create a draft entry
-praxis checkout        Fast review of the latest passive draft
+praxis checkout        Calibrate the latest passive draft (outcome, quality, governance tag)
 praxis diagnose        Show your workflow diagnosis
 praxis log "task"      Log a task (interactive if no args given)
 praxis incident "desc" Log a governance emergence event
-praxis activate        Transition Phase A → Phase B (governance on)
-praxis govern "rule"   Log a governance rule event (Phase B)
+praxis activate        Activate structured observation mode
+praxis govern "rule"   Log a governance rule event
 praxis survey pre      Launch pre-survey
 praxis survey post     Launch post-survey
 praxis export          Generate anonymized data ZIP for research
@@ -263,8 +266,8 @@ This kit is part of a doctoral thesis that documents governance phenomena in AI-
 4. What do current AI governance frameworks (EU AI Act, OECD, NIST) fail to cover?
 
 **Important disclosures:**
-- Quality assessments in Phase A are self-rated by the participant
-- External blind evaluation (PRAXIS-Q) is available for Phase B outputs
+- Quality assessments are self-rated by the participant (checkout step)
+- Passive capture produces lower-reliability data than calibrated checkouts
 - All data is anonymized and stored locally — nothing is sent to any server automatically
 - Participants can withdraw at any time
 
@@ -276,7 +279,7 @@ This kit is part of a doctoral thesis that documents governance phenomena in AI-
 @software{herreros2026praxis,
   author = {Herreros Riaza, Javier},
   title = {PRAXIS Universal Kit},
-  version = {0.3.2},
+  version = {0.9.2},
   year = {2026},
   publisher = {Javier Herreros Riaza},
   url = {https://github.com/JHRiaza/praxis-universal-kit}
@@ -333,8 +336,7 @@ python desktop/app.py
 - **Dashboard** — Live status view plus a user-facing workflow diagnosis
 - **Log Sprint** — Visual form with dropdowns, sliders, and number inputs
 - **Export & Submit** — ZIP generation, diagnosis review, and optional inbox submission
-- **PRAXIS-Q Survey** — 5-dimension quality rubric (Phase B)
-- **Session Controls** — Start/Stop/Initialize buttons with status indicator
+- **Session Controls** — Start/Stop/Checkout with status indicator
 - **Platform Detection** — Auto-detects installed AI tools from system
 - **Creative mode** — Automatically detects creative projects (Godot, game design) and shows extra design quality sub-metrics
 
@@ -382,5 +384,5 @@ By using PRAXIS Universal Kit, you acknowledge that the authors shall not be hel
 
 ---
 
-*PRAXIS Universal Kit v0.7.0 — 2026-04-28*
+*PRAXIS Universal Kit v0.9.2 — 2026-04-29*
 *Doctoral research — Javier Herreros Riaza*

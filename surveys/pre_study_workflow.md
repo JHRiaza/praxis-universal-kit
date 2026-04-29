@@ -1,7 +1,7 @@
 # Pre-Study AI Workflow Questionnaire
 
 > Part of PRAXIS Universal Kit v0.2
-> Completed BEFORE Phase A begins. ~10 minutes.
+> Completed BEFORE observation begins. ~10 minutes.
 > All data anonymized. Participant can withdraw at any time.
 
 ---
@@ -89,6 +89,6 @@
 ## For Researcher Use Only
 
 - Date completed: __________
-- Phase A start date: __________
-- Phase B start date: __________
+- Observation start date: __________
+- Observation end date: __________
 - Notes: __________

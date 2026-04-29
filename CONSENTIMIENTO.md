@@ -12,40 +12,35 @@
 
 ## Propósito del Estudio
 
-Esta investigación documenta qué sucede cuando las personas adoptan un framework de gobernanza (PRAXIS) para su trabajo asistido por IA. El estudio utiliza un diseño de medidas repetidas: usted es su propio grupo control, trabajando primero sin gobernanza (Fase A, línea base) y luego con gobernanza PRAXIS activa (Fase B, tratamiento).
-
-El estudio captura métricas de la misma persona, los mismos proyectos y las mismas herramientas — antes y después de adoptar gobernanza — para observar fenómenos como la emergencia de reglas, los efectos de la gobernanza relacional y la portabilidad de la personalidad entre modelos de IA.
+Esta investigación documenta qué sucede cuando las personas usan un framework de gobernanza (PRAXIS) para su trabajo asistido por IA. El estudio observa flujos de trabajo reales de forma pasiva y mediante checkouts calibrados para identificar fenómenos de gobernanza como la emergencia de reglas, la calibración de confianza y los efectos en los límites de sesión.
 
 ---
 
 ## En Qué Consiste la Participación
 
 ### Duración
-- **Fase A (Línea base):** 1-2 semanas de trabajo normal asistido por IA
-- **Fase B (Tratamiento):** 2+ semanas con gobernanza PRAXIS activa
-- **Tiempo total comprometido:** Mínimo 3-4 semanas
+- **Período de observación:** Mínimo 3-4 semanas de trabajo asistido por IA
 
 ### Qué hará
 1. Instalar el Kit PRAXIS en su computadora
 2. Completar una encuesta pre-estudio (~10 minutos)
-3. Registrar sus tareas asistidas por IA diariamente con el comando `praxis log`
-4. Después de 7+ días, ejecutar `praxis activate` para iniciar la Fase B
-5. Continuar registrando tareas durante la Fase B (con calificación de calidad PRAXIS-Q)
-6. Registrar eventos de gobernanza cuando cree o modifique reglas
-7. Completar una encuesta post-estudio (~12 minutos) al finalizar la Fase B
-8. Exportar sus datos anónimos para el investigador
+3. Usar `praxis start` / `praxis stop` para capturar sus sesiones de trabajo con IA
+4. Después de cada sesión, ejecutar `praxis checkout` para calibrar los datos (resumen de tarea, calidad, observaciones de gobernanza)
+5. Registrar eventos de gobernanza cuando cree o modifique reglas
+6. Completar una encuesta post-estudio (~12 minutos)
+7. Exportar sus datos anónimos para el investigador
 
 ### Qué se recopila
 
 **Recopilado (con su conocimiento):**
 - Métricas de tareas: descripción, duración, calificación de calidad (1-5), ciclos de generación de IA, correcciones humanas
 - Nombres de modelos/herramientas de IA que usted reporta
-- Puntuaciones de calidad PRAXIS-Q (Fase B)
+- Puntuaciones de calidad y observaciones de gobernanza (checkout)
 - Observaciones L1-R (opcionales): sus percepciones sobre la seguridad, calidez, confianza y tendencia a la complacencia de la IA por tarea
 - Eventos de gobernanza: reglas que crea, incidentes, modificaciones
 - Observaciones de límite de sesión: recuperación de memoria y calibración entre sesiones
 - Respuestas a encuestas (pre y post)
-- Fechas de fase y conteos de sesión
+- Fechas de sesión y conteos de sesión
 - Asignación de condición experimental (si participa en el estudio factorial 2×2)
 - Evaluación externa de calidad: un evaluador independiente puede puntuar sus resultados anonimizados mediante PRAXIS-Q
 
@@ -110,7 +105,7 @@ Al participar, usted:
 ## Riesgos
 
 - Compromiso de tiempo de unos minutos al día para registrar tareas
-- Breve período de ajuste al adoptar gobernanza en la Fase B
+- Breve período de ajuste al adoptar gobernanza si se activa
 - No se conocen riesgos psicológicos, físicos ni económicos
 
 ---

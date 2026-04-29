@@ -42,7 +42,7 @@
         "A",
         "B"
       ],
-      "description": "Legacy field: Phase A (baseline) or Phase B (governance active)"
+      "description": "Observation phase (A=passive, B=structured)"
     },
     "task": {
       "type": "string",
@@ -112,7 +112,7 @@
         "L4",
         "L5"
       ],
-      "description": "Dominant PRAXIS layer (Phase B only)"
+      "description": "Dominant PRAXIS layer"
     },
     "outputs": {
       "type": "array",
@@ -171,7 +171,7 @@
     },
     "governance_events": {
       "type": "array",
-      "description": "Governance emergence events (Phase B only)",
+      "description": "Governance emergence events",
       "items": {
         "type": "object",
         "properties": {

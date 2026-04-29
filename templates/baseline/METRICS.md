@@ -1,16 +1,31 @@
 # PRAXIS Metrics — Task Log
 
-Welcome to Phase A of the PRAXIS research study.
+Welcome to the PRAXIS research study.
 
-**Your job is simple:** after each significant AI-assisted task, run one command:
+**Your job is simple:** use `praxis start` when you begin AI-assisted work, and `praxis stop` when you finish. Then run `praxis checkout` to calibrate the captured data.
 
 ```bash
-praxis log "what you did" -d <minutes> -m <model> -q <1-5> -i <cycles> -h2 <corrections>
+praxis start
+# ... do your AI-assisted work ...
+praxis stop
+praxis checkout
 ```
 
 ---
 
 ## Quick Reference
+
+| Command | What it does |
+|---------|-------------|
+| `praxis start` | Start passive session capture |
+| `praxis stop` | Stop capture and create a draft |
+| `praxis checkout` | Calibrate the latest draft (task summary, quality, governance observations) |
+
+### Manual logging (alternative)
+
+```bash
+praxis log "what you did" -d <minutes> -m <model> -q <1-5> -i <cycles> -h2 <corrections>
+```
 
 | Flag | What it means | Example |
 |------|--------------|---------|
@@ -44,11 +59,9 @@ If you forget to log right away, that's okay — log it later with an approximat
 
 ## Why am I doing this?
 
-This is **Phase A (Baseline)**. You're working normally, without any governance framework.
-After 7+ days, you'll run `praxis activate` to start Phase B, where PRAXIS governance
-is added to your AI workflow. The research measures what changes.
+PRAXIS observes your AI workflow patterns — what tools you use, how long you work, when you intervene, and what governance moments arise. The research captures these patterns descriptively.
 
-**Data collected:** task description, duration, model used, quality rating, iteration count, and optional creative cycle metadata such as `iteration_type`.
+**Data collected:** task description, duration, model used, quality rating, governance observations, platform telemetry.
 **Data NOT collected:** your file contents, conversations, project code, personal information.
 
 Check your progress anytime:
@@ -61,12 +74,12 @@ praxis status
 ## Other useful commands
 
 ```bash
-praxis status              # See how many days/entries you have
-praxis survey pre          # Complete the pre-study survey (5 minutes)
+praxis status              # See session count, days active, averages
+praxis diagnose            # See your workflow diagnosis
 praxis platforms           # See which AI tools were detected
 ```
 
 ---
 
-*Phase A — no governance, natural workflow. Just log what you do.*
-*This file was created by PRAXIS Universal Kit v0.2*
+*PRAXIS observes your workflow — just work normally and calibrate with checkout.*
+*This file was created by PRAXIS Universal Kit v0.9.2*

@@ -103,7 +103,7 @@ praxis diagnose
 
 ---
 
-## Novedades en v0.6
+## Novedades en v0.9.2
 
 | Característica | Descripción |
 |---------------|-------------|
@@ -168,7 +168,7 @@ Este kit forma parte de una tesis doctoral que documenta fenómenos de gobernanz
 **Información importante:**
 - Las evaluaciones de calidad en la Fase A son autoevaluadas por el participante
 - La evaluación externa ciega (PRAXIS-Q) está disponible para los resultados de la Fase B
-- Todos los datos se anonimizan y almacenan localmente — nada se envía a ningún servidor automáticamente
+- Todos los datos se anonimizan y almacenan localmente - nada se envía a ningún servidor automáticamente
 - Los participantes pueden retirarse en cualquier momento
 
 ---
@@ -188,9 +188,9 @@ Este kit forma parte de una tesis doctoral que documenta fenómenos de gobernanz
 
 ## Licencia
 
-CC BY-SA 4.0 — ver [LICENSE](LICENSE)
+CC BY-SA 4.0 - ver [LICENSE](LICENSE)
 
 ---
 
-*PRAXIS Universal Kit v0.2 — 2026-04-15*
-*Investigación doctoral — Universidad Complutense de Madrid*
+*PRAXIS Universal Kit v0.9.2 - 2026-04-29*
+*Investigación doctoral - Universidad Complutense de Madrid*
