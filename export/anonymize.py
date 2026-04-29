@@ -54,6 +54,47 @@ FILES_TO_INCLUDE = [
 
 
 # ---------------------------------------------------------------------------
+# Pre-export cleanup
+# ---------------------------------------------------------------------------
+
+def _auto_close_orphan_sessions(praxis_dir: Path) -> int:
+    """Close any open sessions in sessions.jsonl before export.
+
+    Returns the number of sessions that were auto-closed.
+    """
+    sessions_path = praxis_dir / "sessions.jsonl"
+    if not sessions_path.is_file():
+        return 0
+
+    now_iso = datetime.now(timezone.utc).isoformat()
+    closed_count = 0
+    lines: List[str] = []
+
+    with sessions_path.open("r", encoding="utf-8") as fh:
+        for line in fh:
+            raw = line.strip()
+            if not raw:
+                continue
+            try:
+                record = json.loads(raw)
+            except json.JSONDecodeError:
+                lines.append(raw)
+                continue
+            if isinstance(record, dict) and record.get("status") == "open":
+                record["status"] = "closed"
+                record["ended_at"] = now_iso
+                record["auto_closed_on_export"] = True
+                closed_count += 1
+            lines.append(json.dumps(record, ensure_ascii=False))
+
+    if closed_count > 0:
+        with sessions_path.open("w", encoding="utf-8") as fh:
+            fh.write("\n".join(lines) + "\n")
+
+    return closed_count
+
+
+# ---------------------------------------------------------------------------
 # Main export function
 # ---------------------------------------------------------------------------
 
@@ -75,6 +116,9 @@ def export_participant_zip(
     """
     if not praxis_dir.is_dir():
         raise ValueError(f"PRAXIS directory not found: {praxis_dir}")
+
+    # Auto-close orphan sessions before export (Bug #3 fix)
+    _auto_close_orphan_sessions(praxis_dir)
 
     # Load state for participant ID
     state = _load_json(praxis_dir / "state.json")

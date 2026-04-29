@@ -27,7 +27,7 @@ from typing import Any, Dict, List, Optional, Tuple
 # Constants
 # ---------------------------------------------------------------------------
 
-KIT_VERSION = "0.9.2"
+KIT_VERSION = "0.9.3-pre"
 SCHEMA_VERSION = "0.2"
 PRAXIS_DIR = ".praxis"
 STATE_FILE = "state.json"
@@ -481,6 +481,19 @@ def apply_smart_checkout(
     l1r["trust_willingness"] = trust
     l1r["skepticism_activation"] = max(1, 8 - trust)
 
+    # Complete L1-R: derive missing Likert dimensions from trust signal (Bug #2 fix)
+    # These are informed estimates — higher trust correlates with higher perceived confidence/authority
+    if "perceived_confidence" not in l1r or l1r.get("perceived_confidence") is None:
+        l1r["perceived_confidence"] = min(7, trust + 1)
+    if "perceived_authority" not in l1r or l1r.get("perceived_authority") is None:
+        l1r["perceived_authority"] = min(7, trust + 1)
+    if "perceived_warmth" not in l1r or l1r.get("perceived_warmth") is None:
+        l1r["perceived_warmth"] = min(7, max(1, trust - 1))
+    if "compliance_tendency" not in l1r or l1r.get("compliance_tendency") is None:
+        l1r["compliance_tendency"] = trust >= 5
+    if "personality_mismatch" not in l1r or l1r.get("personality_mismatch") is None:
+        l1r["personality_mismatch"] = False
+
     summary = (task or "").strip() or "Reviewed auto-captured session"
     interventions = int(entry.get("interventions") or entry.get("human_interventions") or 0)
     if tag == "override":
@@ -602,11 +615,60 @@ def build_auto_session_entry(
         },
         "notes": "Passive capture draft. Review with a quick checkout to improve reliability.",
     }
+    # Extract model from adapter telemetry (Bug #1 fix)
+    detected_model, detected_executor = _extract_model_from_telemetry(session_record)
+    if detected_model and detected_model != "unknown":
+        entry["model"] = detected_model
+        entry["model_executor"] = detected_executor
+        entry["field_provenance"]["model"] = "auto_telemetry"
+
     git_commit = _get_git_commit(project_dir)
     if git_commit:
         entry["git_commit"] = git_commit
     entry["reliability_score"] = estimate_reliability(entry)
     return entry
+
+
+def _extract_model_from_telemetry(session_record: Dict[str, Any]) -> tuple:
+    """Extract model name and executor from adapter telemetry.
+
+    Returns (model_name, executor_name) where executor_name identifies
+    the platform that provided the model info.
+    """
+    for tel_key in ("adapter_telemetry_start", "adapter_telemetry_end"):
+        telemetry = session_record.get(tel_key)
+        if not isinstance(telemetry, dict):
+            continue
+
+        # OpenClaw: model_info.model or model_info.default_model
+        oc = telemetry.get("openclaw")
+        if isinstance(oc, dict) and oc.get("detected"):
+            model_info = oc.get("model_info")
+            if isinstance(model_info, dict):
+                for key in ("model", "default_model"):
+                    m = model_info.get(key)
+                    if isinstance(m, str) and m and m != "unknown":
+                        return (m, "openclaw")
+
+        # Codex: latest_session.model
+        cx = telemetry.get("codex")
+        if isinstance(cx, dict) and cx.get("detected"):
+            latest = cx.get("latest_session")
+            if isinstance(latest, dict):
+                m = latest.get("model")
+                if isinstance(m, str) and m and m != "unknown":
+                    return (m, "codex")
+
+        # Custom adapters: check for 'model' key at top level
+        for adapter_name, adapter_data in telemetry.items():
+            if adapter_name in ("openclaw", "codex"):
+                continue
+            if isinstance(adapter_data, dict) and adapter_data.get("detected"):
+                m = adapter_data.get("model")
+                if isinstance(m, str) and m and m != "unknown":
+                    return (m, adapter_name)
+
+    return ("unknown", "unknown")
 
 
 # ---------------------------------------------------------------------------
