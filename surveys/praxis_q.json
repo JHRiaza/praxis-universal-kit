@@ -4,8 +4,8 @@
     "version": "0.1",
     "title_en": "PRAXIS-Q: Sprint Quality Rubric (3-point fast version)",
     "title_es": "PRAXIS-Q: Rúbrica de Calidad por Sprint (versión rápida 3 puntos)",
-    "purpose_en": "Fast per-sprint quality self-assessment. Complete in under 15 seconds. Prompted automatically after each 'praxis log' in Phase B.",
-    "purpose_es": "Autoevaluación rápida de calidad por sprint. Completar en menos de 15 segundos. Se solicita automáticamente después de cada 'praxis log' en Fase B.",
+    "purpose_en": "Legacy per-sprint quality self-assessment. Retained for backwards compatibility. Replaced by smart checkout in v0.8.0+.",
+    "purpose_es": "Autoevaluación de calidad por sprint (legado). Conservada por compatibilidad. Reemplazada por checkout inteligente en v0.8.0+.",
     "estimated_seconds": 15,
     "phase_required": "B",
     "scale": {
