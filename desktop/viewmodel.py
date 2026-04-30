@@ -381,6 +381,7 @@ class PraxisViewModel:
             "session_elapsed_min": self.get_session_elapsed_minutes(),
             "praxis_mode_on": self._praxis_mode_on,
             "diagnosis": diagnosis,
+            "git_available": state.get("git_available", True),
         }
 
     # ------------------------------------------------------------------

@@ -52,8 +52,8 @@ jobs:
             <key>CFBundleName</key><string>PRAXIS Kit</string>
             <key>CFBundleDisplayName</key><string>PRAXIS Kit</string>
             <key>CFBundleIdentifier</key><string>com.praxis-kit.desktop</string>
-            <key>CFBundleVersion</key><string>0.9.4</string>
-            <key>CFBundleShortVersionString</key><string>0.9.4</string>
+            <key>CFBundleVersion</key><string>0.9.5</string>
+            <key>CFBundleShortVersionString</key><string>0.9.5</string>
             <key>CFBundleExecutable</key><string>PRAXIS Kit</string>
             <key>CFBundlePackageType</key><string>APPL</string>
             <key>LSMinimumSystemVersion</key><string>11.0</string>
@@ -86,15 +86,16 @@ jobs:
       - uses: softprops/action-gh-release@v2
         with:
             body: |
-            ## PRAXIS Kit Desktop v0.9.4
+            ## PRAXIS Kit Desktop v0.9.5
 
             Workflow observability kit with passive capture and micro-checkout telemetry.
 
-            ### What's new in v0.9.4
-            - Fixed state.json writing legacy phase "A" instead of "obs"
-            - Added timezone capture (timezone name + UTC offset)
-            - Fixed protocol.py legacy A/B phase references
-            - Updated version labels across CLI and desktop
+            ### What's new in v0.9.5
+            - **Git pre-flight check**: detects missing git without triggering macOS CLT install prompt
+            - **Graceful git degradation**: git tracking disabled cleanly when git unavailable
+            - **Dashboard warning banner**: shows when git is not available
+            - **Timezone capture**: state.json now records timezone name + UTC offset
+            - **Fixed state.json phase**: writes "obs" instead of legacy "A"
 
             ### Downloads
             - **Windows**: `praxis-desktop.exe` — download and run, no install needed
@@ -103,6 +104,7 @@ jobs:
             ### Requirements
             - No Python installation needed — binaries are self-contained
             - macOS: May need to right-click → Open on first launch (unsigned app)
+            - Git is optional — if not installed, git tracking is disabled gracefully
           files: |
             ./artifacts/praxis-desktop.exe
             ./artifacts/PRAXIS-Kit-macOS-arm64.dmg

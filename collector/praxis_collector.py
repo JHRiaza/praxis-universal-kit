@@ -27,7 +27,7 @@ from typing import Any, Dict, List, Optional, Tuple
 # Constants
 # ---------------------------------------------------------------------------
 
-KIT_VERSION = "0.9.4"
+KIT_VERSION = "0.9.5"
 SCHEMA_VERSION = "0.2"
 PRAXIS_DIR = ".praxis"
 STATE_FILE = "state.json"
@@ -130,6 +130,7 @@ def _default_state(participant_id: str, consent_given: bool = False) -> Dict[str
         "session_count": 0,
         "last_active": now,
         "withdrawn": False,
+        "git_available": _check_git_available(),
     }
 
 
@@ -152,6 +153,8 @@ def load_state(praxis_dir: Path) -> Dict[str, Any]:
             import time
             state["timezone"] = time.tzname[0] if hasattr(time, 'tzname') else None
             state["timezone_offset"] = time.timezone // -3600 if hasattr(time, 'timezone') else None
+        # Refresh git availability on each load
+        state["git_available"] = _check_git_available()
         return state
     except (json.JSONDecodeError, OSError) as exc:
         raise PraxisError(f"Failed to read state file: {exc}") from exc
@@ -244,8 +247,27 @@ def get_open_session_record(praxis_dir: Path) -> Optional[Dict[str, Any]]:
     return None
 
 
+# Global git availability cache (avoids repeated checks / CLT prompts on macOS)
+_git_available: Optional[bool] = None
+
+
+def _check_git_available() -> bool:
+    """Check if git is accessible without triggering macOS CLT install prompt.
+
+    Uses shutil.which() which only checks PATH — does NOT execute git.
+    macOS only shows the CLT prompt when git is actually invoked.
+    """
+    global _git_available
+    if _git_available is not None:
+        return _git_available
+    _git_available = shutil.which("git") is not None
+    return _git_available
+
+
 def _git_probe(project_dir: Optional[Path]) -> Dict[str, Any]:
     """Collect lightweight git context for passive capture."""
+    if not _check_git_available():
+        return {"repo": False, "commit": None, "branch": None, "dirty_files": None, "git_unavailable": True}
     root = Path(project_dir or Path.cwd())
     commit = _get_git_commit(root)
     payload: Dict[str, Any] = {
@@ -745,6 +767,8 @@ def _generate_entry_id(task: str) -> str:
 
 def _get_git_commit(project_dir: Optional[Path] = None) -> Optional[str]:
     """Attempt to get the current git commit hash. Returns None on failure."""
+    if not _check_git_available():
+        return None
     try:
         result = subprocess.run(
             ["git", "rev-parse", "--short", "HEAD"],

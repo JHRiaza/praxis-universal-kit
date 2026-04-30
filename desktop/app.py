@@ -167,7 +167,7 @@ class PraxisApp(ctk.CTk):
 
         version_label = ctk.CTkLabel(
             self._sidebar,
-            text="v0.9.4 Desktop · passive capture + TZ fix",
+            text="v0.9.5 Desktop · git pre-flight + TZ fix",
             font=ctk.CTkFont(size=11),
             text_color="gray",
         )

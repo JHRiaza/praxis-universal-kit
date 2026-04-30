@@ -93,6 +93,23 @@ class DashboardView(ctk.CTkScrollableFrame):
         )
         self._unreviewed_label.pack(side="right", padx=(0, 16), pady=8)
 
+        # --- Git availability warning (hidden by default) ---
+        self._git_warning_bar = ctk.CTkFrame(self, height=40, fg_color=("#fdf2e9", "#3d2b1f"))
+        self._git_warning_bar.grid(
+            row=self._next_row(), column=0, columnspan=3,
+            padx=20, pady=(0, 8), sticky="ew",
+        )
+        self._git_warning_bar.grid_propagate(False)
+        self._git_warning_bar.grid_remove()  # hidden until we know git is missing
+
+        self._git_warning_label = ctk.CTkLabel(
+            self._git_warning_bar,
+            text="⚠ git not found — git tracking disabled. Install Command Line Tools for full features.",
+            font=ctk.CTkFont(size=12),
+            text_color=("#e67e22", "#f39c12"),
+        )
+        self._git_warning_label.pack(side="left", padx=(16, 0), pady=8)
+
         # --- Status cards ---
         self._cards: dict[str, ctk.CTkLabel] = {}
         card_data = [
@@ -255,6 +272,13 @@ class DashboardView(ctk.CTkScrollableFrame):
             text="🔬 Passive capture active",
             text_color="#2ecc71",
         )
+
+        # Git availability warning
+        git_available = data.get("git_available", True)
+        if not git_available:
+            self._git_warning_bar.grid()  # show
+        else:
+            self._git_warning_bar.grid_remove()  # hide
 
         # Unreviewed badge (Sprint 2)
         unreviewed = data.get("unreviewed_count", 0)
