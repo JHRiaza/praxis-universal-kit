@@ -377,7 +377,7 @@ class ProtocolManager:
     def get_status_summary(self) -> str:
         """Get a human-readable status summary."""
         injected = self.get_injected_platforms()
-        phase = "B" if injected else "A"
+        phase = "obs" if not injected else "obs"  # unified observational model
         count = len(injected)
         total = len(GOVERNANCE_RULES)
         return PRAXIS_STATUS_LINE.format(

@@ -554,7 +554,7 @@ def cmd_status(args: argparse.Namespace) -> int:
         print_ok("Passive capture session is currently open.")
         print_info("Run: praxis stop  → then praxis checkout")
 
-    if phase == "A":
+    if phase == "obs":
         days_data = _days_of_data(entries)
         print()
         if days_data >= 7:
@@ -1529,7 +1529,7 @@ def build_parser() -> argparse.ArgumentParser:
               praxis withdraw
         """),
     )
-    parser.add_argument("--version", action="version", version="PRAXIS Kit 0.7.0")
+    parser.add_argument("--version", action="version", version="PRAXIS Kit 0.9.4")
     parser.add_argument("--lang", choices=["en", "es"], default="en",
                         help="Language for interactive prompts (default: en)")
 

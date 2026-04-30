@@ -52,8 +52,8 @@ jobs:
             <key>CFBundleName</key><string>PRAXIS Kit</string>
             <key>CFBundleDisplayName</key><string>PRAXIS Kit</string>
             <key>CFBundleIdentifier</key><string>com.praxis-kit.desktop</string>
-            <key>CFBundleVersion</key><string>0.7.0</string>
-            <key>CFBundleShortVersionString</key><string>0.7.0</string>
+            <key>CFBundleVersion</key><string>0.9.4</string>
+            <key>CFBundleShortVersionString</key><string>0.9.4</string>
             <key>CFBundleExecutable</key><string>PRAXIS Kit</string>
             <key>CFBundlePackageType</key><string>APPL</string>
             <key>LSMinimumSystemVersion</key><string>11.0</string>
@@ -85,21 +85,20 @@ jobs:
           path: ./artifacts/
       - uses: softprops/action-gh-release@v2
         with:
-          body: |
-            ## PRAXIS Kit Desktop v0.7
+            body: |
+            ## PRAXIS Kit Desktop v0.9.4
 
-            Workflow observability kit with passive capture and micro-checkout telemetry for understanding what AI is actually doing to work, trust, and decisions.
+            Workflow observability kit with passive capture and micro-checkout telemetry.
+
+            ### What's new in v0.9.4
+            - Fixed state.json writing legacy phase "A" instead of "obs"
+            - Added timezone capture (timezone name + UTC offset)
+            - Fixed protocol.py legacy A/B phase references
+            - Updated version labels across CLI and desktop
 
             ### Downloads
             - **Windows**: `praxis-desktop.exe` — download and run, no install needed
             - **macOS (Apple Silicon)**: `PRAXIS-Kit-macOS-arm64.dmg` — open, drag to Applications
-
-            ### What's new in v0.7
-            - Passive capture flow: start / stop / checkout
-            - Session telemetry export via sessions.jsonl
-            - Provenance-aware reliability scoring in diagnosis and exports
-            - User-facing workflow diagnosis in the dashboard and exports
-            - Optional throttled research inbox submission flow
 
             ### Requirements
             - No Python installation needed — binaries are self-contained

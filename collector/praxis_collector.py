@@ -27,7 +27,7 @@ from typing import Any, Dict, List, Optional, Tuple
 # Constants
 # ---------------------------------------------------------------------------
 
-KIT_VERSION = "0.9.3-pre"
+KIT_VERSION = "0.9.4"
 SCHEMA_VERSION = "0.2"
 PRAXIS_DIR = ".praxis"
 STATE_FILE = "state.json"
@@ -119,7 +119,7 @@ def _default_state(participant_id: str, consent_given: bool = False) -> Dict[str
         "kit_version": KIT_VERSION,
         "schema_version": SCHEMA_VERSION,
         "participant_id": participant_id,
-        "phase": "A",
+        "phase": "obs",
         "installed_at": now,
         "activated_at": None,
         "consent_given": consent_given,
@@ -147,6 +147,11 @@ def load_state(praxis_dir: Path) -> Dict[str, Any]:
         # Migrate legacy phase values (A/B -> obs)
         if state.get("phase") in ("A", "B"):
             state["phase"] = "obs"
+        # Ensure timezone is captured
+        if "timezone" not in state:
+            import time
+            state["timezone"] = time.tzname[0] if hasattr(time, 'tzname') else None
+            state["timezone_offset"] = time.timezone // -3600 if hasattr(time, 'timezone') else None
         return state
     except (json.JSONDecodeError, OSError) as exc:
         raise PraxisError(f"Failed to read state file: {exc}") from exc
