@@ -1,5 +1,24 @@
 # PRAXIS Universal Kit — Changelog
 
+## v0.10.0 (2026-04-30) — Scientific Integrity Update
+
+All 7 critical findings from the Cowork scientific foundation audit resolved.
+
+### MUST fixes (all resolved)
+- **M1: Schema v0.3** — enums corrected (obs/passive instead of A/B experimental), all undocumented fields formally defined (field_provenance, capture_mode, passive_capture, session_id, reviewed, governance_tag, checkout_outcome, l1r_source, provenance_completeness, notes)
+- **M2: L1-R source tracking** — new `l1r_source` field: observed | derived | mixed | unknown. Derived L1-R values flagged as NOT psychological measurements
+- **M3: Fixed `_derive_condition()` crash** — NameError (`entry` undefined) in manual log path. Replaced with observational condition derivation
+- **M4: `autonomous` default documented** — schema and code now clarify that passive capture defaults to true regardless of actual autonomy
+- **M5: Governance capture verified** — end-to-end tested: incident → governance.jsonl → load → round-trip ✅
+- **M6: `reliability_score` renamed** — now `provenance_completeness` (measures capture completeness, not data quality). Legacy alias retained
+- **M7: Consent forms corrected** — "Pseudonymization" (not "anonymization") in both EN and ES consent forms, with explanation that same participant on different machine gets different ID
+
+### Also includes (from v0.9.5)
+- Git pre-flight check (no macOS CLT popup)
+- Timezone capture in state.json
+- `git_unavailable` flag in git telemetry
+- Dashboard warning banner when git missing
+
 ## v0.9.2 (2026-04-29)
 
 ### Added

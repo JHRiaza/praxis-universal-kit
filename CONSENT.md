@@ -57,8 +57,8 @@ This research documents what happens when people use a governance framework (PRA
 ### Storage
 All data is stored **locally** on your computer in a `.praxis/` directory. Nothing is automatically uploaded to any server or cloud service.
 
-### Anonymization
-Your participant ID is automatically generated from a hash of anonymous machine characteristics. It does not include your name, email, or any directly identifying information.
+### Pseudonymization
+Your participant ID is automatically generated from a deterministic hash of machine characteristics (hostname, MAC address, OS). This is **pseudonymization**, not full anonymity: given the raw machine identity, the ID can be verified. It does not include your name, email, or any directly identifying information. The same participant using a different machine will receive a different ID.
 
 When you export data (`praxis export`), the system:
 - Strips any potential PII from metric entries

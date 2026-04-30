@@ -57,8 +57,8 @@ Esta investigación documenta qué sucede cuando las personas usan un framework 
 ### Almacenamiento
 Todos los datos se almacenan **localmente** en su computadora en un directorio `.praxis/`. Nada se sube automáticamente a ningún servidor o servicio en la nube.
 
-### Anonimización
-Su ID de participante se genera automáticamente a partir de un hash de características anónimas de la máquina. No incluye su nombre, correo electrónico ni ninguna información directamente identificable.
+### Seudonimización
+Su ID de participante se genera automáticamente a partir de un hash determinista de características de la máquina (nombre de host, dirección MAC, sistema operativo). Esto es **seudonimización**, no anonimización completa: dada la identidad de la máquina, el ID puede ser verificado. No incluye su nombre, correo electrónico ni información directamente identificable. El mismo participante en una máquina diferente recibirá un ID diferente.
 
 Al exportar datos (`praxis export`), el sistema:
 - Elimina cualquier dato potencialmente identificable de las entradas de métricas

@@ -27,8 +27,8 @@ from typing import Any, Dict, List, Optional, Tuple
 # Constants
 # ---------------------------------------------------------------------------
 
-KIT_VERSION = "0.9.5"
-SCHEMA_VERSION = "0.2"
+KIT_VERSION = "0.10.0"
+SCHEMA_VERSION = "0.3"
 PRAXIS_DIR = ".praxis"
 STATE_FILE = "state.json"
 METRICS_FILE = "metrics.jsonl"
@@ -521,6 +521,20 @@ def apply_smart_checkout(
     if "personality_mismatch" not in l1r or l1r.get("personality_mismatch") is None:
         l1r["personality_mismatch"] = False
 
+    # Track whether L1-R values were observed by the participant or derived from outcome
+    # All 7 dimensions are derived from the 3-choice outcome selector in smart_checkout
+    # This is NOT a psychological measurement \u2014 it is an algebraic transform
+    pre_existing = (entry.get("l1r_observations") or {})
+    user_provided_fields = [k for k in ["trust_willingness", "skepticism_activation", "perceived_confidence",
+                                         "perceived_authority", "perceived_warmth"]
+                            if k in pre_existing and pre_existing[k] is not None]
+    if len(user_provided_fields) >= 3:
+        l1r_source = "observed"
+    elif len(user_provided_fields) > 0:
+        l1r_source = "mixed"
+    else:
+        l1r_source = "derived"
+
     summary = (task or "").strip() or "Reviewed auto-captured session"
     interventions = int(entry.get("interventions") or entry.get("human_interventions") or 0)
     if tag == "override":
@@ -541,9 +555,12 @@ def apply_smart_checkout(
         "governance_tag": tag,
         "checkout_outcome": outcome_key,
         "l1r_observations": l1r,
+        "l1r_source": l1r_source,
         "field_provenance": provenance,
     })
-    updated["reliability_score"] = estimate_reliability(updated)
+    rel = estimate_reliability(updated)
+    updated["reliability_score"] = rel  # deprecated alias
+    updated["provenance_completeness"] = rel  # canonical name
     return updated
 
 
@@ -792,15 +809,17 @@ def _get_session_id(state: Dict[str, Any]) -> str:
 
 
 def _derive_condition(state: Dict[str, Any], model: str) -> str:
-    """Map legacy phase/model inputs to v0.2 2x2 experimental condition."""
+    """Determine capture condition from current state."""
     condition = state.get("condition")
     if condition in VALID_CONDITIONS:
         return condition
 
-    structure = "structured" if entry.get("capture_mode") == "smart_checkout" else "passive"
-    model_name = model.lower()
-    model_axis = "2" if "opus" in model_name else "1"
-    return f"{structure}{model_axis}"
+    # If we have a phase/condition already set, use it
+    if state.get("phase") == "obs":
+        return "passive"
+
+    # Default to passive for observational model
+    return "passive"
 
 
 def validate_metric_entry(entry: Dict[str, Any]) -> List[str]:
@@ -1073,9 +1092,12 @@ def build_metric_entry(
 
     if l1r_observations is not None:
         entry["l1r_observations"] = l1r_observations
+        entry["l1r_source"] = "observed"  # manually logged = participant-rated
         if layer is None:
             entry["praxis_layer"] = "L1-R"
             entry["layer"] = "L1-R"
+    else:
+        entry["l1r_source"] = "unknown"  # no L1-R provided
 
     if iteration_type is not None:
         entry["iteration_type"] = iteration_type

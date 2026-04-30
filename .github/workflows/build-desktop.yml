@@ -52,8 +52,8 @@ jobs:
             <key>CFBundleName</key><string>PRAXIS Kit</string>
             <key>CFBundleDisplayName</key><string>PRAXIS Kit</string>
             <key>CFBundleIdentifier</key><string>com.praxis-kit.desktop</string>
-            <key>CFBundleVersion</key><string>0.9.5</string>
-            <key>CFBundleShortVersionString</key><string>0.9.5</string>
+            <key>CFBundleVersion</key><string>0.10.0</string>
+            <key>CFBundleShortVersionString</key><string>0.10.0</string>
             <key>CFBundleExecutable</key><string>PRAXIS Kit</string>
             <key>CFBundlePackageType</key><string>APPL</string>
             <key>LSMinimumSystemVersion</key><string>11.0</string>
@@ -84,16 +84,23 @@ jobs:
       - uses: softprops/action-gh-release@v2
         with:
           body: |
-            ## PRAXIS Kit Desktop v0.9.5
+            ## PRAXIS Kit Desktop v0.10.0 — Scientific Integrity Update
 
-            Workflow observability kit with passive capture and micro-checkout telemetry.
+            **This release addresses all critical findings from the Cowork scientific foundation audit.**
 
-            ### What's new in v0.9.5
-            - **Git pre-flight check**: detects missing git without triggering macOS CLT install prompt
-            - **Graceful git degradation**: git tracking disabled cleanly when git unavailable
-            - **Dashboard warning banner**: shows when git is not available
-            - **Timezone capture**: state.json now records timezone name + UTC offset
-            - **Fixed state.json phase**: writes "obs" instead of legacy "A"
+            ### MUST fixes (all resolved):
+            - **M1: Schema v0.3** — Corrected enums (obs/passive instead of A/B), added all undocumented fields (field_provenance, capture_mode, passive_capture, etc.)
+            - **M2: L1-R source tracking** — New `l1r_source` field: "observed" | "derived" | "mixed" | "unknown". Derived values are flagged and should not be analyzed as Likert-scale data.
+            - **M3: Fixed `_derive_condition()` crash** — NameError in manual log path resolved
+            - **M4: `autonomous` default documented** — Schema now states passive capture defaults to true regardless of actual autonomy
+            - **M5: Governance capture verified** — End-to-end tested: `praxis incident` → governance.jsonl → export → round-trip ✅
+            - **M6: `reliability_score` renamed** — Now `provenance_completeness` (reliability_score kept as deprecated alias). Measures capture completeness, NOT data quality.
+            - **M7: Consent forms corrected** — "Pseudonymization" (not "anonymization") in both EN and ES consent forms
+
+            ### Also includes:
+            - Git pre-flight check (no macOS CLT popup)
+            - Timezone capture in state.json
+            - `git_unavailable` flag in git telemetry
 
             ### Downloads
             - **Windows**: `praxis-desktop.exe` — download and run, no install needed
