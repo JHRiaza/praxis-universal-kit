@@ -1382,7 +1382,8 @@ def cmd_init(args: argparse.Namespace) -> int:
     participant_id = generate_participant_id()
     print()
     print_ok(f"Participant ID assigned: {_c(participant_id, C.B_CYAN)}")
-    print_info("Keep this ID — it identifies your anonymous dataset.")
+    print_info("Keep this ID — it identifies your pseudonymized dataset.")
+    print_info("Note: This ID is tied to THIS machine. Using a different device will generate a different ID.")
 
     try:
         state = initialize_state(praxis_dir, participant_id, consent_given=True)

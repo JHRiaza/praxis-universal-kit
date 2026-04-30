@@ -565,13 +565,14 @@ def apply_smart_checkout(
 
 
 def _format_clock(raw_value: Optional[str]) -> str:
+    """Format ISO timestamp as HH:MM UTC for display."""
     if not raw_value:
         return "?"
     try:
         dt = datetime.fromisoformat(str(raw_value).replace("Z", "+00:00"))
-        return dt.strftime("%H:%M")
+        return dt.strftime("%H:%M") + " UTC"
     except Exception:
-        return str(raw_value)[11:16] if len(str(raw_value)) >= 16 else str(raw_value)
+        return str(raw_value)[11:16] + " UTC" if len(str(raw_value)) >= 16 else str(raw_value)
 
 
 def _humanize_platform(platform_id: str) -> str:
@@ -611,7 +612,12 @@ def build_auto_session_entry(
     session_record: Dict[str, Any],
     project_dir: Optional[Path] = None,
 ) -> Dict[str, Any]:
-    """Turn a passive session capture into a draft sprint metric entry."""
+    """Turn a passive session capture into a draft sprint metric entry.
+
+    NOTE on duration: For passive capture, duration_minutes is wall-clock time
+    between session start/stop. This is NOT verified active work time — the user
+    may have been idle, in a meeting, etc. Smart checkout allows correcting this.
+    """
     duration = int(session_record.get("duration_minutes") or 1)
     phase = session_record.get("phase", "obs")
     platforms = session_record.get("platform_ids", [])
@@ -745,9 +751,15 @@ def _is_real_model_name(name: str) -> bool:
 
 def generate_participant_id() -> str:
     """
-    Generate a deterministic-but-anonymous participant ID.
-    Uses machine-specific data hashed to produce a stable 6-char suffix.
+    Generate a deterministic pseudonymized participant ID.
+    Uses machine-specific data hashed to produce a stable 8-char hex suffix.
     Format: PRAXIS-XXXXXXXX (8 hex chars from SHA-256 of machine identity).
+
+    IMPORTANT: This is pseudonymization, NOT anonymization.
+    - Same machine always produces the same ID (deterministic hash).
+    - Same participant on a DIFFERENT machine gets a DIFFERENT ID.
+    - If machine identity changes (new MAC, hostname change), ID changes.
+    Researchers should be aware of potential ID fragmentation across devices.
     """
     try:
         # Combine platform info for a stable hash seed
@@ -1471,6 +1483,10 @@ def detect_platforms(project_dir: Optional[Path] = None) -> List[str]:
     Quick platform detection from the collector layer.
     Returns list of detected platform IDs.
     Full detection logic lives in the adapters — this is just a fast pre-check.
+
+    IMPORTANT: This detects INSTALLED platforms (filesystem probes, PATH checks),
+    not platforms that were ACTIVE during any particular session.
+    A detected platform may have been idle during the recorded sprint.
     """
     root = Path(project_dir or Path.cwd()).resolve()
     home = Path.home()

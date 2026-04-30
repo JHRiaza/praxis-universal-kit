@@ -44,7 +44,7 @@ from diagnostics import build_user_diagnosis
 # Constants
 # ---------------------------------------------------------------------------
 
-EXPORT_VERSION = "0.7.0"
+EXPORT_VERSION = "0.10.0"
 PII_FIELDS_TO_REDACT = ["name", "email", "phone", "ip_address", "machine_name"]
 FILES_TO_INCLUDE = [
     "metrics.jsonl",
@@ -368,7 +368,8 @@ def _add_manifest(
         "passive_sessions": session_count,
         "governance_events": gov_count,
         "surveys_completed": survey_count,
-        "mean_reliability": diagnosis.get("metrics", {}).get("avg_reliability"),
+        "mean_provenance_completeness": diagnosis.get("metrics", {}).get("avg_reliability"),
+        "mean_reliability": diagnosis.get("metrics", {}).get("avg_reliability"),  # deprecated alias
         "integrity": {
             "metrics_sha256": _sha256_file(praxis_dir / "metrics.jsonl"),
             "sessions_sha256": _sha256_file(praxis_dir / "sessions.jsonl"),
@@ -376,8 +377,9 @@ def _add_manifest(
         },
         "instructions": (
             "Send this ZIP to the PRAXIS researcher. "
-            "It contains only anonymous research metrics — no project files, "
+            "It contains only pseudonymized research metrics — no project files, "
             "no conversation content, no personal identifiers beyond your participant ID. "
+            "Your participant ID is pseudonymized (derived from machine characteristics), not fully anonymous. "
             "It also includes a user-facing diagnosis so participants get value back from contributing."
         ),
     }

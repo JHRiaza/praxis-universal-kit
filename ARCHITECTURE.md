@@ -1,5 +1,5 @@
 # PRAXIS Universal Kit — Architecture Spec
-## Version 0.9.2 — 2026-04-29
+## Version 0.10.0 — 2026-04-30
 
 ### Purpose
 Cross-platform, platform-agnostic research package for observing and documenting governance phenomena in AI-assisted workflows. Designed for distribution to external participants using any AI platform (Claude Cowork, Codex, OpenClaw, Cursor, Copilot, Aider, Continue.dev, Cline, Roo Code, etc.).
@@ -16,8 +16,10 @@ The kit instruments workflows to capture what happens — governance emergence, 
 ### Research Design
 - **Type:** Observational field study — descriptive, not prescriptive
 - **Data collection:** Passive capture + smart checkout + manual logging (three tiers, provenance-tagged)
-- **Reliability scoring:** Each data point tagged with confidence level based on capture method (passive=0.45, checkout=1.0, manual=0.8)
+- **Provenance tracking:** Each field tagged with origin (auto/smart_checkout/manual/unknown) via `field_provenance`. `provenance_completeness` measures capture completeness (NOT data quality)
+- **L1-R source tracking:** `l1r_source` field distinguishes observed (participant-rated) from derived (algebraic) L1-R values
 - **2×2 Factorial (schema-ready):** Conditions A1, A2, B1, B2 in metrics schema for future controlled study design
+- **Capture conditions:** passive, checked_out, governance_tagged, reviewed
 - **Observation targets:** Governance emergence, trust calibration, session boundary behavior, rework patterns, model/workflow correlation
 
 ### P9: Architecture Independence
@@ -140,17 +142,23 @@ Fields:
 - governance_tag: checkout governance moment category
 - checkout_outcome: solved / partially / abandoned
 
-#### L1-R observations (v0.2)
+#### L1-R observations
 When using the `--l1r` flag, the CLI prompts for relational governance observations:
+- Trust willingness (Likert 1-7): Would you follow this AI's advice without verifying?
+- Skepticism activation (Likert 1-7): Did you feel the need to verify independently?
 - Perceived confidence (Likert 1-7): How confident did the AI seem?
 - Perceived warmth (Likert 1-7): How warm/supportive did the AI feel?
-- Trust willingness (Likert 1-7): Would you follow the AI's advice without verifying?
-- Skepticism activation (Likert 1-7): Did you feel the need to verify independently?
 - Perceived authority (Likert 1-7): How expert did the AI seem?
 - Compliance tendency (boolean): Did you accept the AI's output without questioning?
-- Personality mismatch (boolean + notes): Did the AI's behavior differ from SOUL_TEMPLATE settings?
+- Personality mismatch (boolean + notes): Did the AI's behavior differ from what was expected?
 
-These observations capture the relational governance layer — how the AI's personality affects user trust and behavior.
+**IMPORTANT: L1-R source tracking (v0.10.0).** The `l1r_source` field records whether values were:
+- `observed` — participant explicitly rated ≥3 dimensions
+- `derived` — computed algebraically from checkout_outcome (3-choice: solved/partial/abandoned)
+- `mixed` — some observed, some filled in
+- `unknown` — no L1-R data provided
+
+Derived L1-R values are NOT psychological measurements and must not be analyzed as Likert-scale data. The derivation formula maps: solved→trust=6/8, partial→trust=4, abandoned→trust=2, then derives other dimensions from trust signal.
 
 #### Governance events
 - Governance events (new rules created, rules modified, incidents)
@@ -285,7 +293,32 @@ Surveys rendered in terminal (interactive CLI) or exportable as web form URL.
 This design separates model capability effects from governance structure effects. The `condition` field in metrics_schema.json tracks which condition each sprint belongs to. Conditions are schema-ready for future controlled study deployment.
 
 ### Framework Version
-- **Kit version:** 0.9.2
-- **Schema version:** 0.2
+- **Kit version:** 0.10.0
+- **Schema version:** 0.3
 - **PRAXIS framework:** v1.1 (includes L1-R, P9)
 - **License:** CC BY-SA 4.0
+
+### Data Dictionary (v0.10.0)
+| Field | Type | Capture mode | Description |
+|-------|------|-------------|-------------|
+| `id` | string | auto | Sprint ID (praxis_YYYYMMDDTHHMMSS_slug) |
+| `timestamp` | ISO 8601 | auto | When sprint was logged (UTC) |
+| `schema_version` | string | auto | Schema version ("0.3") |
+| `participant_id` | string | auto | Pseudonymized ID (SHA-256 of hostname+MAC+OS, first 8 chars) |
+| `condition` | enum | auto/checkout | passive / checked_out / governance_tagged / reviewed |
+| `phase` | string | auto | Always "obs" (observational) |
+| `task` | string | checkout/manual | Work description |
+| `model_executor` | string | auto/manual | AI model used. "unknown" if not detectable |
+| `duration_minutes` | int | auto/manual | Wall-clock time. Passive = start/stop gap, NOT verified active time |
+| `quality_self` | int 1-5 | checkout/manual | Self-rated. Checkout: derived from outcome (solved→5, partial→3, abandoned→1) |
+| `human_interventions` | int | checkout/manual | Defaults to 0 in passive — absence ≠ evidence of autonomy |
+| `autonomous` | bool | derived | interventions==0. CAUTION: passive defaults to true |
+| `capture_mode` | enum | auto | passive_auto / smart_checkout / manual |
+| `l1r_source` | enum | derived | observed / derived / mixed / unknown |
+| `provenance_completeness` | float 0-1 | derived | Fraction of fields with non-"unknown" provenance (NOT data quality) |
+| `field_provenance` | object | auto | Per-field origin tracking |
+| `checkout_outcome` | enum | checkout | solved / partial / abandoned |
+| `governance_tag` | string | checkout | Governance context (none/rule_created/incident_logged/override/scope_creep) |
+| `platforms` | string[] | auto | DETECTED installed platforms, not necessarily active |
+| `governance_events` | array | manual/incident | Governance emergence events |
+| `passive_capture` | object | auto | Session telemetry (timestamps, git snapshots, signals) |
