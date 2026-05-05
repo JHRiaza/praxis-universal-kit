@@ -431,6 +431,36 @@ class PraxisViewModel:
         self.touch_active()
         return entry
 
+    def log_pivot(self) -> Optional[Dict[str, Any]]:
+        """Log an approach change within the current session.
+
+        Increments intra_session_pivots on the latest sprint entry.
+        Returns the updated entry, or None if no entry found.
+        """
+        if not self.is_initialized():
+            raise StateNotFoundError("PRAXIS not initialized")
+
+        entries = load_all_metrics(self._praxis_dir)
+        if not entries:
+            return None
+
+        # Find the latest sprint entry
+        entry = None
+        for row in reversed(entries):
+            if row.get("type", "sprint") == "sprint":
+                entry = row
+                break
+
+        if entry is None:
+            return None
+
+        current_pivots = int(entry.get("intra_session_pivots", 0))
+        entry["intra_session_pivots"] = current_pivots + 1
+
+        saved = update_metric_entry(self._praxis_dir, str(entry.get("id")), entry)
+        self.touch_active()
+        return saved
+
     # ------------------------------------------------------------------
     # Domain detection
     # ------------------------------------------------------------------

@@ -232,14 +232,59 @@ class DashboardView(ctk.CTkScrollableFrame):
             command=self.refresh,
         )
         refresh_btn.grid(
-            row=self._next_row(), column=0, columnspan=3,
-            padx=20, pady=(0, 20), sticky="w",
+            row=self._next_row(), column=0, columnspan=1,
+            padx=(20, 10), pady=(0, 20), sticky="w",
+        )
+
+        # Pivot button (approach change within session)
+        self._pivot_count_label = ctk.CTkLabel(
+            self,
+            text="",
+            font=ctk.CTkFont(size=12),
+            text_color="gray",
+        )
+        pivot_btn = ctk.CTkButton(
+            self,
+            text="\U0001f504 Approach Change",
+            width=160,
+            fg_color="#c0392b",
+            hover_color="#e74c3c",
+            command=self._log_pivot,
+        )
+        pivot_btn.grid(
+            row=self._row - 1, column=1, columnspan=1,
+            padx=(10, 20), pady=(0, 20), sticky="w",
+        )
+        self._pivot_count_label.grid(
+            row=self._row - 1, column=2, columnspan=1,
+            padx=(0, 20), pady=(0, 20), sticky="w",
         )
 
     def _next_row(self) -> int:
         r = self._row
         self._row += 1
         return r
+
+    def _log_pivot(self) -> None:
+        """Log an approach change within the current session."""
+        try:
+            result = self._vm.log_pivot()
+            if result is not None:
+                pivots = result.get("intra_session_pivots", "?")
+                self._pivot_count_label.configure(
+                    text=f"Pivot #{pivots} logged",
+                    text_color="#2ecc71",
+                )
+            else:
+                self._pivot_count_label.configure(
+                    text="No session to tag",
+                    text_color="#e74c3c",
+                )
+        except Exception as e:
+            self._pivot_count_label.configure(
+                text=f"Error: {e}",
+                text_color="#e74c3c",
+            )
 
     def refresh(self) -> None:
         """Reload data from the view model and update all cards."""
