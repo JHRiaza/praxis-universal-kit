@@ -1,5 +1,36 @@
 # PRAXIS Universal Kit — Changelog
 
+## v0.11.0 (2026-05-05) — Diagnostic Intelligence Update
+
+5 new automated detectors that surface issues previously caught only by manual audit.
+
+### New Diagnostic Features
+
+- **Confidence-Quality Gap** — flags when AI perceived confidence exceeds actual quality by >1.5. Detects the "AI presenting incomplete work as done" pattern automatically.
+- **Skepticism Spike Detection** — flags high variance (>1.0σ) in skepticism across sessions. Identifies specific sessions where the human caught AI errors that session-level metrics miss.
+- **Long Session Flag** — alerts when sessions exceed 4 hours. These typically contain multiple distinct tasks masked as a single data point.
+- **Fabrication Guard** — new checkout question: "Did the AI present any output as factual/exact that you later found was inaccurate or reconstructed?" Auto-tags `fabrication_detected: true` on the entry.
+- **Intra-Session Rework (`praxis pivot`)** — new CLI command to log approach changes within a session. Captures rework that session-level iteration counts completely miss.
+
+### Schema Changes
+
+- New governance type: `approach_change`
+- New governance tag: `fabrication_detected`
+- New metric fields: `intra_session_pivots` (int, default 0), `fabrication_detected` (bool)
+- New diagnosis metrics: `long_sessions`, `fabrication_incidents`, `avg_intra_session_pivots`
+- New diagnosis flags: `confidence_quality_gap`, `skepticism_variance_high`, `long_sessions`, `fabrication_detected`, `intra_session_rework`
+- New headline: "PRAXIS detected a confidence-quality gap..." when gap exceeds threshold
+
+### CLI Changes
+
+- `praxis pivot` — new command, logs an approach change within the current session
+- `praxis checkout` — new fabrication guard question
+
+### Internal
+
+- Added `_std()` statistical helper to diagnostics module
+- CITATION.cff updated to v0.11.0
+
 ## v0.10.0 (2026-04-30) — Scientific Integrity Update
 
 All 7 critical findings from the Cowork scientific foundation audit resolved.
