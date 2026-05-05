@@ -55,6 +55,7 @@ VALID_GOVERNANCE_TYPES = (
     "rule_deleted",
     "incident",
     "escalation",
+    "approach_change",
     "other",
 )
 VALID_INCIDENT_CATEGORIES = ("OPS", "GOV", "COM", "PRD", "RES", "DES")
@@ -64,6 +65,7 @@ VALID_GOVERNANCE_TAGS = (
     "ai_off_track",
     "scope_creep",
     "model_switch",
+    "fabrication_detected",
     "none",
 )
 

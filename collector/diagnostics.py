@@ -16,6 +16,15 @@ def _mean(values: List[float]) -> Optional[float]:
     return round(sum(values) / len(values), 2)
 
 
+def _std(values: List[float]) -> Optional[float]:
+    """Compute population standard deviation."""
+    if len(values) < 2:
+        return None
+    m = sum(values) / len(values)
+    variance = sum((v - m) ** 2 for v in values) / len(values)
+    return round(variance ** 0.5, 2)
+
+
 def _pct(value: Optional[float]) -> Optional[int]:
     if value is None:
         return None
@@ -109,6 +118,15 @@ def build_user_diagnosis(
         elif boundary.get("calibration_recovery") == "gradual":
             partial_boundaries += 1
 
+    # Detect long sessions (>240 min = 4 hours)
+    long_session_count = sum(1 for d in durations if d > 240)
+
+    # Detect fabrication incidents
+    fabrication_count = sum(1 for e in work_entries if e.get("fabrication_detected") is True)
+
+    # Intra-session pivots
+    intra_pivots = [int(e.get("intra_session_pivots", 0)) for e in work_entries if isinstance(e.get("intra_session_pivots"), int)]
+
     total_minutes = sum(durations)
     avg_quality = _mean([float(v) for v in qualities])
     avg_iterations = _mean([float(v) for v in iterations])
@@ -119,6 +137,7 @@ def build_user_diagnosis(
     avg_warmth = _mean([float(v) for v in warmth])
     avg_confidence = _mean([float(v) for v in confidence])
     avg_reliability = _mean(reliability_scores)
+    avg_intra_pivots = _mean([float(v) for v in intra_pivots]) if intra_pivots else None
 
     first_ts = _parse_ts(work_entries[0].get("timestamp", ""))
     last_ts = _parse_ts(work_entries[-1].get("timestamp", ""))
@@ -176,6 +195,50 @@ def build_user_diagnosis(
         insights.append(f"Personality portability is unstable in {mismatch_count} logged cases, which means the same governance setup does not always produce the same behavioral surface.")
         flags.append("personality_drift")
 
+    # 1. Confidence-Quality Gap (surfaces AI presenting incomplete work as done)
+    if avg_confidence is not None and avg_quality is not None:
+        confidence_quality_gap = round(avg_confidence - avg_quality, 2)
+        if confidence_quality_gap > 1.5:
+            insights.append(
+                f"AI confidence consistently exceeds actual outcomes (gap: +{confidence_quality_gap:.1f}). "
+                f"This suggests the AI is presenting work as complete before verification — a known confidence-hallucination pattern."
+            )
+            flags.append("confidence_quality_gap")
+
+    # 2. Skepticism Spike Detection (surfaces sessions where human caught AI going wrong)
+    if len(skepticism) >= 2:
+        skepticism_std = _std(skepticism)
+        if skepticism_std is not None and skepticism_std > 1.0:
+            insights.append(
+                f"Skepticism variance is high ({skepticism_std:.1f}σ), indicating specific sessions triggered "
+                f"strong verification responses — usually where the AI pursued a wrong approach repeatedly."
+            )
+            flags.append("skepticism_variance_high")
+
+    # 3. Long Session Flag (surfaces that session granularity masks multiple tasks)
+    if long_session_count > 0:
+        insights.append(
+            f"{long_session_count} session(s) exceeded 4 hours. These likely contain multiple distinct work phases. "
+            f"Consider using micro-checkout to split them for more accurate per-task metrics."
+        )
+        flags.append("long_sessions")
+
+    # 4. Fabrication detection
+    if fabrication_count > 0:
+        insights.append(
+            f"At least {fabrication_count} fabrication incident(s) detected: the AI presented reconstructed or "
+            f"inaccurate output as factual. This is a governance-relevant finding (RES category)."
+        )
+        flags.append("fabrication_detected")
+
+    # 5. Intra-session rework
+    if avg_intra_pivots is not None and avg_intra_pivots > 0:
+        insights.append(
+            f"Approach changes within sessions are visible (avg {avg_intra_pivots:.1f} per session). "
+            f"This captures rework that session-level iteration counts miss."
+        )
+        flags.append("intra_session_rework")
+
     if not insights:
         insights.append("Your current data already gives you a baseline picture of time, quality, and rework — enough to start seeing patterns instead of relying on memory.")
 
@@ -186,7 +249,11 @@ def build_user_diagnosis(
     ]
 
     headline = "PRAXIS is giving you a workflow mirror, not just a research log."
-    if "over_trust" in flags:
+    if "confidence_quality_gap" in flags:
+        headline = "PRAXIS detected a confidence-quality gap — the AI may be overselling incomplete work."
+    elif "fabrication_detected" in flags:
+        headline = "PRAXIS detected AI fabrication — output was presented as factual when it was reconstructed."
+    elif "over_trust" in flags:
         headline = "PRAXIS is already revealing a trust calibration issue in your AI workflow."
     elif "rework_drag" in flags:
         headline = "PRAXIS is already showing where your AI workflow is leaking effort."
@@ -223,6 +290,9 @@ def build_user_diagnosis(
             "governance_events": len(governance_events),
             "degraded_boundaries": degraded_boundaries,
             "personality_mismatch_count": mismatch_count,
+            "long_sessions": long_session_count,
+            "fabrication_incidents": fabrication_count,
+            "avg_intra_session_pivots": avg_intra_pivots,
             "phase": state.get("phase", "obs"),
             "observation_days": observation_days,
         },

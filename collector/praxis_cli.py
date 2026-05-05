@@ -280,6 +280,12 @@ def _write_checkout(praxis_dir: Path, entry: Dict[str, Any], args: argparse.Name
         "5": "model_switch",
         "0": "none",
     }
+    # Fabrication guard — detect AI presenting reconstructed output as factual
+    fabrication = ask_yn(
+        "Did the AI present any output as factual/exact that you later found was inaccurate or reconstructed?",
+        False,
+    )
+
     task = getattr(args, "task", None) or ask("1-line task summary (optional)", "")
     updated = apply_smart_checkout(
         entry,
@@ -287,6 +293,8 @@ def _write_checkout(praxis_dir: Path, entry: Dict[str, Any], args: argparse.Name
         governance_tag=governance_map.get(governance, "none"),
         task=task,
     )
+    if fabrication:
+        updated["fabrication_detected"] = True
     saved = update_metric_entry(praxis_dir, str(entry.get("id")), updated)
     if saved is None:
         raise PraxisError("Could not update the selected session draft.")
@@ -1306,6 +1314,53 @@ def cmd_platforms(args: argparse.Namespace) -> int:
 
 
 # ---------------------------------------------------------------------------
+# Command: pivot (intra-session approach change)
+# ---------------------------------------------------------------------------
+
+def cmd_pivot(args: argparse.Namespace) -> int:
+    """Log an approach change within the current session.
+
+    This captures the rework that session-level iteration counts miss —
+    when the human switches approach entirely (e.g., texture projection -> GLTF -> GLB).
+    Increments intra_session_pivots on the latest entry.
+    """
+    praxis_dir = find_praxis_dir()
+    if praxis_dir is None:
+        print_err("PRAXIS not found. Run from your project directory.")
+        return 1
+
+    entries = load_all_metrics(praxis_dir)
+    if not entries:
+        print_warn("No sessions found to tag.")
+        return 0
+
+    # Find the latest entry to increment pivots on
+    entry = None
+    for row in reversed(entries):
+        if row.get("type", "sprint") == "sprint":
+            entry = row
+            break
+
+    if entry is None:
+        print_warn("No sprint entries found.")
+        return 0
+
+    current_pivots = int(entry.get("intra_session_pivots", 0))
+    entry["intra_session_pivots"] = current_pivots + 1
+
+    saved = update_metric_entry(praxis_dir, str(entry.get("id")), entry)
+    if saved is None:
+        print_err("Could not update session entry.")
+        return 1
+
+    print()
+    print_ok(f"Approach change logged (pivot #{current_pivots + 1} for this session).")
+    print_info(f"Session: {entry.get('id', '?')}")
+    print_info("Use 'praxis checkout' when the session ends for full calibration.")
+    return 0
+
+
+# ---------------------------------------------------------------------------
 # Command: withdraw
 # ---------------------------------------------------------------------------
 
@@ -1633,6 +1688,9 @@ def build_parser() -> argparse.ArgumentParser:
     # platforms
     p_plat = sub.add_parser("platforms", help="Show detected AI platforms")
 
+    # pivot (intra-session approach change)
+    p_pivot = sub.add_parser("pivot", help="Log an approach change within the current session")
+
     # withdraw
     p_with = sub.add_parser("withdraw", help="Delete all collected data and withdraw from study")
 
@@ -1663,6 +1721,7 @@ COMMAND_MAP = {
     "submit":    cmd_submit,
     "platforms": cmd_platforms,
     "withdraw":  cmd_withdraw,
+    "pivot":     cmd_pivot,
     "init":      cmd_init,
 }
 
