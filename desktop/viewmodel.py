@@ -310,6 +310,29 @@ class PraxisViewModel:
     # Dashboard data
     # ------------------------------------------------------------------
 
+    def _get_validation_engine_status(self) -> Dict[str, Any]:
+        """Check validation engine availability for dashboard display."""
+        status = {"l1_heuristics": True}  # type: Dict[str, Any]
+        try:
+            from collector.llm_judge import check_ollama_available
+            ollama = check_ollama_available()
+            status["ollama_available"] = ollama.get("available", False)
+            status["ollama_model_ready"] = ollama.get("model_ready", False)
+            status["ollama_model"] = ollama.get("default_model", "qwen3:4b")
+            status["ollama_models"] = ollama.get("models", [])[:5]
+            if ollama.get("available") and ollama.get("model_ready"):
+                status["l2_judge"] = "llm"
+                status["l2_judge_label"] = "LLM (Ollama)"
+            else:
+                status["l2_judge"] = "rule_based"
+                status["l2_judge_label"] = "Rule-based (fallback)"
+        except Exception:
+            status["ollama_available"] = False
+            status["l2_judge"] = "rule_based"
+            status["l2_judge_label"] = "Rule-based"
+        status["l2_available"] = True  # rule-based always available
+        return status
+
     def get_dashboard_data(self) -> Dict[str, Any]:
         """Compute dashboard summary. Returns dict with all display fields."""
         if not self.is_initialized():
@@ -373,7 +396,7 @@ class PraxisViewModel:
             "total_duration": summary.get("total_duration_minutes", 0),
             "governance_activity_avg": summary.get("governance_activity_avg"),
             "gas_sample_size": summary.get("gas_sample_size"),
-            "autonomy_rate": summary.get("governance_activity_avg")  # legacy compat,
+            "autonomy_rate": summary.get("governance_activity_avg"),  # legacy compat
             "first_entry": first_ts,
             "last_entry": last_ts,
             "platforms": platforms,
@@ -384,6 +407,7 @@ class PraxisViewModel:
             "praxis_mode_on": self._praxis_mode_on,
             "diagnosis": diagnosis,
             "git_available": state.get("git_available", True),
+            "validation_engine": self._get_validation_engine_status(),
         }
 
     # ------------------------------------------------------------------

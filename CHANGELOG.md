@@ -1,4 +1,24 @@
-﻿## v0.14.0 (2026-05-07) — Cross-Validation via LLM-as-Judge
+﻿## v0.15.0 (2026-05-08) — Validation Engine UI + Judge Type Transparency
+
+### New features
+- **Dashboard validation engine section:** Shows L1 heuristics status, L2 judge mode (LLM or rule-based), Ollama availability
+- **ViewModel Ollama detection:** Auto-checks Ollama on dashboard refresh, reports model availability
+- **Judge type tracking:** cross_validation.judge_type field records which judge was used (llm / rule_based / rule_based_fallback)
+- **User-facing status indicators:** Green=LLM active, yellow=rule-based fallback, red=unavailable
+
+### UX
+- L1 status: always active (pure Python rules)
+- L2 status: shows Ollama model name if available, or helpful tip to install
+- Ollama models list displayed for troubleshooting
+- Cross-validation auto-selects best available judge
+
+### Files changed
+- desktop/views/dashboard.py — validation engine status section
+- desktop/viewmodel.py — _get_validation_engine_status method
+- collector/praxis_collector.py — version bump
+- ARCHITECTURE.md — version update
+- install.ps1, install.sh — version bump
+## v0.14.0 (2026-05-07) — Cross-Validation via LLM-as-Judge
 
 ### New features
 - **LLM-as-Judge module:** Local Ollama independently assesses governance signals per session
@@ -222,6 +242,7 @@ All 7 critical findings from the Cowork scientific foundation audit resolved.
 - Bilingual surveys and consent forms (EN/ES)
 - Anonymization and export pipeline
 - Python 3.8+ stdlib only
+
 
 
 

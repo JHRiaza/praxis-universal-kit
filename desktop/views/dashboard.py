@@ -153,6 +153,57 @@ class DashboardView(ctk.CTkScrollableFrame):
         card_rows = (len(card_data) + 2) // 3
         self._row = cards_start_row + card_rows
 
+        # --- Validation Engine Status ---
+        val_title = ctk.CTkLabel(
+            self,
+            text="\U0001f9ec Validation Engine",
+            font=ctk.CTkFont(size=16, weight="bold"),
+        )
+        val_title.grid(
+            row=self._next_row(), column=0, columnspan=3,
+            padx=20, pady=(16, 5), sticky="w",
+        )
+
+        # L1 status
+        self._l1_status = ctk.CTkLabel(
+            self,
+            text="L1 Heuristics: checking...",
+            font=ctk.CTkFont(size=13),
+            wraplength=680,
+            justify="left",
+        )
+        self._l1_status.grid(
+            row=self._next_row(), column=0, columnspan=3,
+            padx=20, pady=(0, 4), sticky="w",
+        )
+
+        # L2 status (Ollama or rule-based)
+        self._l2_status = ctk.CTkLabel(
+            self,
+            text="L2 Judge: checking...",
+            font=ctk.CTkFont(size=13),
+            wraplength=680,
+            justify="left",
+        )
+        self._l2_status.grid(
+            row=self._next_row(), column=0, columnspan=3,
+            padx=20, pady=(0, 4), sticky="w",
+        )
+
+        # Ollama detail line
+        self._ollama_detail = ctk.CTkLabel(
+            self,
+            text="",
+            font=ctk.CTkFont(size=12),
+            text_color="gray",
+            wraplength=680,
+            justify="left",
+        )
+        self._ollama_detail.grid(
+            row=self._next_row(), column=0, columnspan=3,
+            padx=20, pady=(0, 12), sticky="w",
+        )
+
         # Platforms section
         plat_title = ctk.CTkLabel(
             self,
@@ -315,6 +366,52 @@ class DashboardView(ctk.CTkScrollableFrame):
         for key, value in mapping.items():
             if key in self._cards:
                 self._cards[key].configure(text=value)
+
+        # Validation Engine status
+        val = data.get("validation_engine", {})
+        if val.get("l1_heuristics"):
+            self._l1_status.configure(
+                text="\u2705 L1 Heuristics: Active (9 rules, deterministic)",
+                text_color="#2ecc71",
+            )
+        else:
+            self._l1_status.configure(
+                text="\u26a0\ufe0f L1 Heuristics: Unavailable",
+                text_color="#e74c3c",
+            )
+
+        l2_type = val.get("l2_judge", "rule_based")
+        l2_label = val.get("l2_judge_label", "Rule-based")
+        if l2_type == "llm":
+            self._l2_status.configure(
+                text="\U0001f916 L2 Judge: {} — LLM cross-validation active".format(l2_label),
+                text_color="#2ecc71",
+            )
+        elif l2_type == "rule_based":
+            ollama_up = val.get("ollama_available", False)
+            if ollama_up:
+                model_name = val.get("ollama_model", "")
+                self._l2_status.configure(
+                    text="\u26a0\ufe0f L2 Judge: Rule-based (Ollama running but {} not loaded)".format(model_name),
+                    text_color="#f39c12",
+                )
+            else:
+                self._l2_status.configure(
+                    text="\U0001f4cb L2 Judge: Rule-based (Ollama not detected)",
+                    text_color="#f39c12",
+                )
+
+        # Ollama detail
+        if val.get("ollama_available"):
+            models = val.get("ollama_models", [])
+            model_str = ", ".join(models[:3]) + ("..." if len(models) > 3 else "")
+            self._ollama_detail.configure(
+                text="Ollama models available: {}".format(model_str),
+            )
+        else:
+            self._ollama_detail.configure(
+                text="Tip: Install Ollama + load a model for LLM-enhanced cross-validation. Rule-based L2 works without it.",
+            )
 
         # Platforms
         platforms = data.get("platforms", [])
