@@ -105,6 +105,11 @@ a = Analysis(
         "adapters.cline",
         "adapters.roo_code",
         "adapters.generic",
+
+        # --- Kit modules (v0.13-v0.15) ---
+        "heuristics",
+        "llm_judge",
+        "rule_judge",
     ],
     hookspath=[],
     hooksconfig={},

@@ -52,8 +52,8 @@ jobs:
             <key>CFBundleName</key><string>PRAXIS Kit</string>
             <key>CFBundleDisplayName</key><string>PRAXIS Kit</string>
             <key>CFBundleIdentifier</key><string>com.praxis-kit.desktop</string>
-            <key>CFBundleVersion</key><string>0.10.0</string>
-            <key>CFBundleShortVersionString</key><string>0.10.0</string>
+            <key>CFBundleVersion</key><string>0.15.0</string>
+            <key>CFBundleShortVersionString</key><string>0.15.0</string>
             <key>CFBundleExecutable</key><string>PRAXIS Kit</string>
             <key>CFBundlePackageType</key><string>APPL</string>
             <key>LSMinimumSystemVersion</key><string>11.0</string>
@@ -84,7 +84,7 @@ jobs:
       - uses: softprops/action-gh-release@v2
         with:
           body: |
-            ## PRAXIS Kit Desktop v0.10.0 — Scientific Integrity Update
+            ## PRAXIS Kit Desktop v0.15.0 — Governance Detection + Cross-Validation
 
             **This release addresses all critical findings from the Cowork scientific foundation audit.**
 
