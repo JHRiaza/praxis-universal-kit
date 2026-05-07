@@ -32,7 +32,7 @@ except ImportError:
 # Constants
 # ---------------------------------------------------------------------------
 
-KIT_VERSION = "0.13.0"
+KIT_VERSION = "0.14.0"
 SCHEMA_VERSION = "0.4"
 PRAXIS_DIR = ".praxis"
 STATE_FILE = "state.json"

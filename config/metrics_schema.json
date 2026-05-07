@@ -373,6 +373,18 @@
         "details": { "type": "object" },
         "heuristic_version": { "type": "string" }
       }
+    },
+    "cross_validation": {
+      "type": ["object", "null"],
+      "description": "Cross-validation results comparing heuristic (L1) vs LLM judge (L2) governance detection",
+      "properties": {
+        "heuristic_signals": { "type": "array", "items": { "type": "string" } },
+        "judge_signals": { "type": "array", "items": { "type": "string" } },
+        "agreement_signals": { "type": "array", "items": { "type": "string" } },
+        "agreement_ratio": { "type": "number", "minimum": 0, "maximum": 1 },
+        "judge_result": { "type": "object" },
+        "cross_validation_version": { "type": "string" }
+      }
     }
   },
 

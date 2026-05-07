@@ -221,6 +221,21 @@ def build_user_diagnosis(
             ))
             flags.append("heuristic_signals_detected")
 
+    # Cross-validation summary (v0.14.0)
+    cv_entries = [e for e in work_entries if e.get("cross_validation")]
+    if cv_entries:
+        ratios = [e["cross_validation"]["agreement_ratio"] for e in cv_entries
+                   if isinstance(e.get("cross_validation"), dict)
+                   and e["cross_validation"].get("agreement_ratio") is not None]
+        if ratios:
+            mean_ratio = sum(ratios) / len(ratios)
+            verdict = ("Strong convergence." if mean_ratio > 0.7
+                       else "Moderate divergence - heuristic rules may need calibration." if mean_ratio > 0.4
+                       else "Significant divergence - investigate disagreements.")
+            insights.append("Cross-validation (heuristic vs LLM judge) shows {:.0%} agreement across {} sessions. {}".format(
+                mean_ratio, len(ratios), verdict
+            ))
+
     if not insights:
         insights.append("Your current data already gives you a baseline picture of time, quality, and rework — enough to start seeing patterns instead of relying on memory.")
 

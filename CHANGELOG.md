@@ -1,4 +1,26 @@
-﻿## v0.13.0 (2026-05-07) — Signal Enrichment + Heuristic Governance Detection
+﻿## v0.14.0 (2026-05-07) — Cross-Validation via LLM-as-Judge
+
+### New features
+- **LLM-as-Judge module:** Local Ollama independently assesses governance signals per session
+- **Cross-validation:** Compares heuristic (L1) vs LLM judge (L2) detections, produces agreement metrics
+- **Cross-validation reports:** Batch analysis with signal distribution, agreement ratios, success rates
+- **Ollama availability check:** check_ollama_available() for graceful degradation
+- **Diagnostics:** Cross-validation agreement summary in insights
+
+### Architecture
+- Three-layer validation stack: L1 heuristics (v0.13) + L2 LLM judge (v0.14) + L3 transcript adapter (v1.x)
+- Zero new dependencies: uses stdlib urllib for Ollama HTTP calls
+- Fully offline: all LLM calls are local, no cloud API
+- Graceful fallback if Ollama unavailable
+
+### Files changed
+- collector/llm_judge.py — NEW: LLM-as-judge + cross-validation engine
+- collector/diagnostics.py — cross-validation insights
+- config/metrics_schema.json — cross_validation field
+- ARCHITECTURE.md — LLM-as-judge docs, validation stack table
+- collector/praxis_collector.py — version bump
+- install.ps1, install.sh — version bump
+## v0.13.0 (2026-05-07) — Signal Enrichment + Heuristic Governance Detection
 
 ### New features
 - **Heuristic governance detection engine:** Rule-based signal detection (Layer 1 of cross-validation stack). 9 detection rules: iteration_loop, human_override, governance_event, long_session, task_failure, active_steering, high_skepticism, quality_outcome_mismatch, high_governance_activity.
@@ -200,5 +222,6 @@ All 7 critical findings from the Cowork scientific foundation audit resolved.
 - Bilingual surveys and consent forms (EN/ES)
 - Anonymization and export pipeline
 - Python 3.8+ stdlib only
+
 
 

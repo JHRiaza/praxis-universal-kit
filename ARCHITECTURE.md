@@ -7,8 +7,8 @@ Cross-platform, platform-agnostic research package for observing and documenting
 The kit instruments workflows to capture what happens — governance emergence, relational governance effects, personality portability, session boundary behavior — before and after introducing structured governance. It supports both software production and creative/design workflows such as game design, writing, and narrative iteration.
 
 ### Current Status
-- **Latest release:** v0.13.0 (2026-05-07)
-- **Active development:** cross-validation infrastructure (v0.14.0)
+- **Latest release:** v0.14.0 (2026-05-07)
+- **Active development:** v1.0 preparation
 - **Pre-admission testing:** single-participant pilot ongoing (n=1, real production data)
 - **Code signing:** pending post-admission (Azure Trusted Signing + Apple Developer)
 - **Study deployment:** targeted for post-PhD admission (Oct-Nov 2026)
@@ -203,6 +203,27 @@ The Kit captures these events through: `governance_tag`, `human_interventions`, 
 ### L1-R Data Integrity (v0.12.0+)
 
 L1-R values with `l1r_source = "derived"` are arithmetic identities computed from checkout_outcome, NOT psychological measurements. All Likert-scale aggregations in diagnostics filter to `l1r_source in ("observed", "mixed")` only. Derived values are retained in the raw data for provenance completeness but excluded from statistical averages.
+
+### LLM-as-Judge Cross-Validation (v0.14.0+)
+
+Layer 2 of the three-layer cross-validation stack. Uses a local Ollama model (default: qwen3:4b) to independently assess governance signals, then compares against Layer 1 heuristic results.
+
+**Cross-validation metrics:**
+- **Agreement ratio**: overlap between heuristic and judge signals / total unique signals
+- **Heuristic-only signals**: detected by rules but not by LLM
+- **Judge-only signals**: detected by LLM but not by rules
+- **Success rate**: percentage of entries where LLM responded with valid JSON
+
+**Report generation:** `praxis validate` produces a full cross-validation report saved as JSON.
+
+**Fallback:** If Ollama is unavailable, cross-validation gracefully degrades. Heuristic results (L1) remain valid independently.
+
+**Three-layer validation stack:**
+| Layer | Method | Version | Status |
+|-------|--------|---------|--------|
+| L1 | Rule-based heuristics | v0.13.0+ | Active |
+| L2 | LLM-as-judge (Ollama) | v0.14.0+ | Active |
+| L3 | Transcript adapter | v1.x | Planned |
 
 ### CLI Commands
 
