@@ -167,7 +167,7 @@ class PraxisApp(ctk.CTk):
 
         version_label = ctk.CTkLabel(
             self._sidebar,
-            text="v0.10.0 Desktop · scientific integrity fix",
+            text="v0.15.0 Desktop · governance detection + cross-validation",
             font=ctk.CTkFont(size=11),
             text_color="gray",
         )

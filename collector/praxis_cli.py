@@ -1530,7 +1530,7 @@ def build_parser() -> argparse.ArgumentParser:
               praxis withdraw
         """),
     )
-    parser.add_argument("--version", action="version", version="PRAXIS Kit 0.10.0")
+    parser.add_argument("--version", action="version", version="PRAXIS Kit 0.15.0")
     parser.add_argument("--lang", choices=["en", "es"], default="en",
                         help="Language for interactive prompts (default: en)")
 
