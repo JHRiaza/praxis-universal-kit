@@ -1,4 +1,26 @@
-﻿## v0.12.0 (2026-05-07) — Scientific Measurement Validity Fix
+﻿## v0.13.0 (2026-05-07) — Signal Enrichment + Heuristic Governance Detection
+
+### New features
+- **Heuristic governance detection engine:** Rule-based signal detection (Layer 1 of cross-validation stack). 9 detection rules: iteration_loop, human_override, governance_event, long_session, task_failure, active_steering, high_skepticism, quality_outcome_mismatch, high_governance_activity.
+- **Delegation depth capture:** 0=direct, 1=delegated, 2=multi-hop (checkout dialog)
+- **Context provision effort:** 1-5 Likert scale (checkout dialog)
+- **Decision latency:** Seconds between session end and checkout (auto-computed)
+- **Heuristic insights in diagnostics:** Most common governance signals reported
+
+### Checkout dialog expanded
+- Delegation depth selector (Direct / Delegated / Multi-hop)
+- Context provision effort Likert (1-5)
+- Window resized to accommodate new fields
+
+### Files changed
+- collector/heuristics.py — NEW: rule-based governance detection engine
+- collector/praxis_collector.py — heuristic integration, delegation, context, latency
+- collector/diagnostics.py — heuristic insights
+- desktop/views/checkout_dialog.py — delegation, context effort fields
+- config/metrics_schema.json — new fields
+- ARCHITECTURE.md — heuristic docs
+- install.ps1, install.sh — version bump
+## v0.12.0 (2026-05-07) — Scientific Measurement Validity Fix
 
 ### Breaking changes
 - utonomous field: now 
@@ -178,4 +200,5 @@ All 7 critical findings from the Cowork scientific foundation audit resolved.
 - Bilingual surveys and consent forms (EN/ES)
 - Anonymization and export pipeline
 - Python 3.8+ stdlib only
+
 

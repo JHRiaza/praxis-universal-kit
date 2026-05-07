@@ -21,10 +21,12 @@ class CheckoutDialog(ctk.CTkToplevel):
         self._outcome = ctk.StringVar(value="solved")
         self._governance = ctk.StringVar(value="none")
         self._steering = ctk.IntVar(value=3)
+        self._delegation = ctk.IntVar(value=0)
+        self._context_effort = ctk.IntVar(value=2)
 
         self.title("Session Checkout")
-        self.geometry("560x580")
-        self.minsize(520, 500)
+        self.geometry("580x780")
+        self.minsize(540, 700)
         self.transient(master)
         self.grab_set()
 
@@ -133,18 +135,52 @@ class CheckoutDialog(ctk.CTkToplevel):
                 font=ctk.CTkFont(size=12),
             ).grid(row=0, column=idx, padx=2, pady=4, sticky="w")
 
-        # Multi-line session notes (v0.12.0: expanded from 1-line task summary)
+        # Delegation depth (v0.13.0)
+        ctk.CTkLabel(
+            frame,
+            text="Delegation depth?",
+            font=ctk.CTkFont(size=13),
+            text_color="gray",
+        ).grid(row=8, column=0, padx=18, pady=(0, 4), sticky="w")
+
+        del_row = ctk.CTkFrame(frame, fg_color="transparent")
+        del_row.grid(row=9, column=0, padx=18, pady=(0, 14), sticky="ew")
+        for idx, (val, label) in enumerate([(0, "Direct"), (1, "Delegated"), (2, "Multi-hop")]):
+            del_row.grid_columnconfigure(idx, weight=1)
+            ctk.CTkRadioButton(
+                del_row, text=label, variable=self._delegation, value=val,
+                font=ctk.CTkFont(size=12),
+            ).grid(row=0, column=idx, padx=4, pady=4, sticky="w")
+
+        # Context provision effort (v0.13.0)
+        ctk.CTkLabel(
+            frame,
+            text="Context provided upfront? (1=minimal, 5=extensive)",
+            font=ctk.CTkFont(size=13),
+            text_color="gray",
+        ).grid(row=10, column=0, padx=18, pady=(0, 4), sticky="w")
+
+        ctx_row = ctk.CTkFrame(frame, fg_color="transparent")
+        ctx_row.grid(row=11, column=0, padx=18, pady=(0, 14), sticky="ew")
+        for idx, val in enumerate([1, 2, 3, 4, 5]):
+            ctx_row.grid_columnconfigure(idx, weight=1)
+            ctk.CTkRadioButton(
+                ctx_row, text=str(val), variable=self._context_effort, value=val,
+                font=ctk.CTkFont(size=12),
+            ).grid(row=0, column=idx, padx=4, pady=4, sticky="w")
+
+        # Multi-line session notes
         ctk.CTkLabel(
             frame,
             text="Session notes (what happened?)",
             font=ctk.CTkFont(size=14, weight="bold"),
-        ).grid(row=8, column=0, padx=18, pady=(0, 6), sticky="w")
+        ).grid(row=12, column=0, padx=18, pady=(0, 6), sticky="w")
 
         self._notes_text = ctk.CTkTextbox(frame, height=80)
-        self._notes_text.grid(row=9, column=0, padx=18, pady=(0, 18), sticky="ew")
+        self._notes_text.grid(row=13, column=0, padx=18, pady=(0, 18), sticky="ew")
 
         buttons = ctk.CTkFrame(frame, fg_color="transparent")
-        buttons.grid(row=10, column=0, padx=18, pady=(0, 18), sticky="ew")
+        buttons.grid(row=14, column=0, padx=18, pady=(0, 18), sticky="ew")
         buttons.grid_columnconfigure(0, weight=1)
         buttons.grid_columnconfigure(1, weight=1)
 
@@ -185,6 +221,8 @@ class CheckoutDialog(ctk.CTkToplevel):
             "governance_tag": self._governance.get() or "none",
             "task": notes_text,
             "steering_intensity": self._steering.get(),
+            "delegation_depth": self._delegation.get(),
+            "context_provision_effort": self._context_effort.get(),
         }
         self.destroy()
 

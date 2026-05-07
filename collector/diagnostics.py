@@ -206,6 +206,21 @@ def build_user_diagnosis(
         insights.append("Personality portability is unstable in {} logged cases, which means the same governance setup does not always produce the same behavioral surface.".format(mismatch_count))
         flags.append("personality_drift")
 
+    # Heuristic governance detection summary (v0.13.0)
+    heuristic_entries = [e.get("heuristic_analysis") for e in work_entries if e.get("heuristic_analysis")]
+    if heuristic_entries:
+        total_signals = sum(h.get("signal_count", 0) for h in heuristic_entries)
+        most_common = {}  # type: Dict[str, int]
+        for h in heuristic_entries:
+            for sig in h.get("signals", []):
+                most_common[sig] = most_common.get(sig, 0) + 1
+        if most_common:
+            top_signal = max(most_common, key=most_common.get)
+            insights.append("Heuristic governance detection found {} signals across {} sessions. Most common: {} ({}x).".format(
+                total_signals, len(heuristic_entries), top_signal, most_common[top_signal]
+            ))
+            flags.append("heuristic_signals_detected")
+
     if not insights:
         insights.append("Your current data already gives you a baseline picture of time, quality, and rework — enough to start seeing patterns instead of relying on memory.")
 

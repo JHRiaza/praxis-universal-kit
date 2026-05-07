@@ -22,12 +22,17 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+try:
+    from collector.heuristics import detect_governance_signals as _detect_heuristics
+except ImportError:
+    from heuristics import detect_governance_signals as _detect_heuristics
+
 
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
 
-KIT_VERSION = "0.12.0"
+KIT_VERSION = "0.13.0"
 SCHEMA_VERSION = "0.4"
 PRAXIS_DIR = ".praxis"
 STATE_FILE = "state.json"
@@ -601,6 +606,22 @@ def apply_smart_checkout(
     updated["governance_activity_score"] = gas
     updated["gas_components"] = gas_components
     updated["autonomous"] = gas < 0.3 if gas is not None else None
+    # Heuristic governance detection (Layer 1)
+    updated["heuristic_analysis"] = _detect_heuristics(updated)
+    # Delegation depth + context effort from checkout result
+    updated["delegation_depth"] = result.get("delegation_depth", 0) if result else 0
+    updated["context_provision_effort"] = result.get("context_provision_effort", 2) if result else 2
+    # Decision latency: time between session end and checkout
+    session_end = entry.get("passive_capture", {}).get("ended_at") if isinstance(entry.get("passive_capture"), dict) else None
+    if session_end:
+        try:
+            end_dt = datetime.fromisoformat(session_end.replace("Z", "+00:00"))
+            checkout_dt = datetime.now(timezone.utc)
+            updated["decision_latency_seconds"] = round((checkout_dt - end_dt).total_seconds(), 1)
+        except Exception:
+            updated["decision_latency_seconds"] = None
+    else:
+        updated["decision_latency_seconds"] = None
     rel = estimate_reliability(updated)
     updated["reliability_score"] = rel  # deprecated alias
     updated["provenance_completeness"] = rel  # canonical name
@@ -1147,6 +1168,8 @@ def build_metric_entry(
     entry["governance_activity_score"] = gas
     entry["gas_components"] = gas_components
     entry["autonomous"] = gas < 0.3 if gas is not None else None
+    # Heuristic governance detection (Layer 1)
+    entry["heuristic_analysis"] = _detect_heuristics(entry)
 
     if layer is not None:
         entry["praxis_layer"] = layer

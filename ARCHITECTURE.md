@@ -7,8 +7,8 @@ Cross-platform, platform-agnostic research package for observing and documenting
 The kit instruments workflows to capture what happens — governance emergence, relational governance effects, personality portability, session boundary behavior — before and after introducing structured governance. It supports both software production and creative/design workflows such as game design, writing, and narrative iteration.
 
 ### Current Status
-- **Latest release:** v0.12.0 (2026-05-07)
-- **Active development:** scientific measurement validity + signal enrichment
+- **Latest release:** v0.13.0 (2026-05-07)
+- **Active development:** cross-validation infrastructure (v0.14.0)
 - **Pre-admission testing:** single-participant pilot ongoing (n=1, real production data)
 - **Code signing:** pending post-admission (Azure Trusted Signing + Apple Developer)
 - **Study deployment:** targeted for post-PhD admission (Oct-Nov 2026)

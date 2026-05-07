@@ -346,6 +346,33 @@
     "notes": {
       "type": "string",
       "description": "Free-text notes about this sprint"
+    },
+    "delegation_depth": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2,
+      "description": "How many layers of delegation: 0=direct human-AI, 1=delegated via orchestrator, 2=multi-hop delegation"
+    },
+    "context_provision_effort": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 5,
+      "description": "How much context did the human provide upfront? (1=minimal, 5=extensive)"
+    },
+    "decision_latency_seconds": {
+      "type": ["number", "null"],
+      "description": "Seconds between session end and checkout completion. Proxy for deliberation time."
+    },
+    "heuristic_analysis": {
+      "type": ["object", "null"],
+      "description": "Rule-based heuristic governance detection results (Layer 1 of cross-validation stack)",
+      "properties": {
+        "signals": { "type": "array", "items": { "type": "string" } },
+        "signal_count": { "type": "integer" },
+        "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+        "details": { "type": "object" },
+        "heuristic_version": { "type": "string" }
+      }
     }
   },
 
