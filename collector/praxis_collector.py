@@ -27,14 +27,53 @@ from typing import Any, Dict, List, Optional, Tuple
 # Constants
 # ---------------------------------------------------------------------------
 
-KIT_VERSION = "0.10.0"
-SCHEMA_VERSION = "0.3"
+KIT_VERSION = "0.12.0"
+SCHEMA_VERSION = "0.4"
 PRAXIS_DIR = ".praxis"
 STATE_FILE = "state.json"
 METRICS_FILE = "metrics.jsonl"
 GOVERNANCE_FILE = "governance.jsonl"
 SESSIONS_FILE = "sessions.jsonl"
 DEFAULT_AUTO_QUALITY = 3
+
+
+def compute_gas(interventions, iterations, governance_tag, l1r_observations):
+    """Compute Governance Activity Score (GAS) — composite metric replacing binary autonomy.
+
+    GAS 0.0 = fully autonomous, 1.0 = fully human-governed.
+    Returns None if governance activity cannot be determined (passive-only sessions).
+    """
+    if l1r_observations is None:
+        l1r_observations = {}
+
+    # Correction density: how often the human corrected the AI
+    correction_density = min(1.0, interventions / max(iterations, 1)) if iterations > 0 else 0.0
+
+    # Tag weight: was a governance event tagged?
+    tag_weight = 0.3 if governance_tag and governance_tag != "none" else 0.0
+
+    # Steering proxy: from Likert 1-5, normalized to 0.0-1.0
+    steering_raw = l1r_observations.get("steering_intensity", 3)
+    steering_proxy = (steering_raw - 1) / 4.0
+
+    # Skepticism signal: from Likert 1-7, normalized to 0.0-1.0
+    skepticism_raw = l1r_observations.get("skepticism_activation", 4)
+    skepticism_signal = skepticism_raw / 7.0
+
+    gas = round(
+        0.25 * correction_density +
+        0.25 * tag_weight +
+        0.25 * steering_proxy +
+        0.25 * skepticism_signal,
+        3
+    )
+
+    return gas, {
+        "correction_density": round(correction_density, 3),
+        "tag_weight": round(tag_weight, 3),
+        "steering_proxy": round(steering_proxy, 3),
+        "skepticism_signal": round(skepticism_signal, 3),
+    }
 
 VALID_CONDITIONS = ("passive", "checked_out", "governance_tagged", "reviewed")
 VALID_PHASES = ("obs",)  # legacy: ("A", "B")
@@ -549,7 +588,6 @@ def apply_smart_checkout(
         "first_attempt": int(mapping["iterations"]) <= 1,
         "human_interventions": interventions,
         "interventions": interventions,
-        "autonomous": interventions == 0,
         "reviewed": True,
         "capture_mode": "smart_checkout",
         "governance_tag": tag,
@@ -558,6 +596,11 @@ def apply_smart_checkout(
         "l1r_source": l1r_source,
         "field_provenance": provenance,
     })
+    # Compute GAS (Governance Activity Score)
+    gas, gas_components = compute_gas(interventions, int(mapping["iterations"]), tag, l1r)
+    updated["governance_activity_score"] = gas
+    updated["gas_components"] = gas_components
+    updated["autonomous"] = gas < 0.3 if gas is not None else None
     rel = estimate_reliability(updated)
     updated["reliability_score"] = rel  # deprecated alias
     updated["provenance_completeness"] = rel  # canonical name
@@ -637,7 +680,9 @@ def build_auto_session_entry(
         "quality": DEFAULT_AUTO_QUALITY,
         "human_interventions": 0,
         "interventions": 0,
-        "autonomous": True,
+        "autonomous": None,  # Cannot determine from passive capture
+        "governance_activity_score": None,  # GAS: null for passive sessions
+        "gas_components": None,
         "first_attempt": True,
         "iterations": 1,
         "session_id": session_record.get("id") or _get_session_id(state),
@@ -1086,7 +1131,6 @@ def build_metric_entry(
         "model_executor": model.strip(),
         "quality_self": quality,
         "human_interventions": interventions,
-        "autonomous": interventions == 0,
         "first_attempt": iterations == 1,
         "session_id": _get_session_id(state),
         # Legacy aliases retained for existing analysis/export code.
@@ -1097,6 +1141,12 @@ def build_metric_entry(
         "iterations": iterations,
         "interventions": interventions,
     }
+
+    # Compute GAS for manual entries
+    gas, gas_components = compute_gas(interventions, iterations, None, l1r_observations)
+    entry["governance_activity_score"] = gas
+    entry["gas_components"] = gas_components
+    entry["autonomous"] = gas < 0.3 if gas is not None else None
 
     if layer is not None:
         entry["praxis_layer"] = layer

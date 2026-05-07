@@ -7,8 +7,8 @@ Cross-platform, platform-agnostic research package for observing and documenting
 The kit instruments workflows to capture what happens — governance emergence, relational governance effects, personality portability, session boundary behavior — before and after introducing structured governance. It supports both software production and creative/design workflows such as game design, writing, and narrative iteration.
 
 ### Current Status
-- **Latest release:** v0.10.0 (2026-04-30)
-- **Active development:** plugin adapter system for custom AI platform integrations
+- **Latest release:** v0.12.0 (2026-05-07)
+- **Active development:** scientific measurement validity + signal enrichment
 - **Pre-admission testing:** single-participant pilot ongoing (n=1, real production data)
 - **Code signing:** pending post-admission (Azure Trusted Signing + Apple Developer)
 - **Study deployment:** targeted for post-PhD admission (Oct-Nov 2026)
@@ -169,6 +169,40 @@ Derived L1-R values are NOT psychological measurements and must not be analyzed 
 When a session starts after a break, the schema captures:
 - Memory recovery: instant / partial / lost
 - Calibration recovery: immediate / gradual / significant_degradation
+
+### Governance Activity Score (GAS) — v0.12.0+
+
+The binary `autonomous` field (v0.11 and earlier) conflated "AI produced acceptable output" with "human did not govern." GAS replaces it with a composite metric:
+
+**Formula:**
+```
+GAS = 0.25 x correction_density + 0.25 x tag_weight + 0.25 x steering_proxy + 0.25 x skepticism_signal
+```
+
+| Component | Source | Range |
+|-----------|--------|-------|
+| Correction density | `interventions / max(iterations, 1)` | 0.0-1.0 |
+| Tag weight | governance_tag != "none" -> 0.3, else 0.0 | 0.0-0.3 |
+| Steering proxy | `steering_intensity` (1-5 Likert) normalized | 0.0-1.0 |
+| Skepticism signal | `l1r_observations.skepticism_activation / 7` | 0.0-1.0 |
+
+- **Passive-only sessions:** GAS = null (governance activity cannot be determined)
+- **Legacy:** `autonomous` derived from GAS < 0.3 for backward compatibility
+- **Interpretation:** GAS 0.0 = fully autonomous, GAS 1.0 = fully human-governed
+
+### Operational Definition: Governance Emergence (v0.12.0+)
+
+A **governance emergence event** occurs when any of the following is observed:
+1. A human creates, modifies, or removes a rule, protocol, or constraint that shapes AI behavior
+2. A human overrides, corrects, or redirects AI output mid-task
+3. A human provides explicit context, delegation briefs, or steering instructions that constrain the AI's operating space
+4. A session boundary triggers memory recovery or calibration adjustment
+
+The Kit captures these events through: `governance_tag`, `human_interventions`, `steering_intensity`, `governance_events` log, and `session_boundary` observations.
+
+### L1-R Data Integrity (v0.12.0+)
+
+L1-R values with `l1r_source = "derived"` are arithmetic identities computed from checkout_outcome, NOT psychological measurements. All Likert-scale aggregations in diagnostics filter to `l1r_source in ("observed", "mixed")` only. Derived values are retained in the raw data for provenance completeness but excluded from statistical averages.
 
 ### CLI Commands
 

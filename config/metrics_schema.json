@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "PRAXIS Sprint Metrics Schema v0.3",
-  "description": "Sprint-level metrics for PRAXIS observational field study. Purely descriptive — no experimental conditions. Supports passive capture, smart checkout, and manual logging with full provenance tracking.",
+  "title": "PRAXIS Sprint Metrics Schema v0.4",
+  "description": "Sprint-level metrics for PRAXIS observational field study. Purely descriptive — no experimental conditions. Supports passive capture, smart checkout, and manual logging with full provenance tracking. v0.4 adds GAS (Governance Activity Score) and steering_intensity.",
   "type": "object",
   "required": [
     "id",
@@ -111,8 +111,24 @@
       "description": "Alias for human_interventions (legacy). human_interventions is canonical."
     },
     "autonomous": {
-      "type": "boolean",
-      "description": "Derived boolean: true when human_interventions==0. CAUTION: for passive capture sessions this defaults to true regardless of actual autonomy. Must be calibrated via checkout for meaningful statistics."
+      "type": ["boolean", "null"],
+      "description": "DEPRECATED — use governance_activity_score instead. Derived from GAS < 0.3 for backward compatibility. null for passive sessions. Retained for backward compat with v0.11 and earlier."
+    },
+    "governance_activity_score": {
+      "type": ["number", "null"],
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Governance Activity Score (GAS). Composite metric replacing binary 'autonomous'. 0.0=fully autonomous, 1.0=fully human-governed. null for passive sessions where governance activity cannot be determined. Components: correction_density (0.25), tag_weight (0.25), steering_proxy (0.25), skepticism_signal (0.25)."
+    },
+    "gas_components": {
+      "type": ["object", "null"],
+      "description": "Decomposed GAS sub-scores for analysis. null for passive sessions.",
+      "properties": {
+        "correction_density": { "type": "number", "minimum": 0, "maximum": 1, "description": "interventions / max(iterations, 1), capped at 1.0" },
+        "tag_weight": { "type": "number", "minimum": 0, "maximum": 0.3, "description": "0.3 if governance_tag != 'none', else 0.0" },
+        "steering_proxy": { "type": "number", "minimum": 0, "maximum": 1, "description": "steering_intensity (1-5) normalized to 0.0-1.0" },
+        "skepticism_signal": { "type": "number", "minimum": 0, "maximum": 1, "description": "l1r_observations.skepticism_activation / 7" }
+      }
     },
     "first_attempt": {
       "type": "boolean",
@@ -212,6 +228,10 @@
       "type": "object",
       "description": "L1-R Relational governance observations. IMPORTANT: fields may be directly observed (participant-rated) or algorithmically derived from checkout_outcome. Check l1r_source to determine which.",
       "properties": {
+        "steering_intensity": {
+          "type": "integer", "minimum": 1, "maximum": 5,
+          "description": "How much did you steer/guide the AI during this session? (1=none, 5=constant) — v0.12.0+"
+        },
         "trust_willingness": {
           "type": "integer", "minimum": 1, "maximum": 7,
           "description": "Would you follow this AI's advice without verifying? (Likert 1-7)"

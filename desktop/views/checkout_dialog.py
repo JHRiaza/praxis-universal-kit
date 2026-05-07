@@ -1,4 +1,4 @@
-"""PRAXIS Desktop — Smart session checkout dialog."""
+"""PRAXIS Desktop - Smart session checkout dialog (v0.12.0)."""
 
 from __future__ import annotations
 
@@ -12,17 +12,19 @@ from collector.praxis_collector import get_session_checkout_context
 class CheckoutDialog(ctk.CTkToplevel):
     """Modal smart checkout popup shown at the end of a passive session."""
 
-    def __init__(self, master: Any, entry: Dict[str, Any]) -> None:
+    def __init__(self, master, entry):
+        # type: (Any, Dict[str, Any]) -> None
         super().__init__(master)
         self._entry = entry
-        self.result: Optional[Dict[str, str]] = None
+        self.result = None  # type: Optional[Dict[str, str]]
         self._context = get_session_checkout_context(entry)
         self._outcome = ctk.StringVar(value="solved")
         self._governance = ctk.StringVar(value="none")
+        self._steering = ctk.IntVar(value=3)
 
         self.title("Session Checkout")
-        self.geometry("560x420")
-        self.minsize(520, 380)
+        self.geometry("560x580")
+        self.minsize(520, 500)
         self.transient(master)
         self.grab_set()
 
@@ -41,16 +43,23 @@ class CheckoutDialog(ctk.CTkToplevel):
         ctk.CTkLabel(
             frame,
             text=(
-                f"{self._context.get('started', '?')} → {self._context.get('ended', '?')} "
-                f"({self._context.get('duration_minutes', 0)} min)\n"
-                f"{self._context.get('platform_label', 'Unknown')}\n"
-                f"{self._context.get('git_label', 'No repo detected')}"
+                "{} - {} "
+                "({} min)\n"
+                "{}\n"
+                "{}".format(
+                    self._context.get("started", "?"),
+                    self._context.get("ended", "?"),
+                    self._context.get("duration_minutes", 0),
+                    self._context.get("platform_label", "Unknown"),
+                    self._context.get("git_label", "No repo detected"),
+                )
             ),
             justify="left",
             font=ctk.CTkFont(size=13),
             text_color="gray",
         ).grid(row=1, column=0, padx=18, pady=(0, 12), sticky="w")
 
+        # Outcome
         ctk.CTkLabel(
             frame,
             text="What happened?",
@@ -60,9 +69,9 @@ class CheckoutDialog(ctk.CTkToplevel):
         outcome_row = ctk.CTkFrame(frame, fg_color="transparent")
         outcome_row.grid(row=3, column=0, padx=18, pady=(0, 14), sticky="ew")
         for idx, (value, label, color) in enumerate([
-            ("solved", "✅ Solved", "#2ecc71"),
-            ("partial", "⚠️ Partially", "#f39c12"),
-            ("abandoned", "❌ Abandoned", "#e74c3c"),
+            ("solved", "Solved", "#2ecc71"),
+            ("partial", "Partially", "#f39c12"),
+            ("abandoned", "Abandoned", "#e74c3c"),
         ]):
             outcome_row.grid_columnconfigure(idx, weight=1)
             ctk.CTkRadioButton(
@@ -75,6 +84,7 @@ class CheckoutDialog(ctk.CTkToplevel):
                 font=ctk.CTkFont(size=14, weight="bold"),
             ).grid(row=0, column=idx, padx=6, pady=4, sticky="w")
 
+        # Governance tag
         ctk.CTkLabel(
             frame,
             text="Governance moment? (optional)",
@@ -84,12 +94,12 @@ class CheckoutDialog(ctk.CTkToplevel):
         tags_frame = ctk.CTkFrame(frame, fg_color="transparent")
         tags_frame.grid(row=5, column=0, padx=18, pady=(0, 14), sticky="ew")
         tag_options = [
-            ("context_loss", "🔄 Context loss"),
-            ("override", "👤 Overrode AI"),
-            ("ai_off_track", "🤔 AI off track"),
-            ("scope_creep", "📏 Scope creep"),
-            ("model_switch", "🔀 Model switch"),
-            ("none", "🚫 None"),
+            ("context_loss", "Context loss"),
+            ("override", "Overrode AI"),
+            ("ai_off_track", "AI off track"),
+            ("scope_creep", "Scope creep"),
+            ("model_switch", "Model switch"),
+            ("none", "None"),
         ]
         for idx, (value, label) in enumerate(tag_options):
             row = idx // 2
@@ -103,17 +113,38 @@ class CheckoutDialog(ctk.CTkToplevel):
                 font=ctk.CTkFont(size=13),
             ).grid(row=row, column=col, padx=6, pady=4, sticky="w")
 
+        # Steering intensity (NEW in v0.12.0)
         ctk.CTkLabel(
             frame,
-            text="1-line task summary (optional)",
+            text="How much did you steer the AI?",
             font=ctk.CTkFont(size=14, weight="bold"),
-        ).grid(row=6, column=0, padx=18, pady=(0, 6), sticky="w")
+        ).grid(row=6, column=0, padx=18, pady=(2, 8), sticky="w")
 
-        self._task_entry = ctk.CTkEntry(frame, height=34, placeholder_text="What were you trying to do?")
-        self._task_entry.grid(row=7, column=0, padx=18, pady=(0, 18), sticky="ew")
+        steering_row = ctk.CTkFrame(frame, fg_color="transparent")
+        steering_row.grid(row=7, column=0, padx=18, pady=(0, 14), sticky="ew")
+        label_map = {1: "1 None", 2: "2 Light", 3: "3 Some", 4: "4 Active", 5: "5 Constant"}
+        for idx, val in enumerate([1, 2, 3, 4, 5]):
+            steering_row.grid_columnconfigure(idx, weight=1)
+            ctk.CTkRadioButton(
+                steering_row,
+                text=label_map[val],
+                variable=self._steering,
+                value=val,
+                font=ctk.CTkFont(size=12),
+            ).grid(row=0, column=idx, padx=2, pady=4, sticky="w")
+
+        # Multi-line session notes (v0.12.0: expanded from 1-line task summary)
+        ctk.CTkLabel(
+            frame,
+            text="Session notes (what happened?)",
+            font=ctk.CTkFont(size=14, weight="bold"),
+        ).grid(row=8, column=0, padx=18, pady=(0, 6), sticky="w")
+
+        self._notes_text = ctk.CTkTextbox(frame, height=80)
+        self._notes_text.grid(row=9, column=0, padx=18, pady=(0, 18), sticky="ew")
 
         buttons = ctk.CTkFrame(frame, fg_color="transparent")
-        buttons.grid(row=8, column=0, padx=18, pady=(0, 18), sticky="ew")
+        buttons.grid(row=10, column=0, padx=18, pady=(0, 18), sticky="ew")
         buttons.grid_columnconfigure(0, weight=1)
         buttons.grid_columnconfigure(1, weight=1)
 
@@ -138,25 +169,31 @@ class CheckoutDialog(ctk.CTkToplevel):
         self.protocol("WM_DELETE_WINDOW", self._skip)
         self.after(50, self._focus)
 
-    def _focus(self) -> None:
+    def _focus(self):
+        # type: () -> None
         try:
             self.focus_force()
-            self._task_entry.focus_set()
+            self._notes_text.focus_set()
         except Exception:
             pass
 
-    def _save(self) -> None:
+    def _save(self):
+        # type: () -> None
+        notes_text = self._notes_text.get("1.0", "end-1c").strip()
         self.result = {
             "outcome": self._outcome.get() or "solved",
             "governance_tag": self._governance.get() or "none",
-            "task": self._task_entry.get().strip(),
+            "task": notes_text,
+            "steering_intensity": self._steering.get(),
         }
         self.destroy()
 
-    def _skip(self) -> None:
+    def _skip(self):
+        # type: () -> None
         self.result = None
         self.destroy()
 
-    def show(self) -> Optional[Dict[str, str]]:
+    def show(self):
+        # type: () -> Optional[Dict[str, str]]
         self.wait_window()
         return self.result

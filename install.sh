@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env bash
+#!/usr/bin/env bash
 # PRAXIS Universal Kit â€” Unix Installer (macOS / Linux)
 # =====================================================
 # Usage: bash install.sh [--lang es] [--dir /path/to/project]

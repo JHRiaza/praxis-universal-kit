@@ -120,7 +120,7 @@ class DashboardView(ctk.CTkScrollableFrame):
             ("avg_quality", "Avg Quality", "—"),
             ("avg_reliability", "Avg Reliability", "—"),
             ("avg_duration", "Avg Duration (min)", "—"),
-            ("autonomy_rate", "Autonomy Rate", "—"),
+            ("governance_activity_avg", "Governance Activity (GAS)", "—"),
         ]
 
         cards_start_row = self._next_row()
@@ -307,7 +307,7 @@ class DashboardView(ctk.CTkScrollableFrame):
                 if data.get("avg_duration") is not None else "—"
             ),
             "autonomy_rate": (
-                f"{data['autonomy_rate']:.0%}"
+                "{}".format(round(data['governance_activity_avg'], 2))
                 if data.get("autonomy_rate") is not None else "—"
             ),
         }

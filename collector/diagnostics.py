@@ -2,6 +2,8 @@
 
 Turns logged PRAXIS data into a compact personal diagnosis so participants
 get immediate value from contributing to the study.
+
+v0.12.0: GAS replaces binary autonomy. L1-R filtering by l1r_source.
 """
 
 from __future__ import annotations
@@ -10,19 +12,22 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 
-def _mean(values: List[float]) -> Optional[float]:
+def _mean(values):
+    # type: (List[float]) -> Optional[float]
     if not values:
         return None
     return round(sum(values) / len(values), 2)
 
 
-def _pct(value: Optional[float]) -> Optional[int]:
+def _pct(value):
+    # type: (Optional[float]) -> Optional[int]
     if value is None:
         return None
     return round(value * 100)
 
 
-def _parse_ts(ts: str) -> Optional[datetime]:
+def _parse_ts(ts):
+    # type: (str) -> Optional[datetime]
     if not ts:
         return None
     try:
@@ -31,17 +36,19 @@ def _parse_ts(ts: str) -> Optional[datetime]:
         return None
 
 
-def _format_percent(value: Optional[float]) -> str:
+def _format_percent(value):
+    # type: (Optional[float]) -> str
     if value is None:
         return "n/a"
-    return f"{round(value * 100)}%"
+    return "{}%".format(round(value * 100))
 
 
 def build_user_diagnosis(
-    entries: List[Dict[str, Any]],
-    governance_events: Optional[List[Dict[str, Any]]] = None,
-    state: Optional[Dict[str, Any]] = None,
-) -> Dict[str, Any]:
+    entries,  # type: List[Dict[str, Any]]
+    governance_events=None,  # type: Optional[List[Dict[str, Any]]]
+    state=None,  # type: Optional[Dict[str, Any]]
+):
+    # type: (...) -> Dict[str, Any]
     governance_events = governance_events or []
     state = state or {}
     work_entries = [e for e in entries if e.get("type", "sprint") == "sprint"]
@@ -52,9 +59,9 @@ def build_user_diagnosis(
             "headline": "Log a few real AI-assisted work sessions to unlock your workflow diagnosis.",
             "summary": "PRAXIS becomes useful once it can compare duration, quality, rework, trust, and session-boundary patterns.",
             "insights": [
-                "You’ll see where your AI workflow costs time.",
-                "You’ll see where trust may be too high or too low.",
-                "You’ll get a longitudinal picture instead of one-off impressions.",
+                "You'll see where your AI workflow costs time.",
+                "You'll see where trust may be too high or too low.",
+                "You'll get a longitudinal picture instead of one-off impressions.",
             ],
             "user_value": [
                 "A mirror for your AI workflow",
@@ -68,13 +75,18 @@ def build_user_diagnosis(
     durations = [e.get("duration_minutes", e.get("duration")) for e in work_entries if isinstance(e.get("duration_minutes", e.get("duration")), int)]
     qualities = [e.get("quality_self", e.get("quality")) for e in work_entries if isinstance(e.get("quality_self", e.get("quality")), int)]
     iterations = [e.get("iterations") for e in work_entries if isinstance(e.get("iterations"), int)]
-    autonomy_values = [1 if e.get("autonomous") else 0 for e in work_entries if "autonomous" in e]
-    interventions = [e.get("human_interventions", e.get("interventions")) for e in work_entries if isinstance(e.get("human_interventions", e.get("interventions")), int)]
+    interventions_list = [e.get("human_interventions", e.get("interventions")) for e in work_entries if isinstance(e.get("human_interventions", e.get("interventions")), int)]
     reliability_scores = [float(e.get("reliability_score")) for e in work_entries if isinstance(e.get("reliability_score"), (int, float))]
+
+    # GAS (Governance Activity Score) — replaces binary autonomy
+    gas_values = [e.get("governance_activity_score") for e in work_entries if e.get("governance_activity_score") is not None]
+
     passive_only_count = 0
     reviewed_count = 0
     manual_count = 0
 
+    # L1-R: ONLY use observed/mixed values for Likert aggregations
+    # Derived values are arithmetic identities, not psychological measurements
     trust = []
     skepticism = []
     warmth = []
@@ -91,15 +103,20 @@ def build_user_diagnosis(
             manual_count += 1
         if entry.get("reviewed"):
             reviewed_count += 1
+
+        # L1-R filtering: only use observed/mixed source
         l1r = entry.get("l1r_observations") or {}
-        if isinstance(l1r.get("trust_willingness"), int):
-            trust.append(l1r["trust_willingness"])
-        if isinstance(l1r.get("skepticism_activation"), int):
-            skepticism.append(l1r["skepticism_activation"])
-        if isinstance(l1r.get("perceived_warmth"), int):
-            warmth.append(l1r["perceived_warmth"])
-        if isinstance(l1r.get("perceived_confidence"), int):
-            confidence.append(l1r["perceived_confidence"])
+        l1r_src = entry.get("l1r_source", "unknown")
+        if l1r_src in ("observed", "mixed"):
+            if isinstance(l1r.get("trust_willingness"), int):
+                trust.append(l1r["trust_willingness"])
+            if isinstance(l1r.get("skepticism_activation"), int):
+                skepticism.append(l1r["skepticism_activation"])
+            if isinstance(l1r.get("perceived_warmth"), int):
+                warmth.append(l1r["perceived_warmth"])
+            if isinstance(l1r.get("perceived_confidence"), int):
+                confidence.append(l1r["perceived_confidence"])
+        # personality_mismatch is not a Likert scale — safe to count from all sources
         if l1r.get("personality_mismatch") is True:
             mismatch_count += 1
 
@@ -112,13 +129,15 @@ def build_user_diagnosis(
     total_minutes = sum(durations)
     avg_quality = _mean([float(v) for v in qualities])
     avg_iterations = _mean([float(v) for v in iterations])
-    avg_interventions = _mean([float(v) for v in interventions])
-    autonomy_rate = _mean([float(v) for v in autonomy_values])
+    avg_interventions = _mean([float(v) for v in interventions_list])
     avg_trust = _mean([float(v) for v in trust])
     avg_skepticism = _mean([float(v) for v in skepticism])
     avg_warmth = _mean([float(v) for v in warmth])
     avg_confidence = _mean([float(v) for v in confidence])
     avg_reliability = _mean(reliability_scores)
+
+    # GAS-based governance activity
+    gas_avg = _mean(gas_values) if gas_values else None
 
     first_ts = _parse_ts(work_entries[0].get("timestamp", ""))
     last_ts = _parse_ts(work_entries[-1].get("timestamp", ""))
@@ -126,34 +145,43 @@ def build_user_diagnosis(
     if first_ts and last_ts:
         observation_days = max(1, (last_ts - first_ts).days + 1)
 
-    insights: List[str] = []
-    flags: List[str] = []
+    insights = []  # type: List[str]
+    flags = []  # type: List[str]
 
     if avg_iterations is not None and avg_iterations >= 3:
-        insights.append(f"Your workflow shows notable rework drag ({avg_iterations:.1f} iterations per task on average).")
+        insights.append("Your workflow shows notable rework drag ({:.1f} iterations per task on average).".format(avg_iterations))
         flags.append("rework_drag")
     elif avg_iterations is not None:
-        insights.append(f"Your workflow is relatively compact ({avg_iterations:.1f} iterations per task on average).")
+        insights.append("Your workflow is relatively compact ({:.1f} iterations per task on average).".format(avg_iterations))
 
     if passive_only_count > 0:
         insights.append(
-            f"{passive_only_count} session(s) were captured passively without checkout yet, so PRAXIS has timing evidence but still needs quick human calibration for stronger conclusions."
+            "{} session(s) were captured passively without checkout yet, so PRAXIS has timing evidence but still needs quick human calibration for stronger conclusions.".format(passive_only_count)
         )
         flags.append("needs_checkout")
 
     if avg_reliability is not None:
         if avg_reliability < 0.55:
-            insights.append(f"Current evidence reliability is still light ({round(avg_reliability * 100)}%). Passive capture is working, but more micro-checkouts would make the diagnosis materially stronger.")
+            insights.append("Current evidence reliability is still light ({}%). Passive capture is working, but more micro-checkouts would make the diagnosis materially stronger.".format(round(avg_reliability * 100)))
             flags.append("low_reliability")
         else:
-            insights.append(f"Data reliability is building ({round(avg_reliability * 100)}%), which means the workflow picture is becoming more defensible over time.")
+            insights.append("Data reliability is building ({}%), which means the workflow picture is becoming more defensible over time.".format(round(avg_reliability * 100)))
 
-    if autonomy_rate is not None and autonomy_rate < 0.5:
-        insights.append(f"You are intervening often — autonomy is {_format_percent(autonomy_rate)}, so the AI is still leaning heavily on human correction.")
-        flags.append("low_autonomy")
-    elif autonomy_rate is not None:
-        insights.append(f"Autonomy is {_format_percent(autonomy_rate)}, which helps reveal when AI can finish cleanly versus when it still needs steering.")
+    # GAS-based governance activity insight (replaces binary autonomy)
+    if gas_values:
+        if gas_avg is not None and gas_avg > 0.6:
+            insights.append("Governance activity is high (GAS={:.2f}/1.0) — you are actively steering the AI in most sessions.".format(gas_avg))
+            flags.append("high_governance_activity")
+        elif gas_avg is not None and gas_avg > 0.3:
+            insights.append("Governance activity is moderate (GAS={:.2f}/1.0) — a mix of autonomous work and human steering.".format(gas_avg))
+        elif gas_avg is not None:
+            insights.append("Governance activity is low (GAS={:.2f}/1.0) — most sessions run autonomously after initial setup.".format(gas_avg))
+    else:
+        insights.append("Governance Activity Score not yet available — complete more checkouts with steering ratings to unlock this metric.")
+        flags.append("needs_gas_data")
 
+    # L1-R trust/skepticism insight (only from observed data)
+    observed_l1r_count = len(trust)
     if avg_trust is not None and avg_skepticism is not None:
         if avg_trust >= 5 and avg_skepticism <= 3:
             insights.append("Your logs suggest a possible over-trust zone: the AI feels persuasive before enough independent verification kicks in.")
@@ -161,19 +189,21 @@ def build_user_diagnosis(
         elif avg_skepticism >= 5 and avg_trust <= 4:
             insights.append("Your logs suggest a healthy skepticism pattern: you keep verification active even when the AI sounds confident.")
         else:
-            insights.append("Trust and skepticism are both visible in the data, which makes the relational layer scientifically useful instead of anecdotal.")
+            insights.append("Trust and skepticism are both visible in the data ({} observed rating(s), derived values excluded from averages), which makes the relational layer scientifically useful instead of anecdotal.".format(observed_l1r_count))
+    elif observed_l1r_count == 0:
+        insights.append("No directly observed L1-R ratings yet — use the full Likert checkout to generate relational governance data.")
 
     if degraded_boundaries > 0:
-        insights.append(f"Session-boundary fragility is visible: {degraded_boundaries} sessions showed significant calibration degradation after context breaks or resets.")
+        insights.append("Session-boundary fragility is visible: {} sessions showed significant calibration degradation after context breaks or resets.".format(degraded_boundaries))
         flags.append("session_fragility")
     elif partial_boundaries > 0:
-        insights.append(f"Some continuity drag is already visible: {partial_boundaries} sessions recovered only gradually after session boundaries.")
+        insights.append("Some continuity drag is already visible: {} sessions recovered only gradually after session boundaries.".format(partial_boundaries))
 
     if governance_events:
-        insights.append(f"Rules are not theoretical here — {len(governance_events)} governance events were logged, showing how structure emerges from real failure or escalation moments.")
+        insights.append("Rules are not theoretical here — {} governance events were logged, showing how structure emerges from real failure or escalation moments.".format(len(governance_events)))
 
     if mismatch_count > 0:
-        insights.append(f"Personality portability is unstable in {mismatch_count} logged cases, which means the same governance setup does not always produce the same behavioral surface.")
+        insights.append("Personality portability is unstable in {} logged cases, which means the same governance setup does not always produce the same behavioral surface.".format(mismatch_count))
         flags.append("personality_drift")
 
     if not insights:
@@ -194,9 +224,9 @@ def build_user_diagnosis(
         headline = "PRAXIS is already showing that session continuity is part of your quality problem."
 
     summary = (
-        f"Based on {total_entries} logged sessions across {observation_days or 1} day(s), "
-        f"PRAXIS can describe your workflow in terms of time, quality, rework, trust, and continuity."
-    )
+        "Based on {} logged sessions across {} day(s), "
+        "PRAXIS can describe your workflow in terms of time, quality, rework, trust, and continuity."
+    ).format(total_entries, observation_days or 1)
 
     return {
         "ready": True,
@@ -211,7 +241,8 @@ def build_user_diagnosis(
             "avg_quality": avg_quality,
             "avg_iterations": avg_iterations,
             "avg_interventions": avg_interventions,
-            "autonomy_rate": autonomy_rate,
+            "governance_activity_avg": gas_avg,
+            "gas_sample_size": len(gas_values),
             "avg_trust": avg_trust,
             "avg_skepticism": avg_skepticism,
             "avg_warmth": avg_warmth,
@@ -223,6 +254,7 @@ def build_user_diagnosis(
             "governance_events": len(governance_events),
             "degraded_boundaries": degraded_boundaries,
             "personality_mismatch_count": mismatch_count,
+            "observed_l1r_count": observed_l1r_count,
             "phase": state.get("phase", "obs"),
             "observation_days": observation_days,
         },

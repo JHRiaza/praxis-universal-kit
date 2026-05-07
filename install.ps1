@@ -1,4 +1,4 @@
-﻿# PRAXIS Universal Kit â€” Windows Installer (PowerShell 5.1+)
+# PRAXIS Universal Kit â€” Windows Installer (PowerShell 5.1+)
 # ===========================================================
 # Usage: .\install.ps1 [-Lang es] [-Dir C:\path\to\project]
 # Requirements: Python 3.10+, PowerShell 5.1+
