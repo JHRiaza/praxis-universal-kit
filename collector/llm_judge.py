@@ -116,10 +116,13 @@ def judge_session(entry, model=DEFAULT_JUDGE_MODEL):
         }
 
 
-def cross_validate(entry, heuristic_result=None, model=DEFAULT_JUDGE_MODEL):
-    # type: (Dict[str, Any], Optional[Dict[str, Any]], str) -> Dict[str, Any]
+def cross_validate(entry, heuristic_result=None, model=DEFAULT_JUDGE_MODEL, prefer_rule_based=False):
+    # type: (Dict[str, Any], Optional[Dict[str, Any]], str, bool) -> Dict[str, Any]
     """Cross-validate heuristic detection against LLM judge.
-
+    
+    If prefer_rule_based=True or Ollama is unavailable, falls back to
+    rule-based L2 judge (collector.rule_judge) for deterministic results.
+    
     Returns dict with heuristic_signals, judge_signals, agreement_signals,
     disagreement sets, agreement_ratio, judge_result, cross_validation_version.
     """
@@ -130,7 +133,29 @@ def cross_validate(entry, heuristic_result=None, model=DEFAULT_JUDGE_MODEL):
             from heuristics import detect_governance_signals
         heuristic_result = detect_governance_signals(entry)
 
+    if prefer_rule_based:
+        try:
+            from collector.rule_judge import cross_validate_rule_based
+        except ImportError:
+            from rule_judge import cross_validate_rule_based
+        result = cross_validate_rule_based(entry, heuristic_result=heuristic_result)
+        result["judge_type"] = "rule_based_preferred"
+        return result
+
     judge_result = judge_session(entry, model=model)
+
+    # Fallback to rule-based if LLM failed
+    if not judge_result["judge_success"]:
+        try:
+            from collector.rule_judge import rule_judge_session
+        except ImportError:
+            from rule_judge import rule_judge_session
+        rule_result = rule_judge_session(entry)
+        judge_result = rule_result
+        judge_result["reasoning"] += " (rule-based fallback: LLM unavailable)"
+        used_fallback = True
+    else:
+        used_fallback = False
 
     h_signals = set(heuristic_result.get("signals", []))
     j_signals = set(judge_result.get("judge_signals", []))
@@ -151,6 +176,7 @@ def cross_validate(entry, heuristic_result=None, model=DEFAULT_JUDGE_MODEL):
         "agreement_ratio": round(agreement_ratio, 2),
         "judge_result": judge_result,
         "cross_validation_version": "1.0",
+        "judge_type": "rule_based_fallback" if used_fallback else "llm",
     }
 
 
@@ -162,14 +188,14 @@ def _count(items):
     return d
 
 
-def generate_cross_validation_report(entries, model=DEFAULT_JUDGE_MODEL):
-    # type: (List[Dict[str, Any]], str) -> Dict[str, Any]
+def generate_cross_validation_report(entries, model=DEFAULT_JUDGE_MODEL, prefer_rule_based=False):
+    # type: (List[Dict[str, Any]], str, bool) -> Dict[str, Any]
     """Generate a full cross-validation report for all entries with heuristic_analysis."""
     results = []  # type: List[Dict[str, Any]]
     for entry in entries:
         if entry.get("type") != "sprint" or not entry.get("heuristic_analysis"):
             continue
-        cv = cross_validate(entry, heuristic_result=entry["heuristic_analysis"], model=model)
+        cv = cross_validate(entry, heuristic_result=entry["heuristic_analysis"], model=model, prefer_rule_based=prefer_rule_based)
         results.append(cv)
 
     agreement_ratios = [r["agreement_ratio"] for r in results]
