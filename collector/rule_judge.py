@@ -26,7 +26,7 @@ SIGNAL_WEIGHTS = {
     "active_steering": 0.15,      # graduated from steering_intensity
     "high_skepticism": 0.10,      # graduated from skepticism_activation
     "context_heavy": 0.10,        # from context_provision_effort
-    "delegation_chain": 0.08,     # from delegation_depth
+    "delegation_chain": 0.12,     # from delegation_depth
     "low_trust_verification": 0.12,  # inverse of trust_willingness
     "quality_outcome_mismatch": 0.15,  # mismatch penalty
 }
@@ -58,7 +58,8 @@ def rule_judge_session(entry):
     delegation = entry.get("delegation_depth", 0) or 0
     gas = entry.get("governance_activity_score")
     
-    # S1: Iteration loop — graduated (0.15 per iteration above 1)
+    # S1: Iteration loop — graduated (0.15 per iteration above 1, fires at iterations >= 2)
+    # Note: deliberately fires at >=2 (vs L1 H1 at >2) for asymmetric detection
     if iterations > 1:
         weight = min(1.0, (iterations - 1) * SIGNAL_WEIGHTS["iteration_loop"])
         if weight >= DETECTION_THRESHOLD:

@@ -368,12 +368,10 @@ class PraxisViewModel:
 
         # Unreviewed count
         unreviewed_count = 0
-        if self._praxis_dir:
-            all_entries = load_all_metrics(self._praxis_dir)
-            unreviewed_count = sum(
-                1 for e in all_entries
-                if e.get("type") == "sprint" and not e.get("reviewed", True)
-            )
+        unreviewed_count = sum(
+            1 for e in entries
+            if e.get("type") == "sprint" and not e.get("reviewed", True)
+        )
 
         diagnosis = build_user_diagnosis(
             entries,

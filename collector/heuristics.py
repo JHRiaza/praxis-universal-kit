@@ -103,13 +103,15 @@ def detect_governance_signals(entry):
             "reason": "Outcome is 'partial' but quality rated {} - possible scope creep".format(quality)
         }
 
-    # H9: GAS-based governance detection
+    # H9: GAS-based governance detection (composite — only fires if not already covered by H6/H7)
     if gas is not None and gas > 0.6:
-        signals.append("high_governance_activity")
-        details["high_governance_activity"] = {
-            "gas": gas,
-            "reason": "GAS={:.3f} > 0.6 - substantial human governance detected".format(gas)
-        }
+        # Skip if steering or skepticism already explain the high GAS
+        if "active_steering" not in signals and "high_skepticism" not in signals:
+            signals.append("high_governance_activity")
+            details["high_governance_activity"] = {
+                "gas": gas,
+                "reason": "GAS={:.3f} > 0.6 from correction_density/tag_weight alone — governance not explained by steering or skepticism".format(gas)
+            }
 
     # Compute heuristic confidence
     signal_count = len(signals)

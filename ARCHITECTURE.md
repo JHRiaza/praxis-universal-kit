@@ -182,11 +182,12 @@ GAS = 0.25 x correction_density + 0.25 x tag_weight + 0.25 x steering_proxy + 0.
 | Component | Source | Range |
 |-----------|--------|-------|
 | Correction density | `interventions / max(iterations, 1)` | 0.0-1.0 |
-| Tag weight | governance_tag != "none" -> 0.3, else 0.0 | 0.0-0.3 |
+| Tag weight | governance_tag != "none" -> 1.0, else 0.0 | 0.0-1.0 |
 | Steering proxy | `steering_intensity` (1-5 Likert) normalized | 0.0-1.0 |
 | Skepticism signal | `l1r_observations.skepticism_activation / 7` | 0.0-1.0 |
 
-- **Passive-only sessions:** GAS = null (governance activity cannot be determined)
+- **Passive sessions:** GAS = null (governance activity cannot be determined)
+- **Insufficient data:** GAS = null when no steering, no skepticism, no interventions, and no governance tag
 - **Legacy:** `autonomous` derived from GAS < 0.3 for backward compatibility
 - **Interpretation:** GAS 0.0 = fully autonomous, GAS 1.0 = fully human-governed
 

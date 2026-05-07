@@ -54,16 +54,31 @@ def compute_gas(interventions, iterations, governance_tag, l1r_observations):
     # Correction density: how often the human corrected the AI
     correction_density = min(1.0, interventions / max(iterations, 1)) if iterations > 0 else 0.0
 
-    # Tag weight: was a governance event tagged?
-    tag_weight = 0.3 if governance_tag and governance_tag != "none" else 0.0
+    # Tag weight: was a governance event tagged? (normalized to 0/1, not 0/0.3)
+    tag_weight = 1.0 if governance_tag and governance_tag != "none" else 0.0
 
     # Steering proxy: from Likert 1-5, normalized to 0.0-1.0
-    steering_raw = l1r_observations.get("steering_intensity", 3)
-    steering_proxy = (steering_raw - 1) / 4.0
+    # Default to 1 (minimum) when unobserved — conservative, avoids inflation
+    has_steering = "steering_intensity" in l1r_observations
+    steering_raw = l1r_observations.get("steering_intensity", 1)
+    steering_proxy = max(0.0, (steering_raw - 1) / 4.0)
 
     # Skepticism signal: from Likert 1-7, normalized to 0.0-1.0
-    skepticism_raw = l1r_observations.get("skepticism_activation", 4)
-    skepticism_signal = skepticism_raw / 7.0
+    # Default to 1 (minimum) when unobserved
+    has_skepticism = "skepticism_activation" in l1r_observations
+    skepticism_raw = l1r_observations.get("skepticism_activation", 1)
+    skepticism_signal = max(0.0, skepticism_raw / 7.0)
+
+    # If no steering, no skepticism, no interventions, and no governance tag,
+    # return None — insufficient data for meaningful GAS
+    if not has_steering and not has_skepticism and interventions == 0 and (not governance_tag or governance_tag == "none"):
+        return None, {
+            "correction_density": 0.0,
+            "tag_weight": 0.0,
+            "steering_proxy": 0.0,
+            "skepticism_signal": 0.0,
+            "note": "insufficient_data",
+        }
 
     gas = round(
         0.25 * correction_density +
@@ -240,8 +255,9 @@ def touch_last_active(praxis_dir: Path) -> None:
         state["last_active"] = _now_iso()
         state["session_count"] = state.get("session_count", 0) + 1
         save_state(praxis_dir, state)
-    except PraxisError:
-        pass  # Don't crash on touch failure
+    except PraxisError as exc:
+        import sys
+        print("PRAXIS: touch_last_active failed: {}".format(exc), file=sys.stderr)
 
 
 def append_session_record(praxis_dir: Path, record: Dict[str, Any]) -> None:
@@ -435,9 +451,12 @@ def finish_passive_session(
     except Exception:
         pass
 
-    start_dt = datetime.fromisoformat(str(row.get("started_at", "")).replace("Z", "+00:00"))
-    end_dt = datetime.fromisoformat(str(row.get("ended_at", "")).replace("Z", "+00:00"))
-    row["duration_minutes"] = max(1, round((end_dt - start_dt).total_seconds() / 60.0))
+    try:
+        start_dt = datetime.fromisoformat(str(row.get("started_at", "")).replace("Z", "+00:00"))
+        end_dt = datetime.fromisoformat(str(row.get("ended_at", "")).replace("Z", "+00:00"))
+        row["duration_minutes"] = max(1, round((end_dt - start_dt).total_seconds() / 60.0))
+    except (ValueError, TypeError):
+        row["duration_minutes"] = 1  # conservative fallback for interrupted sessions
     row["passive_signals"] = {
         "platform_count": len(row.get("platform_ids", [])),
         "git_repo_detected": bool((row.get("git_end") or {}).get("repo")),
@@ -518,6 +537,7 @@ def apply_smart_checkout(
     outcome: str,
     governance_tag: Optional[str] = None,
     task: Optional[str] = None,
+    checkout_result: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """Apply the smart contextual checkout mapping to a passive session draft."""
     outcome_key = str(outcome or "").strip().lower()
@@ -553,6 +573,10 @@ def apply_smart_checkout(
     l1r["skepticism_activation"] = max(1, 8 - trust)
 
     # Complete L1-R: derive missing Likert dimensions from trust signal (Bug #2 fix)
+    # Store user-provided steering_intensity in l1r (fix: was silently discarded)
+    if checkout_result and checkout_result.get("steering_intensity"):
+        l1r["steering_intensity"] = checkout_result["steering_intensity"]
+
     # These are informed estimates — higher trust correlates with higher perceived confidence/authority
     if "perceived_confidence" not in l1r or l1r.get("perceived_confidence") is None:
         l1r["perceived_confidence"] = min(7, trust + 1)
@@ -609,8 +633,8 @@ def apply_smart_checkout(
     # Heuristic governance detection (Layer 1)
     updated["heuristic_analysis"] = _detect_heuristics(updated)
     # Delegation depth + context effort from checkout result
-    updated["delegation_depth"] = result.get("delegation_depth", 0) if result else 0
-    updated["context_provision_effort"] = result.get("context_provision_effort", 2) if result else 2
+    updated["delegation_depth"] = checkout_result.get("delegation_depth", 0) if checkout_result else 0
+    updated["context_provision_effort"] = checkout_result.get("context_provision_effort", 2) if checkout_result else 2
     # Decision latency: time between session end and checkout
     session_end = entry.get("passive_capture", {}).get("ended_at") if isinstance(entry.get("passive_capture"), dict) else None
     if session_end:
@@ -1237,7 +1261,7 @@ def append_incident_event(
         )
 
     incident: Dict[str, Any] = {
-        "id": generate_participant_id()[:8] + "-" + datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S"),
+        "id": "inc-" + uuid.uuid4().hex[:8] + "-" + datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S"),
         "timestamp": _now_iso(),
         "event_type": "incident",
         "incident": description.strip(),
@@ -1415,7 +1439,9 @@ def update_metric_entry(praxis_dir: Path, entry_id: str, updates: Dict[str, Any]
         rows.append(json.dumps(row, ensure_ascii=False))
     if updated_row is None:
         return None
-    metrics_path.write_text("\n".join(rows) + "\n", encoding="utf-8")
+    tmp_path = metrics_path.with_suffix(".tmp")
+    tmp_path.write_text("\n".join(rows) + "\n", encoding="utf-8")
+    tmp_path.replace(metrics_path)
     return updated_row
 
 
@@ -1441,7 +1467,9 @@ def delete_metric_entry(praxis_dir: Path, entry_id: str) -> bool:
         rows.append(json.dumps(row, ensure_ascii=False))
     if not found:
         return False
-    metrics_path.write_text("\n".join(rows) + "\n", encoding="utf-8")
+    tmp_path = metrics_path.with_suffix(".tmp")
+    tmp_path.write_text("\n".join(rows) + "\n", encoding="utf-8")
+    tmp_path.replace(metrics_path)
     return True
 
 
@@ -1484,6 +1512,11 @@ def compute_summary(entries: List[Dict[str, Any]]) -> Dict[str, Any]:
     if autonomous_flags:
         autonomy_rate = round(sum(1 for a in autonomous_flags if a) / len(autonomous_flags), 3)
 
+    # GAS metrics (v0.12.0+)
+    gas_values = [float(e["governance_activity_score"]) for e in sprint_entries
+                  if isinstance(e.get("governance_activity_score"), (int, float))]
+    gas_avg = safe_mean(gas_values)
+
     # Layer distribution (structured checkout sessions)
     layer_counts: Dict[str, int] = {}
     for e in sprint_entries:
@@ -1504,6 +1537,8 @@ def compute_summary(entries: List[Dict[str, Any]]) -> Dict[str, Any]:
         "praxis_q_mean": safe_mean(praxis_q_scores),
         "mean_reliability": safe_mean(reliability_scores),
         "layer_distribution": layer_counts,
+        "governance_activity_avg": gas_avg,
+        "gas_sample_size": len(gas_values),
     }
 
 

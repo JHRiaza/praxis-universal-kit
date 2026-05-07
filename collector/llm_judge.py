@@ -35,7 +35,10 @@ def _ollama_generate(prompt, model=DEFAULT_JUDGE_MODEL, timeout=120):
     try:
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             data = json.loads(resp.read().decode("utf-8"))
-            return data.get("response", "").strip()
+            raw = data.get("response", "").strip()
+            if raw.startswith("<"):  # likely HTML error page from misconfigured proxy
+                return None
+            return raw
     except (urllib.error.URLError, urllib.error.HTTPError, OSError, json.JSONDecodeError):
         return None
 
@@ -202,7 +205,7 @@ def generate_cross_validation_report(entries, model=DEFAULT_JUDGE_MODEL, prefer_
     all_agreement = [s for r in results for s in r["agreement_signals"]]
     all_h_only = [s for r in results for s in r["disagreement_heuristic_only"]]
     all_j_only = [s for r in results for s in r["disagreement_judge_only"]]
-    success_rate = sum(1 for r in results if r["judge_result"]["judge_success"]) / max(len(results), 1)
+    success_rate = sum(1 for r in results if r.get("judge_result", {}).get("judge_success")) / max(len(results), 1)
 
     return {
         "total_entries": len(results),

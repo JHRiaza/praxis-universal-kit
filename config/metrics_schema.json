@@ -169,7 +169,8 @@
 
     "capture_mode": {
       "type": "string",
-      "enum": ["passive_auto", "smart_checkout", "manual"],
+      "enum": ["passive_auto", "smart_checkout",
+          "micro_checkout", "manual"],
       "description": "How this entry was captured. passive_auto=automatic session detection. smart_checkout=user-calibrated. manual=explicit logging."
     },
     "source_session_id": {
@@ -187,7 +188,9 @@
       "description": "Tracks the origin of each field value. Keys are field names, values are: 'auto' (detected), 'smart_checkout' (user-confirmed), 'manual' (user-entered), 'unknown' (not determinable).",
       "additionalProperties": {
         "type": "string",
-        "enum": ["auto", "smart_checkout", "manual", "unknown"]
+        "enum": ["auto", "smart_checkout",
+          "micro_checkout", "manual", "unknown",
+          "manual_micro_checkout"]
       }
     },
     "provenance_completeness": {
@@ -268,7 +271,8 @@
     },
     "l1r_source": {
       "type": "string",
-      "enum": ["observed", "derived", "mixed", "unknown"],
+      "enum": ["observed", "derived", "mixed", "unknown",
+          "manual_micro_checkout"],
       "description": "CRITICAL: Whether L1-R values were directly observed (participant explicitly rated) or derived (computed from checkout_outcome). 'derived' values are NOT psychological measurements and should not be analyzed as Likert-scale data."
     },
 

@@ -1,4 +1,4 @@
-"""PRAXIS diagnostics — user-facing workflow observability insights.
+"""PRAXIS diagnostics - user-facing workflow observability insights.
 
 Turns logged PRAXIS data into a compact personal diagnosis so participants
 get immediate value from contributing to the study.
@@ -78,7 +78,7 @@ def build_user_diagnosis(
     interventions_list = [e.get("human_interventions", e.get("interventions")) for e in work_entries if isinstance(e.get("human_interventions", e.get("interventions")), int)]
     reliability_scores = [float(e.get("reliability_score")) for e in work_entries if isinstance(e.get("reliability_score"), (int, float))]
 
-    # GAS (Governance Activity Score) — replaces binary autonomy
+    # GAS (Governance Activity Score) - replaces binary autonomy
     gas_values = [e.get("governance_activity_score") for e in work_entries if e.get("governance_activity_score") is not None]
 
     passive_only_count = 0
@@ -116,7 +116,7 @@ def build_user_diagnosis(
                 warmth.append(l1r["perceived_warmth"])
             if isinstance(l1r.get("perceived_confidence"), int):
                 confidence.append(l1r["perceived_confidence"])
-        # personality_mismatch is not a Likert scale — safe to count from all sources
+        # personality_mismatch is not a Likert scale - safe to count from all sources
         if l1r.get("personality_mismatch") is True:
             mismatch_count += 1
 
@@ -170,14 +170,14 @@ def build_user_diagnosis(
     # GAS-based governance activity insight (replaces binary autonomy)
     if gas_values:
         if gas_avg is not None and gas_avg > 0.6:
-            insights.append("Governance activity is high (GAS={:.2f}/1.0) — you are actively steering the AI in most sessions.".format(gas_avg))
+            insights.append("Governance activity is high (GAS={:.2f}/1.0) - you are actively steering the AI in most sessions.".format(gas_avg))
             flags.append("high_governance_activity")
         elif gas_avg is not None and gas_avg > 0.3:
-            insights.append("Governance activity is moderate (GAS={:.2f}/1.0) — a mix of autonomous work and human steering.".format(gas_avg))
+            insights.append("Governance activity is moderate (GAS={:.2f}/1.0) - a mix of autonomous work and human steering.".format(gas_avg))
         elif gas_avg is not None:
-            insights.append("Governance activity is low (GAS={:.2f}/1.0) — most sessions run autonomously after initial setup.".format(gas_avg))
+            insights.append("Governance activity is low (GAS={:.2f}/1.0) - most sessions run autonomously after initial setup.".format(gas_avg))
     else:
-        insights.append("Governance Activity Score not yet available — complete more checkouts with steering ratings to unlock this metric.")
+        insights.append("Governance Activity Score not yet available - complete more checkouts with steering ratings to unlock this metric.")
         flags.append("needs_gas_data")
 
     # L1-R trust/skepticism insight (only from observed data)
@@ -191,7 +191,7 @@ def build_user_diagnosis(
         else:
             insights.append("Trust and skepticism are both visible in the data ({} observed rating(s), derived values excluded from averages), which makes the relational layer scientifically useful instead of anecdotal.".format(observed_l1r_count))
     elif observed_l1r_count == 0:
-        insights.append("No directly observed L1-R ratings yet — use the full Likert checkout to generate relational governance data.")
+        insights.append("No directly observed L1-R ratings yet - use the full Likert checkout to generate relational governance data. Note: entries logged before v0.12 are excluded from L1-R averages for scientific validity.")
 
     if degraded_boundaries > 0:
         insights.append("Session-boundary fragility is visible: {} sessions showed significant calibration degradation after context breaks or resets.".format(degraded_boundaries))
@@ -200,7 +200,7 @@ def build_user_diagnosis(
         insights.append("Some continuity drag is already visible: {} sessions recovered only gradually after session boundaries.".format(partial_boundaries))
 
     if governance_events:
-        insights.append("Rules are not theoretical here — {} governance events were logged, showing how structure emerges from real failure or escalation moments.".format(len(governance_events)))
+        insights.append("Rules are not theoretical here - {} governance events were logged, showing how structure emerges from real failure or escalation moments.".format(len(governance_events)))
 
     if mismatch_count > 0:
         insights.append("Personality portability is unstable in {} logged cases, which means the same governance setup does not always produce the same behavioral surface.".format(mismatch_count))
@@ -237,7 +237,7 @@ def build_user_diagnosis(
             ))
 
     if not insights:
-        insights.append("Your current data already gives you a baseline picture of time, quality, and rework — enough to start seeing patterns instead of relying on memory.")
+        insights.append("Your current data already gives you a baseline picture of time, quality, and rework - enough to start seeing patterns instead of relying on memory.")
 
     user_value = [
         "See where AI saves time versus where it creates rework.",
@@ -262,7 +262,7 @@ def build_user_diagnosis(
         "ready": True,
         "headline": headline,
         "summary": summary,
-        "insights": insights[:5],
+        "insights": insights[:8],
         "user_value": user_value,
         "flags": flags,
         "metrics": {

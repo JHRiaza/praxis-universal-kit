@@ -25,8 +25,9 @@ class CheckoutDialog(ctk.CTkToplevel):
         self._context_effort = ctk.IntVar(value=2)
 
         self.title("Session Checkout")
-        self.geometry("580x780")
-        self.minsize(540, 700)
+        self.geometry("580x720")
+        self.minsize(540, 600)
+        self.resizable(True, True)
         self.transient(master)
         self.grab_set()
 
