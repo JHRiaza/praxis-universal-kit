@@ -1193,11 +1193,12 @@ def cmd_export(args: argparse.Namespace) -> int:
         return 1
 
     try:
-        output_path = export_participant_zip(
+        result = export_participant_zip(
             praxis_dir=praxis_dir,
             redact_tasks=getattr(args, "redact_tasks", False),
             output_dir=Path(getattr(args, "output", None) or Path.cwd()),
         )
+        output_path = result["zip_path"] if isinstance(result, dict) else result
         diagnosis = build_user_diagnosis(
             load_all_metrics(praxis_dir),
             load_governance_events(praxis_dir),
@@ -1207,6 +1208,8 @@ def cmd_export(args: argparse.Namespace) -> int:
         print_ok(f"Export complete: {_c(str(output_path), C.B_CYAN)}")
         print_info("This ZIP contains only anonymous metrics — no personal data.")
         print_info(f"Diagnosis: {diagnosis.get('headline', '')}")
+        if isinstance(result, dict) and result.get("warning"):
+            print_info(f"⚠ {result['warning']}")
         print_info("Run 'praxis submit' to send it automatically when submission is enabled.")
     except Exception as exc:
         print_err(f"Export failed: {exc}")
@@ -1223,11 +1226,14 @@ def cmd_submit(args: argparse.Namespace) -> int:
 
     try:
         state = load_state(praxis_dir)
-        zip_path = export_participant_zip(
+        zip_result = export_participant_zip(
             praxis_dir=praxis_dir,
             redact_tasks=getattr(args, "redact_tasks", False),
             output_dir=Path(getattr(args, "output", None) or Path.cwd()),
         )
+        zip_path = zip_result["zip_path"] if isinstance(zip_result, dict) else zip_result
+        if isinstance(zip_result, dict) and zip_result.get("warning"):
+            print_info(f"⚠ {zip_result['warning']}")
         diagnosis = build_user_diagnosis(
             load_all_metrics(praxis_dir),
             load_governance_events(praxis_dir),

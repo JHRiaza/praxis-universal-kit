@@ -514,22 +514,30 @@ class PraxisViewModel:
     # Export
     # ------------------------------------------------------------------
 
-    def export_zip(self, redact_tasks: bool = False) -> Path:
-        """Export anonymized ZIP to the project directory. Returns path to generated file."""
+    def export_zip(self, redact_tasks: bool = False) -> Dict[str, Any]:
+        """Export anonymized ZIP to the project directory.
+
+        Returns dict with zip_path, incomplete_count, and warning.
+        """
         if self._praxis_dir is None:
             raise StateNotFoundError("PRAXIS not initialized")
         # Always export to the project directory (parent of .praxis/)
         output_dir = self._praxis_dir.parent if self._praxis_dir else self._project_dir
-        return export_participant_zip(
+        result = export_participant_zip(
             self._praxis_dir,
             redact_tasks=redact_tasks,
             output_dir=output_dir,
         )
+        # Backward compat: if old code expects a Path, wrap gracefully
+        if isinstance(result, dict):
+            return result
+        return {"zip_path": result, "incomplete_count": 0, "warning": None}
 
     def submit_latest_export(self, redact_tasks: bool = False) -> Dict[str, Any]:
         if self._praxis_dir is None:
             raise StateNotFoundError("PRAXIS not initialized")
-        zip_path = self.export_zip(redact_tasks=redact_tasks)
+        export_result = self.export_zip(redact_tasks=redact_tasks)
+        zip_path = export_result["zip_path"] if isinstance(export_result, dict) else export_result
         state = self._state or load_state(self._praxis_dir)
         diagnosis = build_user_diagnosis(
             load_all_metrics(self._praxis_dir),

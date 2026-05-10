@@ -325,10 +325,30 @@ def _check_git_available() -> bool:
 
 
 def _git_probe(project_dir: Optional[Path]) -> Dict[str, Any]:
-    """Collect lightweight git context for passive capture."""
+    """Collect lightweight git context for passive capture.
+
+    If project_dir is not a git repo, falls back to common workspace locations
+    (OpenClaw workspace, CWD) so git data is still captured when the kit is
+    installed in a non-git directory.
+    """
     if not _check_git_available():
         return {"repo": False, "commit": None, "branch": None, "dirty_files": None, "git_unavailable": True}
+
     root = Path(project_dir or Path.cwd())
+    git_source = None
+
+    # If the primary dir is not a git repo, try fallback locations
+    if not _get_git_commit(root):
+        fallbacks = [
+            Path.home() / ".openclaw" / "workspace",
+            Path.cwd(),
+        ]
+        for fallback in fallbacks:
+            if fallback.resolve() != root.resolve() and _get_git_commit(fallback):
+                root = fallback
+                git_source = "workspace_fallback"
+                break
+
     commit = _get_git_commit(root)
     payload: Dict[str, Any] = {
         "repo": bool(commit),
@@ -336,6 +356,8 @@ def _git_probe(project_dir: Optional[Path]) -> Dict[str, Any]:
         "branch": None,
         "dirty_files": None,
     }
+    if git_source:
+        payload["git_source"] = git_source
     try:
         branch = subprocess.run(
             ["git", "branch", "--show-current"],
@@ -384,12 +406,89 @@ def _git_commit_delta(project_dir: Optional[Path], start_commit: Optional[str], 
     return 0
 
 
+def _load_praxis_config(praxis_dir: Path) -> Dict[str, Any]:
+    """Load optional .praxis/config.json for user-tunable settings."""
+    config_path = praxis_dir / "config.json"
+    if config_path.is_file():
+        try:
+            with config_path.open("r", encoding="utf-8") as fh:
+                data = json.load(fh)
+            return data if isinstance(data, dict) else {}
+        except (OSError, json.JSONDecodeError):
+            pass
+    return {}
+
+
+def auto_close_idle_sessions(
+    praxis_dir: Path,
+    state: Optional[Dict[str, Any]] = None,
+    idle_timeout_minutes: Optional[int] = None,
+) -> int:
+    """Close open sessions that have exceeded the idle timeout.
+
+    Reads all session records, finds open sessions where now - started_at
+    exceeds the idle threshold, and closes them with capped duration.
+
+    Args:
+        praxis_dir: Path to .praxis/ directory.
+        state: Optional state dict (unused, kept for interface compat).
+        idle_timeout_minutes: Override for timeout. If None, reads from
+            .praxis/config.json or defaults to 30 minutes.
+
+    Returns:
+        Number of sessions closed.
+    """
+    if idle_timeout_minutes is None:
+        config = _load_praxis_config(praxis_dir)
+        idle_timeout_minutes = int(config.get("idle_timeout_minutes", 30))
+
+    rows = load_session_records(praxis_dir)
+    if not rows:
+        return 0
+
+    now = datetime.now(timezone.utc)
+    closed_count = 0
+    changed = False
+
+    for idx, row in enumerate(rows):
+        if row.get("status") != "open":
+            continue
+        try:
+            started_at = datetime.fromisoformat(
+                str(row.get("started_at", "")).replace("Z", "+00:00")
+            )
+        except (ValueError, TypeError):
+            continue
+        if started_at.tzinfo is None:
+            started_at = started_at.replace(tzinfo=timezone.utc)
+
+        elapsed_minutes = (now - started_at).total_seconds() / 60.0
+        if elapsed_minutes > idle_timeout_minutes:
+            capped_end = started_at + __import__("datetime").timedelta(minutes=idle_timeout_minutes)
+            rows[idx]["status"] = "closed_idle"
+            rows[idx]["ended_at"] = capped_end.isoformat()
+            rows[idx]["duration_minutes"] = idle_timeout_minutes
+            rows[idx]["duration_capped"] = True
+            rows[idx]["passive_signals"] = rows[idx].get("passive_signals") or {}
+            rows[idx]["passive_signals"]["idle_timeout_closed"] = True
+            closed_count += 1
+            changed = True
+
+    if changed:
+        _write_session_records(praxis_dir, rows)
+
+    return closed_count
+
+
 def start_passive_session(
     praxis_dir: Path,
     state: Dict[str, Any],
     project_dir: Optional[Path] = None,
 ) -> Dict[str, Any]:
     """Open a passive capture session used as the default logging path."""
+    # Auto-close any idle sessions before starting a new one
+    auto_close_idle_sessions(praxis_dir, state)
+
     existing = get_open_session_record(praxis_dir)
     if existing is not None:
         return existing
@@ -756,11 +855,11 @@ def build_auto_session_entry(
         "notes": "Passive capture draft. Review with a quick checkout to improve reliability.",
     }
     # Extract model from adapter telemetry (Bug #1 fix)
-    detected_model, detected_executor = _extract_model_from_telemetry(session_record)
+    detected_model, detected_executor, detected_provenance = _extract_model_from_telemetry(session_record)
     if detected_model and detected_model != "unknown":
         entry["model"] = detected_model
         entry["model_executor"] = detected_executor
-        entry["field_provenance"]["model"] = "auto_telemetry"
+        entry["field_provenance"]["model"] = detected_provenance
 
     git_commit = _get_git_commit(project_dir)
     if git_commit:
@@ -772,32 +871,41 @@ def build_auto_session_entry(
 def _extract_model_from_telemetry(session_record: Dict[str, Any]) -> tuple:
     """Extract model name and executor from adapter telemetry.
 
-    Returns (model_name, executor_name) where executor_name identifies
-    the platform that provided the model info.
+    Returns (model_name, executor_name, provenance) where executor_name identifies
+    the platform that provided the model info and provenance is "inferred" when
+    reading config (not runtime state) or "auto_telemetry" for direct observation.
     """
     for tel_key in ("adapter_telemetry_start", "adapter_telemetry_end"):
         telemetry = session_record.get(tel_key)
         if not isinstance(telemetry, dict):
             continue
 
-        # OpenClaw: model_info.model or model_info.default_model
+        # OpenClaw config-based active model (highest priority)
         oc = telemetry.get("openclaw")
         if isinstance(oc, dict) and oc.get("detected"):
+            active_model_data = oc.get("active_model")
+            if isinstance(active_model_data, dict):
+                for key in ("active_model", "default_model"):
+                    m = active_model_data.get(key)
+                    if isinstance(m, str) and m and _is_real_model_name(m):
+                        return (m, "openclaw", "inferred")
+
+            # Legacy: model_info.model or model_info.default_model from session_state
             model_info = oc.get("model_info")
             if isinstance(model_info, dict):
                 for key in ("model", "default_model"):
                     m = model_info.get(key)
                     if isinstance(m, str) and m and _is_real_model_name(m):
-                        return (m, "openclaw")
+                        return (m, "openclaw", "auto_telemetry")
 
-        # Codex: latest_session.model
+        # Codex: latest_session.model (lower priority)
         cx = telemetry.get("codex")
         if isinstance(cx, dict) and cx.get("detected"):
             latest = cx.get("latest_session")
             if isinstance(latest, dict):
                 m = latest.get("model")
                 if isinstance(m, str) and m and _is_real_model_name(m):
-                    return (m, "codex")
+                    return (m, "codex", "auto_telemetry")
 
         # Custom adapters: check for 'model' key at top level
         for adapter_name, adapter_data in telemetry.items():
@@ -806,9 +914,9 @@ def _extract_model_from_telemetry(session_record: Dict[str, Any]) -> tuple:
             if isinstance(adapter_data, dict) and adapter_data.get("detected"):
                 m = adapter_data.get("model")
                 if isinstance(m, str) and m and _is_real_model_name(m):
-                    return (m, adapter_name)
+                    return (m, adapter_name, "auto_telemetry")
 
-    return ("unknown", "unknown")
+    return ("unknown", "unknown", "unknown")
 
 
 # Generic provider names that are NOT real model identifiers

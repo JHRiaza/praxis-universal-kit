@@ -49,7 +49,10 @@ def main() -> int:
     if not status.get("allowed"):
         return 1
 
-    zip_path = export_participant_zip(praxis_dir, output_dir=praxis_dir.parent)
+    zip_result = export_participant_zip(praxis_dir, output_dir=praxis_dir.parent)
+    zip_path = zip_result["zip_path"] if isinstance(zip_result, dict) else zip_result
+    if isinstance(zip_result, dict) and zip_result.get("warning"):
+        print(f"⚠ {zip_result['warning']}")
     result = submit_export(
         praxis_dir,
         zip_path,
