@@ -44,7 +44,7 @@ from diagnostics import build_user_diagnosis
 # Constants
 # ---------------------------------------------------------------------------
 
-EXPORT_VERSION = "0.15.0"
+EXPORT_VERSION = "0.16.0"
 PII_FIELDS_TO_REDACT = ["name", "email", "phone", "ip_address", "machine_name"]
 FILES_TO_INCLUDE = [
     "metrics.jsonl",

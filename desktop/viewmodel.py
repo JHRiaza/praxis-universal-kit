@@ -58,7 +58,8 @@ import praxis_collector  # noqa: E402
 from adapters.base import detect_project_type  # noqa: E402
 
 # Re-export for convenience
-from praxis_collector import (  # noqa: E402
+from praxis_collector import (
+    KIT_VERSION,  # noqa: E402
     PraxisError,
     StateNotFoundError,
     ValidationError,

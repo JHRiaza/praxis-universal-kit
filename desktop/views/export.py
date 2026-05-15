@@ -232,8 +232,9 @@ class ExportView(ctk.CTkScrollableFrame):
         if self._last_zip_path is None:
             return
         folder = str(self._last_zip_path.parent)
+        flags = subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
         if sys.platform == "win32":
-            subprocess.run(["explorer", folder])
+            subprocess.run(["explorer", folder], creationflags=flags)
         elif sys.platform == "darwin":
             subprocess.run(["open", folder])
         else:

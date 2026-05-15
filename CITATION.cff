@@ -2,7 +2,7 @@ cff-version: 1.2.0
 message: "If you use this software in your research, please cite it as below."
 type: software
 title: "PRAXIS Universal Kit"
-version: "0.11.0"
+version: "0.16.0"
 date-released: "2026-05-05"
 description: "Cross-platform research tool for observing and documenting governance phenomena in AI-assisted workflows. Part of doctoral research at Universidad Complutense de Madrid."
 license: CC-BY-SA-4.0

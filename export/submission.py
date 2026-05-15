@@ -1,6 +1,6 @@
 """PRAXIS export delivery helpers.
 
-Supports optional SMTP submission with throttling so the study can scale
+Supports HTTP and SMTP submission with throttling so the study can scale
 without flooding the research inbox.
 """
 
@@ -9,14 +9,20 @@ from __future__ import annotations
 import json
 import os
 import smtplib
+import urllib.request
+import urllib.error
+import uuid as _uuid
 from datetime import datetime, timedelta, timezone
 from email.message import EmailMessage
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+DEFAULT_SUBMIT_URL = "https://praxis-submit.vercel.app/api/submit"
+
 DEFAULT_SETTINGS: Dict[str, Any] = {
-    "enabled": False,
-    "mode": "smtp",
+    "enabled": True,
+    "mode": "http",
+    "submit_url": DEFAULT_SUBMIT_URL,
     "email_to": "hello@javierherreros.xyz",
     "cooldown_hours": 168,
     "max_submissions_per_30d": 4,
@@ -146,19 +152,106 @@ def _smtp_config_from_env() -> Dict[str, Any]:
     }
 
 
+def _build_multipart_boundary() -> str:
+    """Generate a unique multipart boundary string."""
+    return f"PRAXIS----{_uuid.uuid4().hex}"
+
+
+def _build_multipart_body(fields: Dict[str, str], file_field: str, file_name: str, file_data: bytes, boundary: str) -> bytes:
+    """Build a multipart/form-data body for HTTP upload."""
+    parts = []
+    for key, value in fields.items():
+        parts.append(f"--{boundary}\r\n".encode())
+        parts.append(f'Content-Disposition: form-data; name="{key}"\r\n\r\n'.encode())
+        parts.append(f"{value}\r\n".encode())
+    # File part
+    parts.append(f"--{boundary}\r\n".encode())
+    parts.append(f'Content-Disposition: form-data; name="{file_field}"; filename="{file_name}"\r\n'.encode())
+    parts.append(b"Content-Type: application/zip\r\n\r\n")
+    parts.append(file_data)
+    parts.append(f"\r\n--{boundary}--\r\n".encode())
+    return b"".join(parts)
+
+
+def _submit_http(
+    zip_path: Path,
+    participant_id: str,
+    kit_version: str,
+    submit_url: str,
+    diagnosis: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    """Submit ZIP via HTTP POST to the Vercel endpoint."""
+    boundary = _build_multipart_boundary()
+    zip_data = zip_path.read_bytes()
+    diag_headline = (diagnosis or {}).get("headline", "")
+
+    fields = {
+        "participant_id": participant_id,
+        "kit_version": kit_version,
+        "diagnosis_headline": diag_headline,
+    }
+
+    body = _build_multipart_body(fields, "file", zip_path.name, zip_data, boundary)
+
+    req = urllib.request.Request(
+        submit_url,
+        data=body,
+        headers={"Content-Type": f"multipart/form-data; boundary={boundary}"},
+        method="POST",
+    )
+
+    try:
+        with urllib.request.urlopen(req, timeout=60) as resp:
+            resp_data = json.loads(resp.read().decode("utf-8"))
+            return {
+                "status": "sent",
+                "participant_id": participant_id,
+                "zip_name": zip_path.name,
+                "delivered_via": "http",
+                "server_response": resp_data,
+            }
+    except urllib.error.HTTPError as exc:
+        err_body = ""
+        try:
+            err_body = exc.read().decode("utf-8", errors="replace")
+        except Exception:
+            pass
+        raise RuntimeError(f"HTTP submit failed ({exc.code}): {err_body}") from exc
+    except urllib.error.URLError as exc:
+        raise RuntimeError(f"Network error during submit: {exc.reason}") from exc
+
+
 def submit_export(
     praxis_dir: Path,
     zip_path: Path,
     participant_id: str,
     diagnosis: Optional[Dict[str, Any]] = None,
+    kit_version: str = "unknown",
 ) -> Dict[str, Any]:
     status = get_submission_status(praxis_dir)
     if not status["allowed"]:
         raise RuntimeError(status["reason"])
 
     settings = status["settings"]
-    if settings.get("mode") != "smtp":
-        raise RuntimeError("Only SMTP delivery is currently implemented.")
+    mode = settings.get("mode", "http")
+
+    # HTTP mode (default)
+    if mode == "http":
+        submit_url = settings.get("submit_url") or DEFAULT_SUBMIT_URL
+        result = _submit_http(zip_path, participant_id, kit_version, submit_url, diagnosis)
+        record_submission(praxis_dir, {
+            "timestamp": _now_iso(),
+            "status": "sent",
+            "participant_id": participant_id,
+            "zip_name": zip_path.name,
+            "mode": "http",
+            "submit_url": submit_url,
+        })
+        return result
+
+    # SMTP mode (legacy)
+    if mode != "smtp":
+        raise RuntimeError(f"Unknown submission mode: {mode}")
 
     smtp = _smtp_config_from_env()
     missing = [key for key in ("host", "user", "password", "from") if not smtp.get(key)]

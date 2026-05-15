@@ -1,4 +1,4 @@
-"""PRAXIS Kit Desktop — Main Application
+﻿"""PRAXIS Kit Desktop — Main Application
 
 CustomTkinter GUI wrapping the PRAXIS Universal Kit collector.
 Works as both source (`python desktop/app.py`) and PyInstaller bundle.
@@ -167,7 +167,7 @@ class PraxisApp(ctk.CTk):
 
         version_label = ctk.CTkLabel(
             self._sidebar,
-            text="v0.15.0 Desktop · governance detection + cross-validation",
+            text="v0.16.0 Desktop · governance detection + cross-validation",
             font=ctk.CTkFont(size=11),
             text_color="gray",
         )

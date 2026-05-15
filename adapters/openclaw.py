@@ -15,10 +15,13 @@ from __future__ import annotations
 import os
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 from typing import Any, Dict, List
 
 from .base import PraxisAdapter, _write_file, _remove_file
+
+_SUBPROCESS_FLAGS = subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
 
 _MARKER = "<!-- PRAXIS-GOVERNANCE -->"
 
@@ -195,11 +198,12 @@ def _register_cron_reminder(project_root: Path) -> None:
         result = subprocess.run(
             ["crontab", "-l"],
             capture_output=True, text=True, timeout=5,
+            creationflags=_SUBPROCESS_FLAGS,
         )
         existing = result.stdout if result.returncode == 0 else ""
         if cron_tag in existing:
             return
         new_cron = existing.rstrip() + "\n" + cron_line + "\n"
-        subprocess.run(["crontab", "-"], input=new_cron, text=True, timeout=5, check=True)
+        subprocess.run(["crontab", "-"], input=new_cron, text=True, timeout=5, check=True, creationflags=_SUBPROCESS_FLAGS)
     except Exception:
         pass

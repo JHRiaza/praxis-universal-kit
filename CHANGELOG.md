@@ -1,4 +1,30 @@
-﻿## v0.15.0 (2026-05-08) — Validation Engine UI + Judge Type Transparency
+﻿## v0.16.0 (2026-05-15) — UX Polish & HTTP Submit
+
+Participant-facing fixes to reduce friction and improve data delivery.
+
+### UX Fixes
+
+- **CMD window flash eliminated** — All `subprocess.run()` calls now use `CREATE_NO_WINDOW` on Windows. No more console windows flashing when git operations run inside the GUI exe.
+- **Submit button now active by default** — Changed default submission mode from SMTP (required env vars) to HTTP (uploads to Vercel endpoint). Participants click "Generate ZIP + Submit" and the data reaches the research inbox with zero configuration.
+
+### New: HTTP Submission
+
+- `api/submit.js` — Vercel serverless function that receives ZIP uploads from participants
+- `submission.py` — New `_submit_http()` using `urllib.request` (no new dependencies)
+- Validates participant ID format (PRAXIS-XXXXXXXX), max 10 MB
+- Forwards via Resend (email) or Vercel Blob storage
+- URL: `https://praxis-submit.vercel.app/api/submit`
+
+### Technical Changes
+
+- `praxis_collector.py` — `_SUBPROCESS_FLAGS` with `CREATE_NO_WINDOW` on all git subprocess calls
+- `adapters/openclaw.py` — Same subprocess fix for cron registration
+- `desktop/views/export.py` — Same subprocess fix for "Open File Location"
+- `submission.py` — `submit_export()` now accepts `kit_version` parameter
+- `viewmodel.py` — Imports `KIT_VERSION` and passes it to `submit_export()`
+- Schema version: 0.4 (unchanged)
+
+## v0.15.0 (2026-05-08) — Validation Engine UI + Judge Type Transparency
 
 ### New features
 - **Dashboard validation engine section:** Shows L1 heuristics status, L2 judge mode (LLM or rule-based), Ollama availability

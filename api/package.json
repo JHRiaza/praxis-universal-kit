@@ -1,0 +1,10 @@
+{
+  "name": "praxis-submit",
+  "version": "1.0.0",
+  "private": true,
+  "description": "PRAXIS Kit submission endpoint",
+  "scripts": {
+    "dev": "vercel dev",
+    "deploy": "vercel --prod"
+  }
+}

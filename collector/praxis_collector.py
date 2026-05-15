@@ -22,6 +22,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+# Windows: prevent console window flash when git subprocess runs from PyInstaller GUI exe
+_SUBPROCESS_FLAGS = subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
+
 try:
     from collector.heuristics import detect_governance_signals as _detect_heuristics
 except ImportError:
@@ -32,7 +35,7 @@ except ImportError:
 # Constants
 # ---------------------------------------------------------------------------
 
-KIT_VERSION = "0.15.0"
+KIT_VERSION = "0.16.0"
 SCHEMA_VERSION = "0.4"
 PRAXIS_DIR = ".praxis"
 STATE_FILE = "state.json"
@@ -365,6 +368,7 @@ def _git_probe(project_dir: Optional[Path]) -> Dict[str, Any]:
             text=True,
             cwd=str(root),
             timeout=5,
+            creationflags=_SUBPROCESS_FLAGS,
         )
         if branch.returncode == 0:
             payload["branch"] = branch.stdout.strip() or None
@@ -378,6 +382,7 @@ def _git_probe(project_dir: Optional[Path]) -> Dict[str, Any]:
             text=True,
             cwd=str(root),
             timeout=5,
+            creationflags=_SUBPROCESS_FLAGS,
         )
         if dirty.returncode == 0:
             payload["dirty_files"] = len([line for line in dirty.stdout.splitlines() if line.strip()])
@@ -398,6 +403,7 @@ def _git_commit_delta(project_dir: Optional[Path], start_commit: Optional[str], 
             text=True,
             cwd=str(root),
             timeout=5,
+            creationflags=_SUBPROCESS_FLAGS,
         )
         if result.returncode == 0:
             return max(0, int((result.stdout or "0").strip() or "0"))
@@ -1003,6 +1009,7 @@ def _get_git_commit(project_dir: Optional[Path] = None) -> Optional[str]:
             text=True,
             cwd=str(project_dir or Path.cwd()),
             timeout=5,
+            creationflags=_SUBPROCESS_FLAGS,
         )
         if result.returncode == 0:
             return result.stdout.strip()

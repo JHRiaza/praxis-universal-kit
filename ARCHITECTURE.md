@@ -1,5 +1,5 @@
-# PRAXIS Universal Kit — Architecture Spec
-## Version 0.10.0 — 2026-04-30
+﻿# PRAXIS Universal Kit — Architecture Spec
+## Version 0.16.0 — 2026-05-15
 
 ### Purpose
 Cross-platform, platform-agnostic research package for observing and documenting governance phenomena in AI-assisted workflows. Designed for distribution to external participants using any AI platform (Claude Cowork, Codex, OpenClaw, Cursor, Copilot, Aider, Continue.dev, Cline, Roo Code, etc.).
@@ -7,7 +7,7 @@ Cross-platform, platform-agnostic research package for observing and documenting
 The kit instruments workflows to capture what happens — governance emergence, relational governance effects, personality portability, session boundary behavior — before and after introducing structured governance. It supports both software production and creative/design workflows such as game design, writing, and narrative iteration.
 
 ### Current Status
-- **Latest release:** v0.15.0 (2026-05-08)
+- **Latest release:** v0.16.0 (2026-05-15)
 - **Active development:** v1.0 preparation
 - **Pre-admission testing:** single-participant pilot ongoing (n=1, real production data)
 - **Code signing:** pending post-admission (Azure Trusted Signing + Apple Developer)
