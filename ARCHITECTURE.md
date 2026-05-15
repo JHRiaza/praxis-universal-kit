@@ -7,8 +7,8 @@ Cross-platform, platform-agnostic research package for observing and documenting
 The kit instruments workflows to capture what happens — governance emergence, relational governance effects, personality portability, session boundary behavior — before and after introducing structured governance. It supports both software production and creative/design workflows such as game design, writing, and narrative iteration.
 
 ### Current Status
-- **Latest release:** v0.10.0 (2026-04-30)
-- **Active development:** plugin adapter system for custom AI platform integrations
+- **Latest release:** v0.15.0 (2026-05-08)
+- **Active development:** v1.0 preparation
 - **Pre-admission testing:** single-participant pilot ongoing (n=1, real production data)
 - **Code signing:** pending post-admission (Azure Trusted Signing + Apple Developer)
 - **Study deployment:** targeted for post-PhD admission (Oct-Nov 2026)
@@ -169,6 +169,62 @@ Derived L1-R values are NOT psychological measurements and must not be analyzed 
 When a session starts after a break, the schema captures:
 - Memory recovery: instant / partial / lost
 - Calibration recovery: immediate / gradual / significant_degradation
+
+### Governance Activity Score (GAS) — v0.12.0+
+
+The binary `autonomous` field (v0.11 and earlier) conflated "AI produced acceptable output" with "human did not govern." GAS replaces it with a composite metric:
+
+**Formula:**
+```
+GAS = 0.25 x correction_density + 0.25 x tag_weight + 0.25 x steering_proxy + 0.25 x skepticism_signal
+```
+
+| Component | Source | Range |
+|-----------|--------|-------|
+| Correction density | `interventions / max(iterations, 1)` | 0.0-1.0 |
+| Tag weight | governance_tag != "none" -> 1.0, else 0.0 | 0.0-1.0 |
+| Steering proxy | `steering_intensity` (1-5 Likert) normalized | 0.0-1.0 |
+| Skepticism signal | `l1r_observations.skepticism_activation / 7` | 0.0-1.0 |
+
+- **Passive sessions:** GAS = null (governance activity cannot be determined)
+- **Insufficient data:** GAS = null when no steering, no skepticism, no interventions, and no governance tag
+- **Legacy:** `autonomous` derived from GAS < 0.3 for backward compatibility
+- **Interpretation:** GAS 0.0 = fully autonomous, GAS 1.0 = fully human-governed
+
+### Operational Definition: Governance Emergence (v0.12.0+)
+
+A **governance emergence event** occurs when any of the following is observed:
+1. A human creates, modifies, or removes a rule, protocol, or constraint that shapes AI behavior
+2. A human overrides, corrects, or redirects AI output mid-task
+3. A human provides explicit context, delegation briefs, or steering instructions that constrain the AI's operating space
+4. A session boundary triggers memory recovery or calibration adjustment
+
+The Kit captures these events through: `governance_tag`, `human_interventions`, `steering_intensity`, `governance_events` log, and `session_boundary` observations.
+
+### L1-R Data Integrity (v0.12.0+)
+
+L1-R values with `l1r_source = "derived"` are arithmetic identities computed from checkout_outcome, NOT psychological measurements. All Likert-scale aggregations in diagnostics filter to `l1r_source in ("observed", "mixed")` only. Derived values are retained in the raw data for provenance completeness but excluded from statistical averages.
+
+### LLM-as-Judge Cross-Validation (v0.14.0+)
+
+Layer 2 of the three-layer cross-validation stack. Uses a local Ollama model (default: qwen3:4b) to independently assess governance signals, then compares against Layer 1 heuristic results.
+
+**Cross-validation metrics:**
+- **Agreement ratio**: overlap between heuristic and judge signals / total unique signals
+- **Heuristic-only signals**: detected by rules but not by LLM
+- **Judge-only signals**: detected by LLM but not by rules
+- **Success rate**: percentage of entries where LLM responded with valid JSON
+
+**Report generation:** `praxis validate` produces a full cross-validation report saved as JSON.
+
+**Fallback:** If Ollama is unavailable, cross-validation gracefully degrades. Heuristic results (L1) remain valid independently.
+
+**Three-layer validation stack:**
+| Layer | Method | Version | Status |
+|-------|--------|---------|--------|
+| L1 | Rule-based heuristics | v0.13.0+ | Active |
+| L2 | LLM-as-judge (Ollama) | v0.14.0+ | Active |
+| L3 | Transcript adapter | v1.x | Planned |
 
 ### CLI Commands
 

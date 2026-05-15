@@ -1,4 +1,4 @@
-﻿# PRAXIS Universal Kit â€” Windows Installer (PowerShell 5.1+)
+# PRAXIS Universal Kit â€” Windows Installer (PowerShell 5.1+)
 # ===========================================================
 # Usage: .\install.ps1 [-Lang es] [-Dir C:\path\to\project]
 # Requirements: Python 3.10+, PowerShell 5.1+
@@ -15,7 +15,7 @@ $ErrorActionPreference = "Stop"
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
-$PraxisVersion = "0.11.0"
+$PraxisVersion = "0.15.0"
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
 $ProjectDir = $Dir
 

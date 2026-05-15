@@ -44,7 +44,7 @@ from diagnostics import build_user_diagnosis
 # Constants
 # ---------------------------------------------------------------------------
 
-EXPORT_VERSION = "0.10.0"
+EXPORT_VERSION = "0.15.0"
 PII_FIELDS_TO_REDACT = ["name", "email", "phone", "ip_address", "machine_name"]
 FILES_TO_INCLUDE = [
     "metrics.jsonl",
@@ -149,7 +149,7 @@ def export_participant_zip(
     praxis_dir: Path,
     redact_tasks: bool = False,
     output_dir: Optional[Path] = None,
-) -> Path:
+) -> Dict[str, Any]:
     """
     Create an anonymized ZIP file for researcher submission.
 
@@ -159,12 +159,26 @@ def export_participant_zip(
         output_dir: Where to write the ZIP. Defaults to parent of praxis_dir.
 
     Returns:
-        Path to the created ZIP file.
+        Dict with keys:
+            zip_path: Path to the created ZIP file.
+            incomplete_count: Number of sessions with incomplete data.
+            warning: Warning string if incomplete data found, else None.
     """
     if not praxis_dir.is_dir():
         raise ValueError(f"PRAXIS directory not found: {praxis_dir}")
 
-    # Auto-close orphan sessions before export (Bug #3 fix)
+    # Auto-close idle sessions before export (Bug #3 integration)
+    try:
+        from collector.praxis_collector import auto_close_idle_sessions
+        auto_close_idle_sessions(praxis_dir)
+    except ImportError:
+        try:
+            from praxis_collector import auto_close_idle_sessions
+            auto_close_idle_sessions(praxis_dir)
+        except ImportError:
+            pass
+
+    # Auto-close orphan sessions before export (existing logic)
     _auto_close_orphan_sessions(praxis_dir)
 
     # Load state for participant ID
@@ -183,6 +197,7 @@ def export_participant_zip(
 
     zip_path = output_dir / zip_filename
 
+    manifest_info: Dict[str, Any] = {}
     with zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_DEFLATED) as zf:
         # Add core metric files
         _add_metrics(zf, praxis_dir, participant_id, redact_tasks)
@@ -191,9 +206,13 @@ def export_participant_zip(
         _add_state(zf, praxis_dir, participant_id)
         _add_surveys(zf, praxis_dir, participant_id)
         _add_diagnosis(zf, praxis_dir, state)
-        _add_manifest(zf, praxis_dir, participant_id, state, redact_tasks, timestamp)
+        manifest_info = _add_manifest(zf, praxis_dir, participant_id, state, redact_tasks, timestamp)
 
-    return zip_path
+    return {
+        "zip_path": zip_path,
+        "incomplete_count": manifest_info.get("incomplete_sessions", 0),
+        "warning": manifest_info.get("data_quality_warning"),
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -345,8 +364,11 @@ def _add_manifest(
     state: Dict[str, Any],
     redact_tasks: bool,
     timestamp: str,
-) -> None:
-    """Add export_manifest.json with metadata about this export."""
+) -> Dict[str, Any]:
+    """Add export_manifest.json with metadata about this export.
+
+    Returns the manifest dict (used by caller for warnings).
+    """
     # Count entries
     metrics_count = _count_jsonl_lines(praxis_dir / "metrics.jsonl")
     gov_count = _count_jsonl_lines(praxis_dir / "governance.jsonl")
@@ -354,6 +376,23 @@ def _add_manifest(
     survey_count = len(list(praxis_dir.glob("survey_*.json")))
     metrics = _load_jsonl(praxis_dir / "metrics.jsonl")
     diagnosis = build_user_diagnosis(metrics, _load_jsonl(praxis_dir / "governance.jsonl"), state)
+
+    # Count incomplete sessions (open or idle-closed without checkout)
+    sessions = _load_jsonl(praxis_dir / "sessions.jsonl")
+    incomplete_count = 0
+    for s in sessions:
+        status = s.get("status", "")
+        capture_mode = s.get("capture_mode", "")
+        if status in ("open", "closed_idle") or capture_mode == "passive_auto":
+            incomplete_count += 1
+
+    data_quality_warning = None
+    if incomplete_count > 0:
+        data_quality_warning = (
+            f"{incomplete_count} session(s) have incomplete data "
+            f"(open, idle-closed, or pending feedback). "
+            f"Consider reviewing these sessions before final submission."
+        )
 
     manifest = {
         "export_version": EXPORT_VERSION,
@@ -370,6 +409,8 @@ def _add_manifest(
         "surveys_completed": survey_count,
         "mean_provenance_completeness": diagnosis.get("metrics", {}).get("avg_reliability"),
         "mean_reliability": diagnosis.get("metrics", {}).get("avg_reliability"),  # deprecated alias
+        "incomplete_sessions": incomplete_count,
+        "data_quality_warning": data_quality_warning,
         "integrity": {
             "metrics_sha256": _sha256_file(praxis_dir / "metrics.jsonl"),
             "sessions_sha256": _sha256_file(praxis_dir / "sessions.jsonl"),
@@ -385,6 +426,7 @@ def _add_manifest(
     }
 
     zf.writestr("export_manifest.json", json.dumps(manifest, indent=2, ensure_ascii=False))
+    return manifest
 
 
 def _add_diagnosis(

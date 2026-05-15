@@ -176,12 +176,21 @@ class ExportView(ctk.CTkScrollableFrame):
 
     def _do_export(self) -> None:
         try:
-            zip_path = self._vm.export_zip(redact_tasks=self._redact_var.get())
-            self._last_zip_path = zip_path
-            self._status_label.configure(
-                text=f"✅ ZIP created: {zip_path.name}",
-                text_color="#2ecc71",
-            )
+            result = self._vm.export_zip(redact_tasks=self._redact_var.get())
+            if isinstance(result, dict):
+                zip_path = result["zip_path"]
+                self._last_zip_path = zip_path
+                msg = f"✅ ZIP created: {zip_path.name}"
+                if result.get("warning"):
+                    msg += f"\n⚠ {result['warning']}"
+                self._status_label.configure(text=msg, text_color="#2ecc71")
+            else:
+                # Legacy Path return
+                self._last_zip_path = result
+                self._status_label.configure(
+                    text=f"✅ ZIP created: {result.name}",
+                    text_color="#2ecc71",
+                )
             self._open_btn.configure(state="normal")
         except Exception as exc:
             self._status_label.configure(

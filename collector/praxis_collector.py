@@ -22,19 +22,78 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+try:
+    from collector.heuristics import detect_governance_signals as _detect_heuristics
+except ImportError:
+    from heuristics import detect_governance_signals as _detect_heuristics
+
 
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
 
-KIT_VERSION = "0.11.0"
-SCHEMA_VERSION = "0.3"
+KIT_VERSION = "0.15.0"
+SCHEMA_VERSION = "0.4"
 PRAXIS_DIR = ".praxis"
 STATE_FILE = "state.json"
 METRICS_FILE = "metrics.jsonl"
 GOVERNANCE_FILE = "governance.jsonl"
 SESSIONS_FILE = "sessions.jsonl"
 DEFAULT_AUTO_QUALITY = 3
+
+
+def compute_gas(interventions, iterations, governance_tag, l1r_observations):
+    """Compute Governance Activity Score (GAS) — composite metric replacing binary autonomy.
+
+    GAS 0.0 = fully autonomous, 1.0 = fully human-governed.
+    Returns None if governance activity cannot be determined (passive-only sessions).
+    """
+    if l1r_observations is None:
+        l1r_observations = {}
+
+    # Correction density: how often the human corrected the AI
+    correction_density = min(1.0, interventions / max(iterations, 1)) if iterations > 0 else 0.0
+
+    # Tag weight: was a governance event tagged? (normalized to 0/1, not 0/0.3)
+    tag_weight = 1.0 if governance_tag and governance_tag != "none" else 0.0
+
+    # Steering proxy: from Likert 1-5, normalized to 0.0-1.0
+    # Default to 1 (minimum) when unobserved — conservative, avoids inflation
+    has_steering = "steering_intensity" in l1r_observations
+    steering_raw = l1r_observations.get("steering_intensity", 1)
+    steering_proxy = max(0.0, (steering_raw - 1) / 4.0)
+
+    # Skepticism signal: from Likert 1-7, normalized to 0.0-1.0
+    # Default to 1 (minimum) when unobserved
+    has_skepticism = "skepticism_activation" in l1r_observations
+    skepticism_raw = l1r_observations.get("skepticism_activation", 1)
+    skepticism_signal = max(0.0, skepticism_raw / 7.0)
+
+    # If no steering, no skepticism, no interventions, and no governance tag,
+    # return None — insufficient data for meaningful GAS
+    if not has_steering and not has_skepticism and interventions == 0 and (not governance_tag or governance_tag == "none"):
+        return None, {
+            "correction_density": 0.0,
+            "tag_weight": 0.0,
+            "steering_proxy": 0.0,
+            "skepticism_signal": 0.0,
+            "note": "insufficient_data",
+        }
+
+    gas = round(
+        0.25 * correction_density +
+        0.25 * tag_weight +
+        0.25 * steering_proxy +
+        0.25 * skepticism_signal,
+        3
+    )
+
+    return gas, {
+        "correction_density": round(correction_density, 3),
+        "tag_weight": round(tag_weight, 3),
+        "steering_proxy": round(steering_proxy, 3),
+        "skepticism_signal": round(skepticism_signal, 3),
+    }
 
 VALID_CONDITIONS = ("passive", "checked_out", "governance_tagged", "reviewed")
 VALID_PHASES = ("obs",)  # legacy: ("A", "B")
@@ -55,7 +114,6 @@ VALID_GOVERNANCE_TYPES = (
     "rule_deleted",
     "incident",
     "escalation",
-    "approach_change",
     "other",
 )
 VALID_INCIDENT_CATEGORIES = ("OPS", "GOV", "COM", "PRD", "RES", "DES")
@@ -65,7 +123,6 @@ VALID_GOVERNANCE_TAGS = (
     "ai_off_track",
     "scope_creep",
     "model_switch",
-    "fabrication_detected",
     "none",
 )
 
@@ -198,8 +255,9 @@ def touch_last_active(praxis_dir: Path) -> None:
         state["last_active"] = _now_iso()
         state["session_count"] = state.get("session_count", 0) + 1
         save_state(praxis_dir, state)
-    except PraxisError:
-        pass  # Don't crash on touch failure
+    except PraxisError as exc:
+        import sys
+        print("PRAXIS: touch_last_active failed: {}".format(exc), file=sys.stderr)
 
 
 def append_session_record(praxis_dir: Path, record: Dict[str, Any]) -> None:
@@ -267,10 +325,30 @@ def _check_git_available() -> bool:
 
 
 def _git_probe(project_dir: Optional[Path]) -> Dict[str, Any]:
-    """Collect lightweight git context for passive capture."""
+    """Collect lightweight git context for passive capture.
+
+    If project_dir is not a git repo, falls back to common workspace locations
+    (OpenClaw workspace, CWD) so git data is still captured when the kit is
+    installed in a non-git directory.
+    """
     if not _check_git_available():
         return {"repo": False, "commit": None, "branch": None, "dirty_files": None, "git_unavailable": True}
+
     root = Path(project_dir or Path.cwd())
+    git_source = None
+
+    # If the primary dir is not a git repo, try fallback locations
+    if not _get_git_commit(root):
+        fallbacks = [
+            Path.home() / ".openclaw" / "workspace",
+            Path.cwd(),
+        ]
+        for fallback in fallbacks:
+            if fallback.resolve() != root.resolve() and _get_git_commit(fallback):
+                root = fallback
+                git_source = "workspace_fallback"
+                break
+
     commit = _get_git_commit(root)
     payload: Dict[str, Any] = {
         "repo": bool(commit),
@@ -278,6 +356,8 @@ def _git_probe(project_dir: Optional[Path]) -> Dict[str, Any]:
         "branch": None,
         "dirty_files": None,
     }
+    if git_source:
+        payload["git_source"] = git_source
     try:
         branch = subprocess.run(
             ["git", "branch", "--show-current"],
@@ -326,12 +406,89 @@ def _git_commit_delta(project_dir: Optional[Path], start_commit: Optional[str], 
     return 0
 
 
+def _load_praxis_config(praxis_dir: Path) -> Dict[str, Any]:
+    """Load optional .praxis/config.json for user-tunable settings."""
+    config_path = praxis_dir / "config.json"
+    if config_path.is_file():
+        try:
+            with config_path.open("r", encoding="utf-8") as fh:
+                data = json.load(fh)
+            return data if isinstance(data, dict) else {}
+        except (OSError, json.JSONDecodeError):
+            pass
+    return {}
+
+
+def auto_close_idle_sessions(
+    praxis_dir: Path,
+    state: Optional[Dict[str, Any]] = None,
+    idle_timeout_minutes: Optional[int] = None,
+) -> int:
+    """Close open sessions that have exceeded the idle timeout.
+
+    Reads all session records, finds open sessions where now - started_at
+    exceeds the idle threshold, and closes them with capped duration.
+
+    Args:
+        praxis_dir: Path to .praxis/ directory.
+        state: Optional state dict (unused, kept for interface compat).
+        idle_timeout_minutes: Override for timeout. If None, reads from
+            .praxis/config.json or defaults to 30 minutes.
+
+    Returns:
+        Number of sessions closed.
+    """
+    if idle_timeout_minutes is None:
+        config = _load_praxis_config(praxis_dir)
+        idle_timeout_minutes = int(config.get("idle_timeout_minutes", 30))
+
+    rows = load_session_records(praxis_dir)
+    if not rows:
+        return 0
+
+    now = datetime.now(timezone.utc)
+    closed_count = 0
+    changed = False
+
+    for idx, row in enumerate(rows):
+        if row.get("status") != "open":
+            continue
+        try:
+            started_at = datetime.fromisoformat(
+                str(row.get("started_at", "")).replace("Z", "+00:00")
+            )
+        except (ValueError, TypeError):
+            continue
+        if started_at.tzinfo is None:
+            started_at = started_at.replace(tzinfo=timezone.utc)
+
+        elapsed_minutes = (now - started_at).total_seconds() / 60.0
+        if elapsed_minutes > idle_timeout_minutes:
+            capped_end = started_at + __import__("datetime").timedelta(minutes=idle_timeout_minutes)
+            rows[idx]["status"] = "closed_idle"
+            rows[idx]["ended_at"] = capped_end.isoformat()
+            rows[idx]["duration_minutes"] = idle_timeout_minutes
+            rows[idx]["duration_capped"] = True
+            rows[idx]["passive_signals"] = rows[idx].get("passive_signals") or {}
+            rows[idx]["passive_signals"]["idle_timeout_closed"] = True
+            closed_count += 1
+            changed = True
+
+    if changed:
+        _write_session_records(praxis_dir, rows)
+
+    return closed_count
+
+
 def start_passive_session(
     praxis_dir: Path,
     state: Dict[str, Any],
     project_dir: Optional[Path] = None,
 ) -> Dict[str, Any]:
     """Open a passive capture session used as the default logging path."""
+    # Auto-close any idle sessions before starting a new one
+    auto_close_idle_sessions(praxis_dir, state)
+
     existing = get_open_session_record(praxis_dir)
     if existing is not None:
         return existing
@@ -393,9 +550,12 @@ def finish_passive_session(
     except Exception:
         pass
 
-    start_dt = datetime.fromisoformat(str(row.get("started_at", "")).replace("Z", "+00:00"))
-    end_dt = datetime.fromisoformat(str(row.get("ended_at", "")).replace("Z", "+00:00"))
-    row["duration_minutes"] = max(1, round((end_dt - start_dt).total_seconds() / 60.0))
+    try:
+        start_dt = datetime.fromisoformat(str(row.get("started_at", "")).replace("Z", "+00:00"))
+        end_dt = datetime.fromisoformat(str(row.get("ended_at", "")).replace("Z", "+00:00"))
+        row["duration_minutes"] = max(1, round((end_dt - start_dt).total_seconds() / 60.0))
+    except (ValueError, TypeError):
+        row["duration_minutes"] = 1  # conservative fallback for interrupted sessions
     row["passive_signals"] = {
         "platform_count": len(row.get("platform_ids", [])),
         "git_repo_detected": bool((row.get("git_end") or {}).get("repo")),
@@ -476,6 +636,7 @@ def apply_smart_checkout(
     outcome: str,
     governance_tag: Optional[str] = None,
     task: Optional[str] = None,
+    checkout_result: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """Apply the smart contextual checkout mapping to a passive session draft."""
     outcome_key = str(outcome or "").strip().lower()
@@ -511,6 +672,10 @@ def apply_smart_checkout(
     l1r["skepticism_activation"] = max(1, 8 - trust)
 
     # Complete L1-R: derive missing Likert dimensions from trust signal (Bug #2 fix)
+    # Store user-provided steering_intensity in l1r (fix: was silently discarded)
+    if checkout_result and checkout_result.get("steering_intensity"):
+        l1r["steering_intensity"] = checkout_result["steering_intensity"]
+
     # These are informed estimates — higher trust correlates with higher perceived confidence/authority
     if "perceived_confidence" not in l1r or l1r.get("perceived_confidence") is None:
         l1r["perceived_confidence"] = min(7, trust + 1)
@@ -551,7 +716,6 @@ def apply_smart_checkout(
         "first_attempt": int(mapping["iterations"]) <= 1,
         "human_interventions": interventions,
         "interventions": interventions,
-        "autonomous": interventions == 0,
         "reviewed": True,
         "capture_mode": "smart_checkout",
         "governance_tag": tag,
@@ -560,6 +724,27 @@ def apply_smart_checkout(
         "l1r_source": l1r_source,
         "field_provenance": provenance,
     })
+    # Compute GAS (Governance Activity Score)
+    gas, gas_components = compute_gas(interventions, int(mapping["iterations"]), tag, l1r)
+    updated["governance_activity_score"] = gas
+    updated["gas_components"] = gas_components
+    updated["autonomous"] = gas < 0.3 if gas is not None else None
+    # Heuristic governance detection (Layer 1)
+    updated["heuristic_analysis"] = _detect_heuristics(updated)
+    # Delegation depth + context effort from checkout result
+    updated["delegation_depth"] = checkout_result.get("delegation_depth", 0) if checkout_result else 0
+    updated["context_provision_effort"] = checkout_result.get("context_provision_effort", 2) if checkout_result else 2
+    # Decision latency: time between session end and checkout
+    session_end = entry.get("passive_capture", {}).get("ended_at") if isinstance(entry.get("passive_capture"), dict) else None
+    if session_end:
+        try:
+            end_dt = datetime.fromisoformat(session_end.replace("Z", "+00:00"))
+            checkout_dt = datetime.now(timezone.utc)
+            updated["decision_latency_seconds"] = round((checkout_dt - end_dt).total_seconds(), 1)
+        except Exception:
+            updated["decision_latency_seconds"] = None
+    else:
+        updated["decision_latency_seconds"] = None
     rel = estimate_reliability(updated)
     updated["reliability_score"] = rel  # deprecated alias
     updated["provenance_completeness"] = rel  # canonical name
@@ -639,7 +824,9 @@ def build_auto_session_entry(
         "quality": DEFAULT_AUTO_QUALITY,
         "human_interventions": 0,
         "interventions": 0,
-        "autonomous": True,
+        "autonomous": None,  # Cannot determine from passive capture
+        "governance_activity_score": None,  # GAS: null for passive sessions
+        "gas_components": None,
         "first_attempt": True,
         "iterations": 1,
         "session_id": session_record.get("id") or _get_session_id(state),
@@ -668,11 +855,11 @@ def build_auto_session_entry(
         "notes": "Passive capture draft. Review with a quick checkout to improve reliability.",
     }
     # Extract model from adapter telemetry (Bug #1 fix)
-    detected_model, detected_executor = _extract_model_from_telemetry(session_record)
+    detected_model, detected_executor, detected_provenance = _extract_model_from_telemetry(session_record)
     if detected_model and detected_model != "unknown":
         entry["model"] = detected_model
         entry["model_executor"] = detected_executor
-        entry["field_provenance"]["model"] = "auto_telemetry"
+        entry["field_provenance"]["model"] = detected_provenance
 
     git_commit = _get_git_commit(project_dir)
     if git_commit:
@@ -684,32 +871,41 @@ def build_auto_session_entry(
 def _extract_model_from_telemetry(session_record: Dict[str, Any]) -> tuple:
     """Extract model name and executor from adapter telemetry.
 
-    Returns (model_name, executor_name) where executor_name identifies
-    the platform that provided the model info.
+    Returns (model_name, executor_name, provenance) where executor_name identifies
+    the platform that provided the model info and provenance is "inferred" when
+    reading config (not runtime state) or "auto_telemetry" for direct observation.
     """
     for tel_key in ("adapter_telemetry_start", "adapter_telemetry_end"):
         telemetry = session_record.get(tel_key)
         if not isinstance(telemetry, dict):
             continue
 
-        # OpenClaw: model_info.model or model_info.default_model
+        # OpenClaw config-based active model (highest priority)
         oc = telemetry.get("openclaw")
         if isinstance(oc, dict) and oc.get("detected"):
+            active_model_data = oc.get("active_model")
+            if isinstance(active_model_data, dict):
+                for key in ("active_model", "default_model"):
+                    m = active_model_data.get(key)
+                    if isinstance(m, str) and m and _is_real_model_name(m):
+                        return (m, "openclaw", "inferred")
+
+            # Legacy: model_info.model or model_info.default_model from session_state
             model_info = oc.get("model_info")
             if isinstance(model_info, dict):
                 for key in ("model", "default_model"):
                     m = model_info.get(key)
                     if isinstance(m, str) and m and _is_real_model_name(m):
-                        return (m, "openclaw")
+                        return (m, "openclaw", "auto_telemetry")
 
-        # Codex: latest_session.model
+        # Codex: latest_session.model (lower priority)
         cx = telemetry.get("codex")
         if isinstance(cx, dict) and cx.get("detected"):
             latest = cx.get("latest_session")
             if isinstance(latest, dict):
                 m = latest.get("model")
                 if isinstance(m, str) and m and _is_real_model_name(m):
-                    return (m, "codex")
+                    return (m, "codex", "auto_telemetry")
 
         # Custom adapters: check for 'model' key at top level
         for adapter_name, adapter_data in telemetry.items():
@@ -718,9 +914,9 @@ def _extract_model_from_telemetry(session_record: Dict[str, Any]) -> tuple:
             if isinstance(adapter_data, dict) and adapter_data.get("detected"):
                 m = adapter_data.get("model")
                 if isinstance(m, str) and m and _is_real_model_name(m):
-                    return (m, adapter_name)
+                    return (m, adapter_name, "auto_telemetry")
 
-    return ("unknown", "unknown")
+    return ("unknown", "unknown", "unknown")
 
 
 # Generic provider names that are NOT real model identifiers
@@ -1088,7 +1284,6 @@ def build_metric_entry(
         "model_executor": model.strip(),
         "quality_self": quality,
         "human_interventions": interventions,
-        "autonomous": interventions == 0,
         "first_attempt": iterations == 1,
         "session_id": _get_session_id(state),
         # Legacy aliases retained for existing analysis/export code.
@@ -1099,6 +1294,14 @@ def build_metric_entry(
         "iterations": iterations,
         "interventions": interventions,
     }
+
+    # Compute GAS for manual entries
+    gas, gas_components = compute_gas(interventions, iterations, None, l1r_observations)
+    entry["governance_activity_score"] = gas
+    entry["gas_components"] = gas_components
+    entry["autonomous"] = gas < 0.3 if gas is not None else None
+    # Heuristic governance detection (Layer 1)
+    entry["heuristic_analysis"] = _detect_heuristics(entry)
 
     if layer is not None:
         entry["praxis_layer"] = layer
@@ -1166,7 +1369,7 @@ def append_incident_event(
         )
 
     incident: Dict[str, Any] = {
-        "id": generate_participant_id()[:8] + "-" + datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S"),
+        "id": "inc-" + uuid.uuid4().hex[:8] + "-" + datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S"),
         "timestamp": _now_iso(),
         "event_type": "incident",
         "incident": description.strip(),
@@ -1344,7 +1547,9 @@ def update_metric_entry(praxis_dir: Path, entry_id: str, updates: Dict[str, Any]
         rows.append(json.dumps(row, ensure_ascii=False))
     if updated_row is None:
         return None
-    metrics_path.write_text("\n".join(rows) + "\n", encoding="utf-8")
+    tmp_path = metrics_path.with_suffix(".tmp")
+    tmp_path.write_text("\n".join(rows) + "\n", encoding="utf-8")
+    tmp_path.replace(metrics_path)
     return updated_row
 
 
@@ -1370,7 +1575,9 @@ def delete_metric_entry(praxis_dir: Path, entry_id: str) -> bool:
         rows.append(json.dumps(row, ensure_ascii=False))
     if not found:
         return False
-    metrics_path.write_text("\n".join(rows) + "\n", encoding="utf-8")
+    tmp_path = metrics_path.with_suffix(".tmp")
+    tmp_path.write_text("\n".join(rows) + "\n", encoding="utf-8")
+    tmp_path.replace(metrics_path)
     return True
 
 
@@ -1413,6 +1620,11 @@ def compute_summary(entries: List[Dict[str, Any]]) -> Dict[str, Any]:
     if autonomous_flags:
         autonomy_rate = round(sum(1 for a in autonomous_flags if a) / len(autonomous_flags), 3)
 
+    # GAS metrics (v0.12.0+)
+    gas_values = [float(e["governance_activity_score"]) for e in sprint_entries
+                  if isinstance(e.get("governance_activity_score"), (int, float))]
+    gas_avg = safe_mean(gas_values)
+
     # Layer distribution (structured checkout sessions)
     layer_counts: Dict[str, int] = {}
     for e in sprint_entries:
@@ -1433,6 +1645,8 @@ def compute_summary(entries: List[Dict[str, Any]]) -> Dict[str, Any]:
         "praxis_q_mean": safe_mean(praxis_q_scores),
         "mean_reliability": safe_mean(reliability_scores),
         "layer_distribution": layer_counts,
+        "governance_activity_avg": gas_avg,
+        "gas_sample_size": len(gas_values),
     }
 
 

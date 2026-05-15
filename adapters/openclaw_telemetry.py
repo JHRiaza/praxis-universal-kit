@@ -45,6 +45,7 @@ class OpenClawAdapter:
             "has_memory": memory_path.is_file(),
             "memory_size_bytes": memory_path.stat().st_size if memory_path.is_file() else None,
             "model_info": self._extract_model_info(state),
+            "active_model": self.capture_active_model(),
             "active_projects": self._active_projects(),
             "last_activity": self._to_iso(last_activity),
         }
@@ -174,6 +175,39 @@ class OpenClawAdapter:
                 elif child.is_file():
                     files.append(child)
         return files
+
+    def capture_active_model(self) -> Dict[str, Any]:
+        """Read the active model from OpenClaw config (~/.openclaw/openclaw.json).
+
+        Returns dict with 'active_model' and 'default_model' keys.
+        Values may be None if config is unavailable.
+        """
+        config_path = Path.home() / ".openclaw" / "openclaw.json"
+        config = self._load_json(config_path)
+        if not isinstance(config, dict):
+            return {"active_model": None, "default_model": None}
+
+        active_model = None
+        default_model = None
+
+        # agents.list[0].model — the currently configured agent model
+        agents_list = config.get("agents", {}).get("list")
+        if isinstance(agents_list, list) and agents_list:
+            first_agent = agents_list[0] if isinstance(agents_list[0], dict) else {}
+            active_model = first_agent.get("model")
+
+        # agents.defaults.model.primary — the default model
+        defaults = config.get("agents", {}).get("defaults", {})
+        model_cfg = defaults.get("model")
+        if isinstance(model_cfg, dict):
+            default_model = model_cfg.get("primary")
+        elif isinstance(model_cfg, str):
+            default_model = model_cfg
+
+        return {
+            "active_model": active_model if isinstance(active_model, str) else None,
+            "default_model": default_model if isinstance(default_model, str) else None,
+        }
 
     def _extract_model_info(self, state: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
         if not isinstance(state, dict):

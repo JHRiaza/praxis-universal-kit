@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env bash
+#!/usr/bin/env bash
 # PRAXIS Universal Kit â€” Unix Installer (macOS / Linux)
 # =====================================================
 # Usage: bash install.sh [--lang es] [--dir /path/to/project]
@@ -10,7 +10,7 @@ set -euo pipefail
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
-PRAXIS_VERSION="0.11.0"
+PRAXIS_VERSION="0.15.0"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DEFAULT_PROJECT_DIR="$(pwd)"
 LANG="en"
